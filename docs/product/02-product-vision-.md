@@ -10,7 +10,7 @@
 | Version | 1.0.0 |
 | Status | Draft |
 | Owner | Dorian Zuluaga |
-| Last Updated | 2026-07-18 |
+| Last Updated | 07-18-2026 |
 
 ---
 
