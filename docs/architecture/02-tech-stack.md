@@ -210,17 +210,18 @@ Requires schema management and migrations.
 
 # Authentication
 
-## JWT
+## Google OAuth (MVP)
 
 **Role**
 
-Authentication and authorization.
+Authenticate users using a trusted third-party identity provider.
 
 **Why**
 
-- Stateless authentication.
-- Simple architecture.
+- Reduces development time.
+- improves security.
 - Easy frontend integration.
+- allows the team to focus on the core value of Career Copilot.
 
 ---
 

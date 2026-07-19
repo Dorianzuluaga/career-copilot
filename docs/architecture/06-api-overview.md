@@ -38,16 +38,46 @@ The frontend never communicates directly with the database or AI providers.
 
 The API is responsible for:
 
-- User authentication
-- Authorization
-- Business logic
-- Database access
-- AI orchestration
-- PDF generation
-- Data validation
-- Error handling
+- User authentication through Google OAuth.
+- Authorization.
+- Business logic.
+- Database access.
+- AI orchestration.
+- PDF generation.
+- Data validation.
+- Error handling.
 
 ---
+
+# Authentication Flow
+
+```text
+User
+   │
+   ▼
+Frontend
+   │
+Google OAuth Login
+   │
+   ▼
+Google Identity Provider
+   │
+Identity Token
+   │
+   ▼
+Backend API
+   │
+Validate Token
+   │
+Find or Create User
+   │
+Create Application Session
+   │
+   ▼
+Frontend
+```
+
+
 
 # Service Domains
 
@@ -57,10 +87,13 @@ The API is organized into functional domains.
 
 Responsibilities:
 
-- Register users
-- Authenticate users
-- Manage user sessions
-- Validate access tokens
+- Authenticate users using Google OAuth.
+- Validate the identity token provided by Google.
+- Create a new user account on the first successful login.
+- Retrieve existing user profiles.
+- Establish the application's authenticated session.
+
+The backend delegates user authentication to a trusted identity provider while remaining responsible for application-level authorization and user management.
 
 ---
 
@@ -143,19 +176,28 @@ Responsibilities:
 The API follows a request-response model.
 
 ```text
+User
+     │
+     ▼
 Frontend
      │
-HTTP Request
+Google OAuth
      │
+Identity Token
      ▼
 Backend API
      │
-Authentication
+Token Validation
+     │
+Authorization
      │
 Business Logic
      │
-Database / AI Services
+ ┌───────┴────────┐
+ ▼                ▼
+Database      OpenAI API
      │
+     ▼
 Response
      │
      ▼
