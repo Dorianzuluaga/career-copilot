@@ -45,9 +45,16 @@ This project is being developed following a **documentation-first** approach, wh
 
 * PostgreSQL
 
-### AI
+### AI Development
 
-* OpenAI API
+- ChatGPT (Architecture, Documentation & Code Review)
+- Cursor (Feature Development)
+- Claude Code (Feature Development)
+- Codex (Refactoring, Testing & Security)
+
+### AI Integration
+
+- OpenAI API
 
 ### Authentication
 
