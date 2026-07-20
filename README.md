@@ -48,6 +48,7 @@ This project is being developed following a **documentation-first** approach, wh
 ### AI Development
 
 - ChatGPT (Architecture, Documentation & Code Review)
+- Spec Kit (Feature Specifications & AI Context Management)
 - Cursor (Feature Development)
 - Claude Code (Feature Development)
 - Codex (Refactoring, Testing & Security)
