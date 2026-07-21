@@ -172,3 +172,65 @@ Career Copilot follows these principles:
 * The application minimizes repetitive work.
 * The final PDF is generated only after user approval.
 * Every generated application is linked to a specific job opportunity.
+
+# flowcharts
+
+# FAST APPLY
+
+Paste job offer
+
+↓
+
+AI analysis
+
+↓
+
+Automatic adaptation of the Master CV
+
+↓
+
+Preview
+
+↓
+
+Manual edition (optional)
+
+↓
+
+Generate PDF
+
+↓
+
+Save version of the application
+
+# GUIDED APPLY
+
+Paste job offer 
+
+↓
+
+Analysis IA
+
+↓
+
+IA recomendations
+
+↓
+
+Accept / Reject / Edit recommendations
+
+↓
+
+Preview
+
+↓
+
+Manual edition (optional)
+
+↓
+
+Generate PDF
+
+↓
+
+Save version of the application
