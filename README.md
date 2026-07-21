@@ -22,7 +22,7 @@ This project is being developed following a **documentation-first** approach, wh
 * AI CV optimization
 * AI cover letter generation
 * Job application tracking
-* PDF document generation
+* PDF document generation (react-pdf, pdf-lib, jsPDF)
 
 ---
 
