@@ -287,13 +287,6 @@ Working software is preferred over perfect architecture.
 - Avoid unnecessary abbreviations.
 - Follow consistent naming conventions.
 
-## Dependencies
-
-Before installing a new dependency:
-
-- Verify whether the functionality already exists.
-- Prefer the current technology stack.
-- Avoid unnecessary libraries.
 
 ## Refactoring
 
@@ -306,16 +299,6 @@ Refactoring should improve:
 Avoid refactoring without a clear objective.
 
 Do not mix refactoring with unrelated feature development.
-
-## Testing
-
-Every new feature should be testable.
-
-Whenever possible:
-
-- Validate new functionality.
-- Verify bug fixes.
-- Prevent regressions.
 
 ---
 
