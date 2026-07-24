@@ -152,6 +152,24 @@ Source code should reflect documentation—not replace it.
 
 ---
 
+# Context Efficiency
+
+Career Copilot treats context as
+a valuable engineering resource.
+
+AI assistants should always use
+the minimum amount of context
+required to solve a task.
+
+Documentation exists to avoid
+repeating project knowledge across
+multiple conversations.
+
+Reducing context duplication
+improves consistency,
+reduces costs
+and accelerates development.
+
 # Continuous Improvement
 
 Every time an AI assistant produces an incorrect, inconsistent or unexpected result, the team should evaluate whether the problem originated from:
