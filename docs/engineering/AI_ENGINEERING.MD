@@ -1,5 +1,11 @@
 # AI Engineering Guide
 
+## Entry Point for AI Assistants
+
+This document is the primary entry point for every AI assistant working on Career Copilot.
+
+Before implementing any task, consult the project documentation following the documented priority order.
+
 ## Purpose
 
 This document defines how AI assistants should work within the Career Copilot project.
