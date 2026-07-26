@@ -1,0 +1,80 @@
+.
+├── .claude
+│   └── skills
+├── .github
+│   └── .gitkeep
+├── .gitignore
+├── .nvmrc
+├── .prettierignore
+├── .prettierrc.json
+├── .windsurf
+│   └── skills
+├── BACKLOG.md
+├── LICENSE
+├── README.md
+├── ROADMAP.md
+├── apps
+│   ├── api
+│   │   ├── .env.example
+│   │   ├── eslint.config.js
+│   │   ├── generated
+│   │   │   └── prisma
+│   │   ├── package.json
+│   │   ├── prisma
+│   │   │   └── schema.prisma
+│   │   ├── prisma.config.ts
+│   │   ├── src
+│   │   │   ├── app.ts
+│   │   │   └── server.ts
+│   │   └── tsconfig.json
+│   └── web
+│       ├── .env.example
+│       ├── eslint.config.js
+│       ├── index.html
+│       ├── package.json
+│       ├── public
+│       ├── src
+│       │   ├── App.test.tsx
+│       │   ├── App.tsx
+│       │   ├── assets
+│       │   ├── index.css
+│       │   └── main.tsx
+│       ├── tsconfig.app.json
+│       ├── tsconfig.json
+│       ├── tsconfig.node.json
+│       └── vite.config.ts
+├── database
+│   └── README.md
+├── docs
+│   ├── architecture
+│   │   ├── 01-system-overview.md
+│   │   ├── 02-tech-stack.md
+│   │   ├── 03-high-level-architecture.md
+│   │   ├── 04-folder-structure.md
+│   │   ├── 05-database-overview.md
+│   │   ├── 06-api-overview.md
+│   │   ├── 07-security.md
+│   │   └── 08-engineering-decisions.md
+│   ├── engineering
+│   │   ├── AI_ENGINEERING.MD
+│   │   ├── DEVELOPMENT_GUIDE.MD
+│   │   └── PROJECT_RULES.MD
+│   ├── product
+│   │   ├── 01-product-dna.md
+│   │   ├── 02-product-vision-.md
+│   │   ├── 03-mvp-scope-.md
+│   │   ├── 04-application-workflow.md
+│   │   └── 05-user-flow.md
+│   ├── prompts
+│   │   └── README.md
+│   └── specs
+│       ├── README.md
+│       ├── application-workspace.md
+│       ├── bootstrap-project.md
+│       └── feature-template.md
+├── package-lock.json
+├── package.json
+├── prisma
+└── project-tree.txt
+
+24 directories, 54 files
