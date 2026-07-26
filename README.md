@@ -14,6 +14,15 @@ This project is being developed following a **documentation-first** approach, wh
 
 ---
 
+## Current Status
+
+The technical bootstrap is complete. The repository contains the React frontend,
+Express API, PostgreSQL-ready Prisma configuration, and shared development
+tooling required to begin feature development. Product features have not been
+implemented yet.
+
+---
+
 ## MVP Features
 
 * Google OAuth authentication
@@ -31,6 +40,7 @@ This project is being developed following a **documentation-first** approach, wh
 ### Frontend
 
 * React
+* Vite
 * TypeScript
 * Tailwind CSS
 * React Router
@@ -38,12 +48,14 @@ This project is being developed following a **documentation-first** approach, wh
 
 ### Backend
 
-* Node.js
+* Node.js 22
 * Express
+* TypeScript
 
 ### Database
 
 * PostgreSQL
+* Prisma
 
 ### AI Development
 
@@ -117,7 +129,7 @@ Project documentation is organized under the `docs/` directory.
 * Product documentation
 * Architecture documentation
 * AI prompts
-* Feature specifications *(planned)*
+* Feature specifications
 
 ---
 
@@ -133,22 +145,64 @@ ROADMAP.md
 
 ## Getting Started
 
-Clone the repository:
+### Prerequisites
+
+- Node.js 22 LTS
+- npm
+- PostgreSQL when database-backed features are introduced
+
+### Installation
+
+Clone the repository and install the workspace dependencies:
 
 ```bash
 git clone <https://github.com/Dorianzuluaga/career-copilot>
-```
-
-Install dependencies:
-
-```bash
+cd career-copilot
 npm install
 ```
 
-Run the development server:
+Create local environment files from the committed templates:
 
 ```bash
-npm run dev
+cp apps/web/.env.example apps/web/.env
+cp apps/api/.env.example apps/api/.env
+```
+
+Replace the placeholder `DATABASE_URL` before using database commands. Load it
+into the current shell and generate the Prisma Client:
+
+```bash
+set -a
+source apps/api/.env
+set +a
+npm exec --workspace apps/api -- prisma generate
+```
+
+### Development
+
+Run the frontend and backend in separate terminals:
+
+```bash
+npm run dev --workspace apps/web
+```
+
+```bash
+npm run dev --workspace apps/api
+```
+
+The frontend runs at `http://localhost:5173`. The API runs at
+`http://localhost:3001`, with its health check available at
+`http://localhost:3001/health`.
+
+### Verification
+
+Run the complete workspace verification suite from the repository root:
+
+```bash
+npm run build
+npm run lint
+npm run typecheck
+npm run test
 ```
 
 ---
