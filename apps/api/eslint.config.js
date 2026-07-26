@@ -4,7 +4,7 @@ import tseslint from "typescript-eslint";
 
 export default tseslint.config(
   {
-    ignores: ["dist"],
+    ignores: ["dist", "generated"],
   },
   {
     files: ["**/*.ts"],
@@ -13,7 +13,10 @@ export default tseslint.config(
       ecmaVersion: 2023,
       globals: globals.node,
       parserOptions: {
-        projectService: true,
+        projectService: {
+          allowDefaultProject: ["prisma.config.ts"],
+          defaultProject: "tsconfig.json",
+        },
         tsconfigRootDir: import.meta.dirname,
       },
     },
