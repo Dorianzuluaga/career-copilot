@@ -1,14 +1,32 @@
 import { Navigate, Route, Routes } from "react-router";
 import { AppLayout } from "./components/AppLayout";
+import { useAuth } from "./hooks/useAuth";
 import { ApplicationFormPage } from "./pages/ApplicationFormPage";
 import { ApplicationWorkspacePage } from "./pages/ApplicationWorkspacePage";
 import { DashboardPage } from "./pages/DashboardPage";
+import { LoginPage } from "./pages/LoginPage";
+
+function RootRedirect() {
+  const { user, isLoading } = useAuth();
+
+  if (isLoading) {
+    return (
+      <main className="flex min-h-screen items-center justify-center bg-slate-50 text-sm text-slate-600">
+        Restoring your session…
+      </main>
+    );
+  }
+
+  return <Navigate to={user ? "/dashboard" : "/login"} replace />;
+}
 
 function App() {
   return (
     <Routes>
+      <Route index element={<RootRedirect />} />
+      <Route path="login" element={<LoginPage />} />
       <Route element={<AppLayout />}>
-        <Route index element={<DashboardPage />} />
+        <Route path="dashboard" element={<DashboardPage />} />
         <Route path="applications/new" element={<ApplicationFormPage />} />
         <Route
           path="applications/:applicationId"
