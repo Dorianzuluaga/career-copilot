@@ -3,24 +3,40 @@ import { MemoryRouter } from "react-router";
 import { describe, expect, it } from "vitest";
 import App from "./App";
 import { ApplicationsProvider } from "./context/ApplicationsProvider";
+import { AuthContext } from "./context/auth-context";
 
 function renderApp(path: string) {
   return renderToStaticMarkup(
     <MemoryRouter initialEntries={[path]}>
-      <ApplicationsProvider>
-        <App />
-      </ApplicationsProvider>
+      <AuthContext.Provider
+        value={{
+          user: null,
+          isLoading: false,
+          signIn: () => Promise.resolve(),
+        }}
+      >
+        <ApplicationsProvider>
+          <App />
+        </ApplicationsProvider>
+      </AuthContext.Provider>
     </MemoryRouter>,
   );
 }
 
 describe("App", () => {
   it("renders the empty dashboard", () => {
-    const markup = renderApp("/");
+    const markup = renderApp("/dashboard");
 
     expect(markup).toContain("Application dashboard");
     expect(markup).toContain("New Application");
     expect(markup).toContain("No applications yet");
+  });
+
+  it("renders Google sign in", () => {
+    const markup = renderApp("/login");
+
+    expect(markup).toContain("Welcome");
+    expect(markup).toContain("Continue with Google");
   });
 
   it("renders the create application form", () => {

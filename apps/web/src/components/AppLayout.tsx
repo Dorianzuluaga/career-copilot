@@ -12,7 +12,7 @@ export function AppLayout() {
             Career Copilot
           </Link>
           <Link
-            to="/"
+            to="/dashboard"
             className="text-sm font-medium text-slate-600 transition hover:text-slate-950"
           >
             Dashboard
