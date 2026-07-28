@@ -8,15 +8,16 @@ datasource db {
 }
 
 model User {
-  id        String    @id @default(uuid()) @db.Uuid
-  googleSub String    @unique
-  email     String
-  name      String
-  avatar    String?
-  sessions  Session[]
-  masterCv  MasterCv?
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
+  id           String        @id @default(uuid()) @db.Uuid
+  googleSub    String        @unique
+  email        String
+  name         String
+  avatar       String?
+  sessions     Session[]
+  masterCv     MasterCv?
+  applications Application[]
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
 }
 
 model Session {
@@ -50,4 +51,56 @@ model MasterCv {
   updatedAt           DateTime @updatedAt
 
   @@index([userId])
+}
+
+enum ApplicationStatus {
+  NEW
+}
+
+model Application {
+  id          String            @id @default(uuid()) @db.Uuid
+  userId      String            @db.Uuid
+  user        User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  status      ApplicationStatus @default(NEW)
+  jobOffer    JobOffer?
+  jobAnalysis JobAnalysis?
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+
+  @@index([userId])
+}
+
+model JobOffer {
+  id                  String      @id @default(uuid()) @db.Uuid
+  applicationId       String      @unique @db.Uuid
+  application         Application @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  title               String?
+  company             String?
+  originalDescription String
+  createdAt           DateTime    @default(now())
+  updatedAt           DateTime    @updatedAt
+
+  @@index([applicationId])
+}
+
+model JobAnalysis {
+  id               String      @id @default(uuid()) @db.Uuid
+  applicationId    String      @unique @db.Uuid
+  application      Application @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  title            String?
+  company          String?
+  employmentType   String?
+  location         String?
+  experienceLevel  String?
+  education        String?
+  languages        Json
+  summary          String?
+  requiredSkills   Json
+  responsibilities Json
+  atsKeywords      Json
+  analysisVersion  Int         @default(1)
+  createdAt        DateTime    @default(now())
+  updatedAt        DateTime    @updatedAt
+
+  @@index([applicationId])
 }

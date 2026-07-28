@@ -2,9 +2,9 @@ import { useEffect, useState } from "react";
 import { Navigate, Route, Routes } from "react-router";
 import { AppLayout } from "./components/AppLayout";
 import { useAuth } from "./hooks/useAuth";
-import { ApplicationFormPage } from "./pages/ApplicationFormPage";
 import { ApplicationWorkspacePage } from "./pages/ApplicationWorkspacePage";
 import { DashboardPage } from "./pages/DashboardPage";
+import { JobAnalysisPage } from "./pages/JobAnalysisPage";
 import { LoginPage } from "./pages/LoginPage";
 import { MasterCvEditorPage } from "./pages/MasterCvEditorPage";
 import { MasterCvOnboardingPage } from "./pages/MasterCvOnboardingPage";
@@ -69,14 +69,10 @@ function App() {
         />
         <Route path="master-cv" element={<MasterCvEditorPage />} />
         <Route path="dashboard" element={<DashboardPage />} />
-        <Route path="applications/new" element={<ApplicationFormPage />} />
+        <Route path="applications/new" element={<JobAnalysisPage />} />
         <Route
           path="applications/:applicationId"
           element={<ApplicationWorkspacePage />}
-        />
-        <Route
-          path="applications/:applicationId/edit"
-          element={<ApplicationFormPage />}
         />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Route>
