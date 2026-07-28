@@ -14,6 +14,7 @@ model User {
   name      String
   avatar    String?
   sessions  Session[]
+  masterCv  MasterCv?
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
 }
@@ -27,4 +28,26 @@ model Session {
 
   @@index([userId])
   @@index([expiresAt])
+}
+
+model MasterCv {
+  id                  String   @id @default(uuid()) @db.Uuid
+  userId              String   @unique @db.Uuid
+  user                User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  fullName            String
+  email               String
+  phone               String?
+  location            String?
+  linkedin            String?
+  portfolio           String?
+  professionalSummary String
+  experience          Json
+  education           Json
+  skills              Json
+  languages           Json
+  certifications      Json
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  @@index([userId])
 }

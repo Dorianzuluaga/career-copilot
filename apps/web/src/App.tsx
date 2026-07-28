@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import { Navigate, Route, Routes } from "react-router";
 import { AppLayout } from "./components/AppLayout";
 import { useAuth } from "./hooks/useAuth";
@@ -5,11 +6,35 @@ import { ApplicationFormPage } from "./pages/ApplicationFormPage";
 import { ApplicationWorkspacePage } from "./pages/ApplicationWorkspacePage";
 import { DashboardPage } from "./pages/DashboardPage";
 import { LoginPage } from "./pages/LoginPage";
+import { MasterCvEditorPage } from "./pages/MasterCvEditorPage";
+import { MasterCvOnboardingPage } from "./pages/MasterCvOnboardingPage";
+import { getMasterCv } from "./services/master-cv";
 
 function RootRedirect() {
   const { user, isLoading } = useAuth();
+  const [destination, setDestination] = useState<string | null>(null);
 
-  if (isLoading) {
+  useEffect(() => {
+    if (!user) {
+      setDestination(null);
+      return;
+    }
+    let isActive = true;
+    void getMasterCv()
+      .then((masterCv) => {
+        if (isActive) {
+          setDestination(masterCv ? "/dashboard" : "/onboarding/master-cv");
+        }
+      })
+      .catch(() => {
+        if (isActive) setDestination("/dashboard");
+      });
+    return () => {
+      isActive = false;
+    };
+  }, [user]);
+
+  if (isLoading || (user && !destination)) {
     return (
       <main className="flex min-h-screen items-center justify-center bg-slate-50 text-sm text-slate-600">
         Restoring your session…
@@ -17,7 +42,19 @@ function RootRedirect() {
     );
   }
 
-  return <Navigate to={user ? "/dashboard" : "/login"} replace />;
+  return <Navigate to={user ? destination! : "/login"} replace />;
+}
+
+function RequireAuthentication() {
+  const { user, isLoading } = useAuth();
+  if (isLoading) {
+    return (
+      <main className="flex min-h-screen items-center justify-center bg-slate-50 text-sm text-slate-600">
+        Restoring your session…
+      </main>
+    );
+  }
+  return user ? <AppLayout /> : <Navigate to="/login" replace />;
 }
 
 function App() {
@@ -25,7 +62,12 @@ function App() {
     <Routes>
       <Route index element={<RootRedirect />} />
       <Route path="login" element={<LoginPage />} />
-      <Route element={<AppLayout />}>
+      <Route element={<RequireAuthentication />}>
+        <Route
+          path="onboarding/master-cv"
+          element={<MasterCvOnboardingPage />}
+        />
+        <Route path="master-cv" element={<MasterCvEditorPage />} />
         <Route path="dashboard" element={<DashboardPage />} />
         <Route path="applications/new" element={<ApplicationFormPage />} />
         <Route

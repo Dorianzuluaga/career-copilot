@@ -16,7 +16,7 @@ export function LoginPage() {
 
     try {
       await signIn();
-      navigate("/dashboard", { replace: true });
+      navigate("/", { replace: true });
     } catch {
       setErrorMessage(LOGIN_ERROR_MESSAGE);
     } finally {
@@ -33,7 +33,7 @@ export function LoginPage() {
   }
 
   if (user) {
-    return <Navigate to="/dashboard" replace />;
+    return <Navigate to="/" replace />;
   }
 
   return (
