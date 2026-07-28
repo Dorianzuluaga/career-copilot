@@ -2,12 +2,14 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { MemoryRouter } from "react-router";
 import { describe, expect, it } from "vitest";
 import App from "./App";
+import { ApplicationCard } from "./components/ApplicationCard";
+import { jobDescriptionError } from "./components/JobAnalysisForm";
 import { MasterCvForm } from "./components/MasterCvForm";
 import { MasterCvImport } from "./components/MasterCvImport";
-import { ApplicationsProvider } from "./context/ApplicationsProvider";
 import { AuthContext } from "./context/auth-context";
 import { masterCvInputFromExtraction } from "./services/master-cv";
 import type { AuthenticatedUser } from "./types/auth";
+import type { PersistedApplication } from "./types/job-analysis";
 
 const authenticatedUser: AuthenticatedUser = {
   id: "user-id",
@@ -29,21 +31,45 @@ function renderApp(
           signIn: () => Promise.resolve(),
         }}
       >
-        <ApplicationsProvider>
-          <App />
-        </ApplicationsProvider>
+        <App />
       </AuthContext.Provider>
     </MemoryRouter>,
   );
 }
 
 describe("App", () => {
-  it("renders the empty dashboard", () => {
+  it("renders the persisted dashboard loading state", () => {
     const markup = renderApp("/dashboard");
 
     expect(markup).toContain("Application dashboard");
     expect(markup).toContain("New Application");
-    expect(markup).toContain("No applications yet");
+    expect(markup).toContain("Loading applications");
+  });
+
+  it("renders persisted application actions without metadata editing", () => {
+    const application: PersistedApplication = {
+      id: "application-id",
+      userId: "user-id",
+      status: "NEW",
+      jobOffer: null,
+      jobAnalysis: null,
+      createdAt: "2026-07-28T12:00:00.000Z",
+      updatedAt: "2026-07-28T12:00:00.000Z",
+    };
+    const markup = renderToStaticMarkup(
+      <MemoryRouter>
+        <ApplicationCard
+          application={application}
+          isDeleting={false}
+          onDelete={() => Promise.resolve()}
+        />
+      </MemoryRouter>,
+    );
+
+    expect(markup).toContain("/applications/application-id");
+    expect(markup).toContain("Open");
+    expect(markup).toContain("Delete");
+    expect(markup).not.toContain("Edit");
   });
 
   it("renders Google sign in", () => {
@@ -53,18 +79,28 @@ describe("App", () => {
     expect(markup).toContain("Continue with Google");
   });
 
-  it("renders the create application form", () => {
+  it("renders the job analysis form", () => {
     const markup = renderApp("/applications/new");
 
-    expect(markup).toContain("Create application");
-    expect(markup).toContain("Company name");
-    expect(markup).toContain("Job title");
-    expect(markup).toContain("Job Description");
+    expect(markup).toContain("Analyze a job description");
+    expect(markup).toContain("Plain text only");
     expect(markup).toMatch(
       /<textarea[^>]*id="jobDescription"[^>]*required[^>]*>/,
     );
-    expect(markup).toContain("Save");
+    expect(markup).toContain("Analyze job");
     expect(markup).toContain("Cancel");
+  });
+
+  it("validates job description boundaries", () => {
+    expect(jobDescriptionError("")).toBe("Job description is required.");
+    expect(jobDescriptionError("a".repeat(299))).toBe(
+      "The job description is too short.",
+    );
+    expect(jobDescriptionError("a".repeat(300))).toBeNull();
+    expect(jobDescriptionError("a".repeat(25_000))).toBeNull();
+    expect(jobDescriptionError("a".repeat(25_001))).toBe(
+      "The job description exceeds the maximum allowed length.",
+    );
   });
 
   it("renders every Master CV section", () => {

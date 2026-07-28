@@ -1,18 +1,66 @@
+import { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router";
 import { ApplicationCard } from "../components/ApplicationCard";
-import { useApplications } from "../hooks/useApplications";
-import type { Application } from "../types/application";
+import { ApiError } from "../services/api";
+import { deleteApplication, listApplications } from "../services/job-analysis";
+import type { PersistedApplication } from "../types/job-analysis";
 
 export function DashboardPage() {
-  const { applications, deleteApplication } = useApplications();
+  const [applications, setApplications] = useState<PersistedApplication[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-  function handleDelete(application: Application) {
+  const loadApplications = useCallback(async () => {
+    setIsLoading(true);
+    setErrorMessage(null);
+    try {
+      setApplications(await listApplications());
+    } catch (error) {
+      setErrorMessage(
+        error instanceof ApiError
+          ? error.message
+          : "Unexpected error. Try again later.",
+      );
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    void loadApplications();
+  }, [loadApplications]);
+
+  async function handleDelete(application: PersistedApplication) {
+    const jobTitle =
+      application.jobAnalysis?.title ??
+      application.jobOffer?.title ??
+      "this opportunity";
+    const company =
+      application.jobAnalysis?.company ??
+      application.jobOffer?.company ??
+      "the company";
     const confirmed = window.confirm(
-      `Delete the application for ${application.jobTitle} at ${application.companyName}?`,
+      `Delete the application for ${jobTitle} at ${company}?`,
     );
 
-    if (confirmed) {
-      deleteApplication(application.id);
+    if (!confirmed) return;
+
+    setDeletingId(application.id);
+    setErrorMessage(null);
+    try {
+      await deleteApplication(application.id);
+      setApplications((currentApplications) =>
+        currentApplications.filter((item) => item.id !== application.id),
+      );
+    } catch (error) {
+      setErrorMessage(
+        error instanceof ApiError
+          ? error.message
+          : "Unexpected error. Try again later.",
+      );
+    } finally {
+      setDeletingId(null);
     }
   }
 
@@ -43,7 +91,27 @@ export function DashboardPage() {
         </div>
       </div>
 
-      {applications.length === 0 ? (
+      {errorMessage && (
+        <div
+          role="alert"
+          className="mt-8 flex flex-col gap-3 rounded-xl border border-red-200 bg-red-50 p-5 text-red-900 sm:flex-row sm:items-center sm:justify-between"
+        >
+          <p>{errorMessage}</p>
+          <button
+            type="button"
+            onClick={() => void loadApplications()}
+            className="w-fit rounded-lg border border-red-300 px-3 py-2 text-sm font-semibold hover:bg-red-100"
+          >
+            Try again
+          </button>
+        </div>
+      )}
+
+      {isLoading ? (
+        <div className="mt-10 rounded-xl border border-slate-200 bg-white px-6 py-14 text-center">
+          <p className="text-sm text-slate-600">Loading applications…</p>
+        </div>
+      ) : applications.length === 0 && !errorMessage ? (
         <div className="mt-10 rounded-xl border border-dashed border-slate-300 bg-white px-6 py-14 text-center">
           <h2 className="text-lg font-bold text-slate-950">
             No applications yet
@@ -59,6 +127,7 @@ export function DashboardPage() {
               key={application.id}
               application={application}
               onDelete={handleDelete}
+              isDeleting={deletingId === application.id}
             />
           ))}
         </div>

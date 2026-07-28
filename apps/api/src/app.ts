@@ -1,5 +1,6 @@
 import cors from "cors";
 import express from "express";
+import { applicationRouter } from "./routes/application.routes.js";
 import { authRouter } from "./routes/auth.routes.js";
 import { masterCvRouter } from "./routes/master-cv.routes.js";
 
@@ -19,3 +20,4 @@ app.get("/health", (_request, response) => {
 
 app.use("/api/auth", authRouter);
 app.use("/api/master-cv", masterCvRouter);
+app.use("/api/applications", applicationRouter);

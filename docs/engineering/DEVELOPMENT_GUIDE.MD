@@ -314,3 +314,11 @@ Whenever repetitive problems appear, evaluate whether the solution should improv
 Whenever possible, improve the system instead of solving the same problem repeatedly.
 
 The objective is to continuously improve both the software and the development process.
+
+## Prisma Studio
+
+Always launch Prisma Studio from the API workspace to ensure the correct Prisma configuration and environment variables are loaded.
+
+```bash
+npm exec --workspace=api -- prisma studio
+```
