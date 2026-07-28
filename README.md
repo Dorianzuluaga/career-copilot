@@ -25,13 +25,13 @@ implemented yet.
 
 ## MVP Features
 
-* Google OAuth authentication
-* Master CV management
-* AI-powered job description analysis
-* AI CV optimization
-* AI cover letter generation
-* Job application tracking
-* PDF document generation (react-pdf, pdf-lib, jsPDF)
+- Google OAuth authentication
+- Master CV management
+- AI-powered job description analysis
+- AI CV optimization
+- AI cover letter generation
+- Job application tracking
+- PDF document generation (react-pdf, pdf-lib, jsPDF)
 
 ---
 
@@ -39,23 +39,23 @@ implemented yet.
 
 ### Frontend
 
-* React
-* Vite
-* TypeScript
-* Tailwind CSS
-* React Router
-* Context API + Custom Hooks
+- React
+- Vite
+- TypeScript
+- Tailwind CSS
+- React Router
+- Context API + Custom Hooks
 
 ### Backend
 
-* Node.js 22
-* Express
-* TypeScript
+- Node.js 22
+- Express
+- TypeScript
 
 ### Database
 
-* PostgreSQL
-* Prisma
+- PostgreSQL
+- Prisma
 
 ### AI Development
 
@@ -71,16 +71,16 @@ implemented yet.
 
 ### Authentication
 
-* Google OAuth
+- Google OAuth
 
 ### Deployment
 
-* Vercel (Frontend)
-* Railway (Backend)
+- Vercel (Frontend)
+- Railway (Backend)
 
 ### Testing
 
-* Vitest
+- Vitest
 
 ---
 
@@ -112,11 +112,11 @@ career-copilot/
 
 Career Copilot follows a modular architecture composed of:
 
-* React Frontend
-* Express Backend API
-* PostgreSQL Database
-* OpenAI Services
-* Google OAuth Authentication
+- React Frontend
+- Express Backend API
+- PostgreSQL Database
+- OpenAI Services
+- Google OAuth Authentication
 
 The architecture is designed to keep business logic, AI services, and data management clearly separated.
 
@@ -126,10 +126,10 @@ The architecture is designed to keep business logic, AI services, and data manag
 
 Project documentation is organized under the `docs/` directory.
 
-* Product documentation
-* Architecture documentation
-* AI prompts
-* Feature specifications
+- Product documentation
+- Architecture documentation
+- AI prompts
+- Feature specifications
 
 ---
 
@@ -167,6 +167,18 @@ Create local environment files from the committed templates:
 cp apps/web/.env.example apps/web/.env
 cp apps/api/.env.example apps/api/.env
 ```
+
+OpenAI configuration belongs only in `apps/api/.env`. Do not add OpenAI
+credentials to `apps/web/.env`.
+
+Master CV extraction uses:
+
+- `OPENAI_API_KEY` — required; a server-side OpenAI API key.
+- `OPENAI_MODEL` — optional; defaults to `gpt-4.1-mini`.
+
+The API validates `OPENAI_API_KEY` during startup and stops with a clear error
+when it is missing or empty. The committed `.env.example` contains placeholders
+only; real credentials must remain in the ignored `apps/api/.env` file.
 
 Replace the placeholder `DATABASE_URL` before using database commands. Load it
 into the current shell and generate the Prisma Client:

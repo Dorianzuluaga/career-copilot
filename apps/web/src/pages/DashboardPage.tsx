@@ -20,7 +20,6 @@ export function DashboardPage() {
     <section>
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <p className="text-sm font-semibold text-blue-700">Applications</p>
           <h1 className="mt-1 text-3xl font-bold tracking-tight sm:text-4xl">
             Application dashboard
           </h1>
@@ -28,12 +27,20 @@ export function DashboardPage() {
             Create and organize your job applications in one place.
           </p>
         </div>
-        <Link
-          to="/applications/new"
-          className="inline-flex w-fit items-center justify-center rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-blue-700"
-        >
-          New Application
-        </Link>
+        <div className="flex flex-wrap gap-3">
+          <Link
+            to="/master-cv"
+            className="inline-flex w-fit items-center justify-center rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+          >
+            Edit Master CV
+          </Link>
+          <Link
+            to="/applications/new"
+            className="inline-flex w-fit items-center justify-center rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-blue-700"
+          >
+            New Application
+          </Link>
+        </div>
       </div>
 
       {applications.length === 0 ? (

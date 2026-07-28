@@ -1,6 +1,7 @@
 import cors from "cors";
 import express from "express";
 import { authRouter } from "./routes/auth.routes.js";
+import { masterCvRouter } from "./routes/master-cv.routes.js";
 
 export const app = express();
 
@@ -17,3 +18,4 @@ app.get("/health", (_request, response) => {
 });
 
 app.use("/api/auth", authRouter);
+app.use("/api/master-cv", masterCvRouter);

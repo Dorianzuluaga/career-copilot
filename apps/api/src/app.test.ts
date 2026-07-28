@@ -9,12 +9,32 @@ vi.mock("./services/auth.service.js", () => ({
   getAuthenticatedUser: vi.fn(),
 }));
 
+vi.mock("./services/master-cv.service.js", () => ({
+  MasterCvError: class MasterCvError extends Error {
+    constructor(
+      message: string,
+      public readonly statusCode: number,
+    ) {
+      super(message);
+    }
+  },
+  getMasterCv: vi.fn(),
+  addMasterCv: vi.fn(),
+  editMasterCv: vi.fn(),
+}));
+
+vi.mock("./services/master-cv-extraction.service.js", () => ({
+  extractMasterCv: vi.fn(),
+}));
+
 import { app } from "./app.js";
 import {
   authenticateWithGoogle,
   AuthenticationError,
   getAuthenticatedUser,
 } from "./services/auth.service.js";
+import { extractMasterCv } from "./services/master-cv-extraction.service.js";
+import { addMasterCv, getMasterCv } from "./services/master-cv.service.js";
 
 const user = {
   id: "4e9c843b-5c3d-4e65-8514-7de898b2aca6",
@@ -85,5 +105,95 @@ describe("authentication API", () => {
       authenticated: false,
       message: "Authentication failed.",
     });
+  });
+});
+
+describe("Master CV API", () => {
+  it("requires an authenticated session", async () => {
+    const response = await request(app).get("/api/master-cv");
+
+    expect(response.status).toBe(401);
+    expect(response.body).toEqual({ message: "Authentication required." });
+    expect(getMasterCv).not.toHaveBeenCalled();
+  });
+
+  it("gets the authenticated user's Master CV", async () => {
+    const masterCv = { id: "master-cv-id", fullName: "Taylor Smith" };
+    vi.mocked(getAuthenticatedUser).mockResolvedValue(user);
+    vi.mocked(getMasterCv).mockResolvedValue(masterCv as never);
+
+    const response = await request(app)
+      .get("/api/master-cv")
+      .set("Cookie", "career_copilot_session=opaque-session-id");
+
+    expect(response.status).toBe(200);
+    expect(response.body).toEqual({ masterCv });
+    expect(getMasterCv).toHaveBeenCalledWith(user.id);
+  });
+
+  it("creates a Master CV for the session user", async () => {
+    const input = { fullName: "Taylor Smith" };
+    vi.mocked(getAuthenticatedUser).mockResolvedValue(user);
+    vi.mocked(addMasterCv).mockResolvedValue({
+      id: "master-cv-id",
+      ...input,
+    } as never);
+
+    const response = await request(app)
+      .post("/api/master-cv")
+      .set("Cookie", "career_copilot_session=opaque-session-id")
+      .send(input);
+
+    expect(response.status).toBe(201);
+    expect(addMasterCv).toHaveBeenCalledWith(user.id, input);
+  });
+
+  it("rejects non-PDF uploads", async () => {
+    vi.mocked(getAuthenticatedUser).mockResolvedValue(user);
+
+    const response = await request(app)
+      .post("/api/master-cv/upload")
+      .set("Cookie", "career_copilot_session=opaque-session-id")
+      .attach("file", Buffer.from("not a pdf"), {
+        filename: "cv.txt",
+        contentType: "text/plain",
+      });
+
+    expect(response.status).toBe(400);
+    expect(response.body).toEqual({
+      message: "Only PDF files are supported.",
+    });
+  });
+
+  it("extracts structured data from a PDF", async () => {
+    const extraction = {
+      personalInformation: {
+        fullName: "Taylor Smith",
+        email: "taylor@example.com",
+        phone: null,
+        location: null,
+        linkedin: null,
+        portfolio: null,
+      },
+      professionalSummary: null,
+      experience: [],
+      education: [],
+      skills: [],
+      languages: [],
+      certifications: [],
+    };
+    vi.mocked(getAuthenticatedUser).mockResolvedValue(user);
+    vi.mocked(extractMasterCv).mockResolvedValue(extraction);
+
+    const response = await request(app)
+      .post("/api/master-cv/upload")
+      .set("Cookie", "career_copilot_session=opaque-session-id")
+      .attach("file", Buffer.from("%PDF-1.7 test"), {
+        filename: "cv.pdf",
+        contentType: "application/pdf",
+      });
+
+    expect(response.status).toBe(200);
+    expect(response.body).toEqual(extraction);
   });
 });

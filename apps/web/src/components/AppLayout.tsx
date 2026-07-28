@@ -11,12 +11,20 @@ export function AppLayout() {
           >
             Career Copilot
           </Link>
-          <Link
-            to="/dashboard"
-            className="text-sm font-medium text-slate-600 transition hover:text-slate-950"
-          >
-            Dashboard
-          </Link>
+          <nav className="flex items-center gap-5">
+            <Link
+              to="/master-cv"
+              className="text-sm font-medium text-slate-600 transition hover:text-slate-950"
+            >
+              Master CV
+            </Link>
+            <Link
+              to="/dashboard"
+              className="text-sm font-medium text-slate-600 transition hover:text-slate-950"
+            >
+              Dashboard
+            </Link>
+          </nav>
         </div>
       </header>
 
