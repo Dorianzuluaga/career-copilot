@@ -8,6 +8,12 @@ Its objective is to ensure that every feature is planned, documented, implemente
 
 Development should always follow a structured process instead of relying on assumptions or improvisation.
 
+Documentation should move from general concepts to specific implementations.
+
+Each document must answer a single architectural question and avoid duplicating responsibilities already covered by another document.
+
+When additional detail is required, create a dedicated document instead of expanding an existing one beyond its original purpose.
+
 ---
 
 # Development Philosophy
