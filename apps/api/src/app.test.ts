@@ -66,6 +66,18 @@ vi.mock("./services/job-analysis.service.js", () => ({
   analyzeJobOffer: vi.fn(),
 }));
 
+vi.mock("./services/profile-comparison.service.js", () => ({
+  ProfileComparisonError: class ProfileComparisonError extends Error {
+    constructor(
+      message: string,
+      public readonly statusCode: number,
+    ) {
+      super(message);
+    }
+  },
+  compareProfiles: vi.fn(),
+}));
+
 import { app } from "./app.js";
 import {
   addApplication,
@@ -86,6 +98,10 @@ import {
 import { addJobOffer, JobOfferError } from "./services/job-offer.service.js";
 import { extractMasterCv } from "./services/master-cv-extraction.service.js";
 import { addMasterCv, getMasterCv } from "./services/master-cv.service.js";
+import {
+  compareProfiles,
+  ProfileComparisonError,
+} from "./services/profile-comparison.service.js";
 
 const user = {
   id: "4e9c843b-5c3d-4e65-8514-7de898b2aca6",
@@ -258,6 +274,7 @@ describe("Job Analysis API", () => {
       request(app).delete("/api/applications/application-id"),
       request(app).post("/api/applications/application-id/job-offer"),
       request(app).post("/api/applications/application-id/job-analysis"),
+      request(app).post("/api/applications/application-id/profile-comparison"),
     ]);
 
     for (const response of responses) {
@@ -270,6 +287,7 @@ describe("Job Analysis API", () => {
     expect(removeApplication).not.toHaveBeenCalled();
     expect(addJobOffer).not.toHaveBeenCalled();
     expect(analyzeJobOffer).not.toHaveBeenCalled();
+    expect(compareProfiles).not.toHaveBeenCalled();
   });
 
   it("creates an application for the authenticated user", async () => {
@@ -388,6 +406,64 @@ describe("Job Analysis API", () => {
       message: "We couldn't analyze this job description.",
     });
   });
+
+  it("returns the complete profile comparison for the authenticated user", async () => {
+    vi.mocked(getAuthenticatedUser).mockResolvedValue(user);
+    vi.mocked(compareProfiles).mockResolvedValue({
+      matchingSkills: ["TypeScript", "REST APIs"],
+      missingSkills: ["Docker", "AWS"],
+      strengths: [
+        "TypeScript experience directly supports the role's core requirement.",
+      ],
+      weaknesses: [
+        "Docker is required by the role but is not demonstrated in the Master CV.",
+      ],
+      alignmentScore: 72,
+      alignmentReasoning:
+        "Relevant backend experience supports the role, but missing cloud skills limit readiness.",
+      recommendation:
+        "Good opportunity. Improve your CV before applying so the supported experience is clear.",
+    });
+
+    const response = await request(app)
+      .post("/api/applications/application-id/profile-comparison")
+      .set("Cookie", "career_copilot_session=opaque-session-id");
+
+    expect(response.status).toBe(200);
+    expect(response.body).toEqual({
+      matchingSkills: ["TypeScript", "REST APIs"],
+      missingSkills: ["Docker", "AWS"],
+      strengths: [
+        "TypeScript experience directly supports the role's core requirement.",
+      ],
+      weaknesses: [
+        "Docker is required by the role but is not demonstrated in the Master CV.",
+      ],
+      alignmentScore: 72,
+      alignmentReasoning:
+        "Relevant backend experience supports the role, but missing cloud skills limit readiness.",
+      recommendation:
+        "Good opportunity. Improve your CV before applying so the supported experience is clear.",
+    });
+    expect(compareProfiles).toHaveBeenCalledWith("application-id", user.id);
+  });
+
+  it.each(["Master CV not found.", "Job analysis not found."])(
+    "returns 404 when a comparison input is missing: %s",
+    async (message) => {
+      vi.mocked(getAuthenticatedUser).mockResolvedValue(user);
+      vi.mocked(compareProfiles).mockRejectedValue(
+        new ProfileComparisonError(message, 404),
+      );
+
+      const response = await request(app)
+        .post("/api/applications/application-id/profile-comparison")
+        .set("Cookie", "career_copilot_session=opaque-session-id");
+
+      expect(response.status).toBe(404);
+      expect(response.body).toEqual({ message });
+    },
+  );
 
   it("does not reveal applications owned by another user", async () => {
     vi.mocked(getAuthenticatedUser).mockResolvedValue(user);

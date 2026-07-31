@@ -63,7 +63,7 @@ Create Style Profile                     │
           Create New Application
                      │
                      ▼
-            Paste Job Description
+            Application Workspace
                      │
                      ▼
               AI Job Analysis
@@ -100,6 +100,14 @@ Adaptation                     │
                      ▼
                  Dashboard
 ```
+
+The internal workflow of an Application Workspace is described in `06-application-workspace.md`.
+
+**MVP Scope**
+
+The current MVP implements only the Fast Apply workflow.
+
+Guided Apply is intentionally excluded from the MVP and planned for a future release.
 
 ---
 
