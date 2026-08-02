@@ -7,6 +7,7 @@ import {
 } from "../controllers/application.controller.js";
 import { createJobAnalysis } from "../controllers/job-analysis.controller.js";
 import { createJobOffer } from "../controllers/job-offer.controller.js";
+import { createOptimizedCv } from "../controllers/optimized-cv.controller.js";
 import { prepareProfileComparison } from "../controllers/profile-comparison.controller.js";
 import { requireAuth } from "../middleware/require-auth.js";
 
@@ -20,3 +21,4 @@ applicationRouter.delete("/:id", deleteApplication);
 applicationRouter.post("/:id/job-offer", createJobOffer);
 applicationRouter.post("/:id/job-analysis", createJobAnalysis);
 applicationRouter.post("/:id/profile-comparison", prepareProfileComparison);
+applicationRouter.post("/:id/optimized-cv", createOptimizedCv);

@@ -236,8 +236,8 @@ describe("App", () => {
     expect(markup).not.toContain("Regenerate comparison");
   });
 
-  it("makes the Optimized CV placeholder available after Profile Match", () => {
-    const markup = renderToStaticMarkup(
+  it("presents the Optimized CV generation and review workflow after Profile Match", () => {
+    const idleMarkup = renderToStaticMarkup(
       <MemoryRouter>
         <ApplicationWorkspace
           company="Example Company"
@@ -248,20 +248,98 @@ describe("App", () => {
           isProfileMatchCompleted
           onSectionChange={() => undefined}
         >
-          <ApplicationOptimizedCv />
+          <ApplicationOptimizedCv
+            errorMessage={null}
+            isLoading={false}
+            onGenerate={() => undefined}
+            optimizedCv={null}
+          />
         </ApplicationWorkspace>
       </MemoryRouter>,
     );
 
-    expect(markup).toContain('aria-current="page"');
-    expect(markup).toContain("Optimized CV");
-    expect(markup).toContain("No optimized CV has been generated yet.");
-    expect(markup).toContain(
-      "Optimized CV generation will be implemented in a future Epic.",
+    expect(idleMarkup).toContain('aria-current="page"');
+    expect(idleMarkup).toContain("Optimized CV");
+    expect(idleMarkup).toContain("Generate Optimized CV");
+    expect(idleMarkup).toContain(
+      "Generate an Optimized CV tailored to this job opportunity",
     );
-    expect(markup).not.toContain('disabled=""');
-    expect(markup).not.toContain("Live document preview");
-    expect(markup).not.toContain("Generated professional summary");
+    expect(idleMarkup).not.toContain("<textarea");
+    expect(idleMarkup).not.toContain('type="text"');
+
+    const loadingMarkup = renderToStaticMarkup(
+      <ApplicationOptimizedCv
+        errorMessage={null}
+        isLoading
+        onGenerate={() => undefined}
+        optimizedCv={null}
+      />,
+    );
+    expect(loadingMarkup).toContain("Generating your Optimized CV…");
+
+    const reviewMarkup = renderToStaticMarkup(
+      <ApplicationOptimizedCv
+        errorMessage={null}
+        isLoading={false}
+        onGenerate={() => undefined}
+        optimizedCv={{
+          fullName: "Taylor Smith",
+          email: "taylor@example.com",
+          phone: null,
+          location: "Berlin",
+          linkedin: null,
+          portfolio: null,
+          professionalSummary: "TypeScript engineer building APIs.",
+          experience: [
+            {
+              jobTitle: "Software Engineer",
+              company: "Example",
+              location: null,
+              startDate: "2022-01",
+              endDate: null,
+              current: true,
+              description: "Built REST APIs with TypeScript.",
+            },
+          ],
+          education: [],
+          skills: ["TypeScript", "Node.js"],
+          languages: [],
+          certifications: [],
+        }}
+      />,
+    );
+    expect(reviewMarkup).toContain("Generate again");
+    expect(reviewMarkup).toContain("Personal information");
+    expect(reviewMarkup).toContain("Taylor Smith");
+    expect(reviewMarkup).toContain("taylor@example.com");
+    expect(reviewMarkup).toContain("Berlin");
+    expect(reviewMarkup).toContain("Professional summary");
+    expect(reviewMarkup).toContain("TypeScript engineer building APIs.");
+    expect(reviewMarkup).toContain("Experience");
+    expect(reviewMarkup).toContain("Software Engineer");
+    expect(reviewMarkup).toContain("Built REST APIs with TypeScript.");
+    expect(reviewMarkup).toContain("Skills");
+    expect(reviewMarkup).toContain("TypeScript");
+    expect(reviewMarkup).toContain("Node.js");
+    expect(reviewMarkup).not.toContain("Education");
+    expect(reviewMarkup).not.toContain("Languages");
+    expect(reviewMarkup).not.toContain("Certifications");
+    expect(reviewMarkup).not.toContain("Not provided");
+    expect(reviewMarkup).not.toContain("<textarea");
+    expect(reviewMarkup).not.toContain('type="text"');
+    expect(reviewMarkup).not.toContain("Save");
+    expect(reviewMarkup).not.toContain("Edit");
+
+    const errorMarkup = renderToStaticMarkup(
+      <ApplicationOptimizedCv
+        errorMessage="Unable to generate this Optimized CV."
+        isLoading={false}
+        onGenerate={() => undefined}
+        optimizedCv={null}
+      />,
+    );
+    expect(errorMarkup).toContain("Unable to generate this Optimized CV.");
+    expect(errorMarkup).toContain("Try again");
   });
 
   it("makes the Cover Letter placeholder available with Optimized CV", () => {

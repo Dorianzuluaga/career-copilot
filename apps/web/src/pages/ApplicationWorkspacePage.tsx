@@ -10,8 +10,10 @@ import { ApplicationWorkspace } from "../components/ApplicationWorkspace";
 import type { WorkspaceSection } from "../components/WorkspaceNavigation";
 import { ApiError } from "../services/api";
 import { getApplication } from "../services/job-analysis";
+import { generateOptimizedCv } from "../services/optimized-cv";
 import { compareProfile } from "../services/profile-comparison";
 import type { PersistedApplication } from "../types/job-analysis";
+import type { OptimizedCv } from "../types/optimized-cv";
 import type { ProfileComparison } from "../types/profile-comparison";
 
 export function ApplicationWorkspacePage() {
@@ -31,6 +33,9 @@ export function ApplicationWorkspacePage() {
     string | null
   >(null);
   const [isComparingProfile, setIsComparingProfile] = useState(false);
+  const [optimizedCv, setOptimizedCv] = useState<OptimizedCv | null>(null);
+  const [optimizedCvError, setOptimizedCvError] = useState<string | null>(null);
+  const [isGeneratingOptimizedCv, setIsGeneratingOptimizedCv] = useState(false);
 
   useEffect(() => {
     setApplication(null);
@@ -40,6 +45,9 @@ export function ApplicationWorkspacePage() {
     setProfileComparison(null);
     setProfileComparisonError(null);
     setIsComparingProfile(false);
+    setOptimizedCv(null);
+    setOptimizedCvError(null);
+    setIsGeneratingOptimizedCv(false);
 
     if (!applicationId) {
       setErrorMessage("Application not found.");
@@ -90,6 +98,32 @@ export function ApplicationWorkspacePage() {
     } finally {
       if (currentApplicationId.current === applicationId) {
         setIsComparingProfile(false);
+      }
+    }
+  }
+
+  async function runOptimizedCvGeneration() {
+    if (!applicationId || isGeneratingOptimizedCv) return;
+
+    setIsGeneratingOptimizedCv(true);
+    setOptimizedCvError(null);
+    try {
+      const result = await generateOptimizedCv(applicationId);
+      if (currentApplicationId.current === applicationId) {
+        setOptimizedCv(result);
+      }
+    } catch (error) {
+      if (currentApplicationId.current === applicationId) {
+        setOptimizedCv(null);
+        setOptimizedCvError(
+          error instanceof ApiError
+            ? error.message
+            : "Unexpected error. Try again later.",
+        );
+      }
+    } finally {
+      if (currentApplicationId.current === applicationId) {
+        setIsGeneratingOptimizedCv(false);
       }
     }
   }
@@ -166,7 +200,12 @@ export function ApplicationWorkspacePage() {
           onReturnToJobAnalysis={() => setActiveSection("job-analysis")}
         />
       ) : activeSection === "optimized-cv" ? (
-        <ApplicationOptimizedCv />
+        <ApplicationOptimizedCv
+          errorMessage={optimizedCvError}
+          isLoading={isGeneratingOptimizedCv}
+          onGenerate={() => void runOptimizedCvGeneration()}
+          optimizedCv={optimizedCv}
+        />
       ) : activeSection === "cover-letter" ? (
         <ApplicationCoverLetter />
       ) : activeSection === "export" ? (

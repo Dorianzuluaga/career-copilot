@@ -78,6 +78,18 @@ vi.mock("./services/profile-comparison.service.js", () => ({
   compareProfiles: vi.fn(),
 }));
 
+vi.mock("./services/optimized-cv.service.js", () => ({
+  OptimizedCvError: class OptimizedCvError extends Error {
+    constructor(
+      message: string,
+      public readonly statusCode: number,
+    ) {
+      super(message);
+    }
+  },
+  generateOptimizedCv: vi.fn(),
+}));
+
 import { app } from "./app.js";
 import {
   addApplication,
@@ -98,6 +110,10 @@ import {
 import { addJobOffer, JobOfferError } from "./services/job-offer.service.js";
 import { extractMasterCv } from "./services/master-cv-extraction.service.js";
 import { addMasterCv, getMasterCv } from "./services/master-cv.service.js";
+import {
+  generateOptimizedCv,
+  OptimizedCvError,
+} from "./services/optimized-cv.service.js";
 import {
   compareProfiles,
   ProfileComparisonError,
@@ -275,6 +291,7 @@ describe("Job Analysis API", () => {
       request(app).post("/api/applications/application-id/job-offer"),
       request(app).post("/api/applications/application-id/job-analysis"),
       request(app).post("/api/applications/application-id/profile-comparison"),
+      request(app).post("/api/applications/application-id/optimized-cv"),
     ]);
 
     for (const response of responses) {
@@ -288,6 +305,7 @@ describe("Job Analysis API", () => {
     expect(addJobOffer).not.toHaveBeenCalled();
     expect(analyzeJobOffer).not.toHaveBeenCalled();
     expect(compareProfiles).not.toHaveBeenCalled();
+    expect(generateOptimizedCv).not.toHaveBeenCalled();
   });
 
   it("creates an application for the authenticated user", async () => {
@@ -458,6 +476,60 @@ describe("Job Analysis API", () => {
 
       const response = await request(app)
         .post("/api/applications/application-id/profile-comparison")
+        .set("Cookie", "career_copilot_session=opaque-session-id");
+
+      expect(response.status).toBe(404);
+      expect(response.body).toEqual({ message });
+    },
+  );
+
+  it("returns the generated Optimized CV for the authenticated user", async () => {
+    const optimizedCv = {
+      fullName: "Taylor Smith",
+      email: "taylor@example.com",
+      phone: null,
+      location: null,
+      linkedin: null,
+      portfolio: null,
+      professionalSummary: "TypeScript engineer building APIs.",
+      experience: [
+        {
+          jobTitle: "Software Engineer",
+          company: "Example",
+          location: null,
+          startDate: null,
+          endDate: null,
+          current: true,
+          description: "Built TypeScript REST APIs.",
+        },
+      ],
+      education: [],
+      skills: ["TypeScript"],
+      languages: [],
+      certifications: [],
+    };
+    vi.mocked(getAuthenticatedUser).mockResolvedValue(user);
+    vi.mocked(generateOptimizedCv).mockResolvedValue(optimizedCv);
+
+    const response = await request(app)
+      .post("/api/applications/application-id/optimized-cv")
+      .set("Cookie", "career_copilot_session=opaque-session-id");
+
+    expect(response.status).toBe(200);
+    expect(response.body).toEqual({ optimizedCv });
+    expect(generateOptimizedCv).toHaveBeenCalledWith("application-id", user.id);
+  });
+
+  it.each(["Master CV not found.", "Job analysis not found."])(
+    "returns 404 when Optimized CV generation input is missing: %s",
+    async (message) => {
+      vi.mocked(getAuthenticatedUser).mockResolvedValue(user);
+      vi.mocked(generateOptimizedCv).mockRejectedValue(
+        new OptimizedCvError(message, 404),
+      );
+
+      const response = await request(app)
+        .post("/api/applications/application-id/optimized-cv")
         .set("Cookie", "career_copilot_session=opaque-session-id");
 
       expect(response.status).toBe(404);
