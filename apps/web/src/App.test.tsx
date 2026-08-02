@@ -3,6 +3,13 @@ import { MemoryRouter } from "react-router";
 import { describe, expect, it } from "vitest";
 import App from "./App";
 import { ApplicationCard } from "./components/ApplicationCard";
+import { ApplicationCoverLetter } from "./components/ApplicationCoverLetter";
+import { ApplicationExport } from "./components/ApplicationExport";
+import { ApplicationJobAnalysis } from "./components/ApplicationJobAnalysis";
+import { ApplicationOptimizedCv } from "./components/ApplicationOptimizedCv";
+import { ApplicationOverview } from "./components/ApplicationOverview";
+import { ApplicationProfileMatch } from "./components/ApplicationProfileMatch";
+import { ApplicationWorkspace } from "./components/ApplicationWorkspace";
 import { jobDescriptionError } from "./components/JobAnalysisForm";
 import { MasterCvForm } from "./components/MasterCvForm";
 import { MasterCvImport } from "./components/MasterCvImport";
@@ -70,6 +77,249 @@ describe("App", () => {
     expect(markup).toContain("Open");
     expect(markup).toContain("Delete");
     expect(markup).not.toContain("Edit");
+  });
+
+  it("renders Overview and Job Analysis as available workspace sections", () => {
+    const application: PersistedApplication = {
+      id: "application-id",
+      userId: "user-id",
+      status: "NEW",
+      jobOffer: null,
+      jobAnalysis: null,
+      createdAt: "2026-07-28T12:00:00.000Z",
+      updatedAt: "2026-07-29T12:00:00.000Z",
+    };
+    const markup = renderToStaticMarkup(
+      <MemoryRouter>
+        <ApplicationWorkspace
+          company="Example Company"
+          title="Frontend Engineer"
+          status={application.status}
+          activeSection="overview"
+          isJobAnalysisCompleted={false}
+          isProfileMatchCompleted={false}
+          onSectionChange={() => undefined}
+        >
+          <ApplicationOverview
+            application={application}
+            company="Example Company"
+            title="Frontend Engineer"
+          />
+        </ApplicationWorkspace>
+      </MemoryRouter>,
+    );
+
+    expect(markup).toContain("Application workspace content");
+    expect(markup).toContain("Overview");
+    expect(markup).toContain("Example Company");
+    expect(markup).toContain("Frontend Engineer");
+    expect(markup).toContain("Last updated");
+    expect(markup).toContain('aria-current="page"');
+    expect(markup).toContain("Job Analysis");
+    expect(markup).toContain("Profile Match");
+    expect(markup).toContain("Optimized CV");
+    expect(markup).toContain("Cover Letter");
+    expect(markup).toContain("Export");
+    expect(markup).toContain("Completed sections: None");
+    expect(markup).toContain("Next recommended step:");
+    expect(markup.match(/<button[^>]*disabled=""/g)).toHaveLength(4);
+    expect(markup).not.toContain("Coming Soon");
+  });
+
+  it("renders the existing structured analysis inside the workspace section", () => {
+    const application: PersistedApplication = {
+      id: "application-id",
+      userId: "user-id",
+      status: "NEW",
+      jobOffer: {
+        id: "offer-id",
+        applicationId: "application-id",
+        title: null,
+        company: null,
+        originalDescription: "Original job description",
+        createdAt: "2026-07-28T12:00:00.000Z",
+        updatedAt: "2026-07-28T12:00:00.000Z",
+      },
+      jobAnalysis: {
+        id: "analysis-id",
+        applicationId: "application-id",
+        title: "Frontend Engineer",
+        company: "Example Company",
+        employmentType: "Full-time",
+        location: "Remote",
+        experienceLevel: "Senior",
+        education: null,
+        languages: ["English"],
+        summary: "Build accessible web applications.",
+        requiredSkills: ["TypeScript"],
+        responsibilities: ["Develop user interfaces"],
+        atsKeywords: ["React"],
+        analysisVersion: 1,
+        createdAt: "2026-07-28T12:00:00.000Z",
+        updatedAt: "2026-07-28T12:00:00.000Z",
+      },
+      createdAt: "2026-07-28T12:00:00.000Z",
+      updatedAt: "2026-07-29T12:00:00.000Z",
+    };
+
+    const markup = renderToStaticMarkup(
+      <ApplicationJobAnalysis application={application} />,
+    );
+
+    expect(markup).toContain("Original job description");
+    expect(markup).toContain("Job analysis");
+    expect(markup).toContain("Version 1");
+    expect(markup).toContain("Full-time");
+    expect(markup).toContain("Remote");
+    expect(markup).toContain("TypeScript");
+    expect(markup).toContain("Develop user interfaces");
+    expect(markup).toContain("React");
+  });
+
+  it("makes Profile Match available after Job Analysis is completed", () => {
+    const markup = renderToStaticMarkup(
+      <MemoryRouter>
+        <ApplicationWorkspace
+          company="Example Company"
+          title="Frontend Engineer"
+          status="NEW"
+          activeSection="job-analysis"
+          isJobAnalysisCompleted
+          isProfileMatchCompleted={false}
+          onSectionChange={() => undefined}
+        >
+          <p>Job analysis content</p>
+        </ApplicationWorkspace>
+      </MemoryRouter>,
+    );
+
+    expect(markup).toContain("Completed sections: Job Analysis");
+    expect(markup).toContain("Next recommended step:");
+    expect(markup).toContain("Profile Match");
+    expect(markup.match(/<button[^>]*disabled=""/g)).toHaveLength(3);
+  });
+
+  it("renders the complete profile comparison without internal reasoning", () => {
+    const markup = renderToStaticMarkup(
+      <ApplicationProfileMatch
+        comparison={{
+          matchingSkills: ["TypeScript"],
+          missingSkills: ["Docker"],
+          strengths: ["Relevant frontend experience"],
+          weaknesses: ["Cloud experience is not demonstrated"],
+          alignmentScore: 72,
+          alignmentReasoning: "Internal score reasoning",
+          recommendation: "Good opportunity. Adapt your CV before applying.",
+        }}
+        errorMessage={null}
+        isLoading={false}
+        onCompare={() => undefined}
+        onReturnToJobAnalysis={() => undefined}
+      />,
+    );
+
+    expect(markup).toContain("ATS Match");
+    expect(markup).toContain("72%");
+    expect(markup).toContain("Matching Skills");
+    expect(markup).toContain("TypeScript");
+    expect(markup).toContain("Missing Skills");
+    expect(markup).toContain("Docker");
+    expect(markup).toContain("Strengths");
+    expect(markup).toContain("Relevant frontend experience");
+    expect(markup).toContain("Weaknesses");
+    expect(markup).toContain("Cloud experience is not demonstrated");
+    expect(markup).toContain("Recommendation");
+    expect(markup).toContain(
+      "Good opportunity. Adapt your CV before applying.",
+    );
+    expect(markup).not.toContain("Internal score reasoning");
+    expect(markup).not.toContain("Regenerate comparison");
+  });
+
+  it("makes the Optimized CV placeholder available after Profile Match", () => {
+    const markup = renderToStaticMarkup(
+      <MemoryRouter>
+        <ApplicationWorkspace
+          company="Example Company"
+          title="Frontend Engineer"
+          status="NEW"
+          activeSection="optimized-cv"
+          isJobAnalysisCompleted
+          isProfileMatchCompleted
+          onSectionChange={() => undefined}
+        >
+          <ApplicationOptimizedCv />
+        </ApplicationWorkspace>
+      </MemoryRouter>,
+    );
+
+    expect(markup).toContain('aria-current="page"');
+    expect(markup).toContain("Optimized CV");
+    expect(markup).toContain("No optimized CV has been generated yet.");
+    expect(markup).toContain(
+      "Optimized CV generation will be implemented in a future Epic.",
+    );
+    expect(markup).not.toContain('disabled=""');
+    expect(markup).not.toContain("Live document preview");
+    expect(markup).not.toContain("Generated professional summary");
+  });
+
+  it("makes the Cover Letter placeholder available with Optimized CV", () => {
+    const markup = renderToStaticMarkup(
+      <MemoryRouter>
+        <ApplicationWorkspace
+          company="Example Company"
+          title="Frontend Engineer"
+          status="NEW"
+          activeSection="cover-letter"
+          isJobAnalysisCompleted
+          isProfileMatchCompleted
+          onSectionChange={() => undefined}
+        >
+          <ApplicationCoverLetter />
+        </ApplicationWorkspace>
+      </MemoryRouter>,
+    );
+
+    expect(markup).toContain('aria-current="page"');
+    expect(markup).toContain("Cover Letter");
+    expect(markup).toContain("No cover letter has been generated yet.");
+    expect(markup).toContain(
+      "Cover Letter generation will be implemented in a future Epic.",
+    );
+    expect(markup).not.toContain('disabled=""');
+    expect(markup).not.toContain("Download");
+    expect(markup).not.toContain("Live preview");
+  });
+
+  it("makes the Export placeholder available with Cover Letter", () => {
+    const markup = renderToStaticMarkup(
+      <MemoryRouter>
+        <ApplicationWorkspace
+          company="Example Company"
+          title="Frontend Engineer"
+          status="NEW"
+          activeSection="export"
+          isJobAnalysisCompleted
+          isProfileMatchCompleted
+          onSectionChange={() => undefined}
+        >
+          <ApplicationExport />
+        </ApplicationWorkspace>
+      </MemoryRouter>,
+    );
+
+    expect(markup).toContain('aria-current="page"');
+    expect(markup).toContain("Export");
+    expect(markup).toContain(
+      "No exportable documents are currently available.",
+    );
+    expect(markup).toContain(
+      "PDF generation and document export will be implemented in a future Epic.",
+    );
+    expect(markup).not.toContain('disabled=""');
+    expect(markup).not.toContain("Download");
+    expect(markup).not.toContain("Export progress");
   });
 
   it("renders Google sign in", () => {
