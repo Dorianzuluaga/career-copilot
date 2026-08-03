@@ -64,6 +64,7 @@ model Application {
   status      ApplicationStatus @default(NEW)
   jobOffer    JobOffer?
   jobAnalysis JobAnalysis?
+  optimizedCv OptimizedCv?
   createdAt   DateTime          @default(now())
   updatedAt   DateTime          @updatedAt
 
@@ -101,6 +102,28 @@ model JobAnalysis {
   analysisVersion  Int         @default(1)
   createdAt        DateTime    @default(now())
   updatedAt        DateTime    @updatedAt
+
+  @@index([applicationId])
+}
+
+model OptimizedCv {
+  id                  String      @id @default(uuid()) @db.Uuid
+  applicationId       String      @unique @db.Uuid
+  application         Application @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  fullName            String
+  email               String
+  phone               String?
+  location            String?
+  linkedin            String?
+  portfolio           String?
+  professionalSummary String
+  experience          Json
+  education           Json
+  skills              Json
+  languages           Json
+  certifications      Json
+  createdAt           DateTime    @default(now())
+  updatedAt           DateTime    @updatedAt
 
   @@index([applicationId])
 }

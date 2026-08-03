@@ -88,6 +88,8 @@ vi.mock("./services/optimized-cv.service.js", () => ({
     }
   },
   generateOptimizedCv: vi.fn(),
+  getOptimizedCv: vi.fn(),
+  saveOptimizedCv: vi.fn(),
 }));
 
 import { app } from "./app.js";
@@ -112,7 +114,9 @@ import { extractMasterCv } from "./services/master-cv-extraction.service.js";
 import { addMasterCv, getMasterCv } from "./services/master-cv.service.js";
 import {
   generateOptimizedCv,
+  getOptimizedCv,
   OptimizedCvError,
+  saveOptimizedCv,
 } from "./services/optimized-cv.service.js";
 import {
   compareProfiles,
@@ -536,6 +540,114 @@ describe("Job Analysis API", () => {
       expect(response.body).toEqual({ message });
     },
   );
+
+  it("returns the saved Optimized CV for the authenticated user", async () => {
+    const optimizedCv = {
+      fullName: "Taylor Smith",
+      email: "taylor@example.com",
+      phone: null,
+      location: null,
+      linkedin: null,
+      portfolio: null,
+      professionalSummary: "TypeScript engineer building APIs.",
+      experience: [
+        {
+          jobTitle: "Software Engineer",
+          company: "Example",
+          location: null,
+          startDate: null,
+          endDate: null,
+          current: true,
+          description: "Built TypeScript REST APIs.",
+        },
+      ],
+      education: [],
+      skills: ["TypeScript"],
+      languages: [],
+      certifications: [],
+    };
+    vi.mocked(getAuthenticatedUser).mockResolvedValue(user);
+    vi.mocked(getOptimizedCv).mockResolvedValue(optimizedCv);
+
+    const response = await request(app)
+      .get("/api/applications/application-id/optimized-cv")
+      .set("Cookie", "career_copilot_session=opaque-session-id");
+
+    expect(response.status).toBe(200);
+    expect(response.body).toEqual({ optimizedCv });
+    expect(getOptimizedCv).toHaveBeenCalledWith("application-id", user.id);
+  });
+
+  it("returns 404 when no saved Optimized CV exists", async () => {
+    vi.mocked(getAuthenticatedUser).mockResolvedValue(user);
+    vi.mocked(getOptimizedCv).mockRejectedValue(
+      new OptimizedCvError("Optimized CV not found.", 404),
+    );
+
+    const response = await request(app)
+      .get("/api/applications/application-id/optimized-cv")
+      .set("Cookie", "career_copilot_session=opaque-session-id");
+
+    expect(response.status).toBe(404);
+    expect(response.body).toEqual({ message: "Optimized CV not found." });
+  });
+
+  it("saves the Optimized CV for the authenticated user", async () => {
+    const optimizedCv = {
+      fullName: "Taylor Smith",
+      email: "taylor@example.com",
+      phone: null,
+      location: null,
+      linkedin: null,
+      portfolio: null,
+      professionalSummary: "TypeScript engineer building APIs.",
+      experience: [
+        {
+          jobTitle: "Software Engineer",
+          company: "Example",
+          location: null,
+          startDate: null,
+          endDate: null,
+          current: true,
+          description: "Built TypeScript REST APIs.",
+        },
+      ],
+      education: [],
+      skills: ["TypeScript"],
+      languages: [],
+      certifications: [],
+    };
+    vi.mocked(getAuthenticatedUser).mockResolvedValue(user);
+    vi.mocked(saveOptimizedCv).mockResolvedValue(optimizedCv);
+
+    const response = await request(app)
+      .put("/api/applications/application-id/optimized-cv")
+      .set("Cookie", "career_copilot_session=opaque-session-id")
+      .send(optimizedCv);
+
+    expect(response.status).toBe(200);
+    expect(response.body).toEqual({ optimizedCv });
+    expect(saveOptimizedCv).toHaveBeenCalledWith(
+      "application-id",
+      user.id,
+      optimizedCv,
+    );
+  });
+
+  it("returns 400 when Optimized CV save payload is invalid", async () => {
+    vi.mocked(getAuthenticatedUser).mockResolvedValue(user);
+    vi.mocked(saveOptimizedCv).mockRejectedValue(
+      new OptimizedCvError("fullName is required.", 400),
+    );
+
+    const response = await request(app)
+      .put("/api/applications/application-id/optimized-cv")
+      .set("Cookie", "career_copilot_session=opaque-session-id")
+      .send({});
+
+    expect(response.status).toBe(400);
+    expect(response.body).toEqual({ message: "fullName is required." });
+  });
 
   it("does not reveal applications owned by another user", async () => {
     vi.mocked(getAuthenticatedUser).mockResolvedValue(user);

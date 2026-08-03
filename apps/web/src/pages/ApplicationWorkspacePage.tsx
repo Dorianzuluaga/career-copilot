@@ -10,7 +10,11 @@ import { ApplicationWorkspace } from "../components/ApplicationWorkspace";
 import type { WorkspaceSection } from "../components/WorkspaceNavigation";
 import { ApiError } from "../services/api";
 import { getApplication } from "../services/job-analysis";
-import { generateOptimizedCv } from "../services/optimized-cv";
+import {
+  generateOptimizedCv,
+  getOptimizedCv,
+  saveOptimizedCv,
+} from "../services/optimized-cv";
 import { compareProfile } from "../services/profile-comparison";
 import type { PersistedApplication } from "../types/job-analysis";
 import type { OptimizedCv } from "../types/optimized-cv";
@@ -36,6 +40,14 @@ export function ApplicationWorkspacePage() {
   const [optimizedCv, setOptimizedCv] = useState<OptimizedCv | null>(null);
   const [optimizedCvError, setOptimizedCvError] = useState<string | null>(null);
   const [isGeneratingOptimizedCv, setIsGeneratingOptimizedCv] = useState(false);
+  const [isSavingOptimizedCv, setIsSavingOptimizedCv] = useState(false);
+  const [optimizedCvSaveError, setOptimizedCvSaveError] = useState<
+    string | null
+  >(null);
+  const [optimizedCvSavedMessage, setOptimizedCvSavedMessage] = useState<
+    string | null
+  >(null);
+  const [hasSavedOptimizedCv, setHasSavedOptimizedCv] = useState(false);
 
   useEffect(() => {
     setApplication(null);
@@ -48,6 +60,10 @@ export function ApplicationWorkspacePage() {
     setOptimizedCv(null);
     setOptimizedCvError(null);
     setIsGeneratingOptimizedCv(false);
+    setIsSavingOptimizedCv(false);
+    setOptimizedCvSaveError(null);
+    setOptimizedCvSavedMessage(null);
+    setHasSavedOptimizedCv(false);
 
     if (!applicationId) {
       setErrorMessage("Application not found.");
@@ -56,9 +72,15 @@ export function ApplicationWorkspacePage() {
     }
 
     let isActive = true;
-    void getApplication(applicationId)
-      .then((result) => {
-        if (isActive) setApplication(result);
+    void Promise.all([
+      getApplication(applicationId),
+      getOptimizedCv(applicationId),
+    ])
+      .then(([result, savedOptimizedCv]) => {
+        if (!isActive) return;
+        setApplication(result);
+        setOptimizedCv(savedOptimizedCv);
+        setHasSavedOptimizedCv(savedOptimizedCv !== null);
       })
       .catch((error: unknown) => {
         if (isActive) {
@@ -107,6 +129,8 @@ export function ApplicationWorkspacePage() {
 
     setIsGeneratingOptimizedCv(true);
     setOptimizedCvError(null);
+    setOptimizedCvSaveError(null);
+    setOptimizedCvSavedMessage(null);
     try {
       const result = await generateOptimizedCv(applicationId);
       if (currentApplicationId.current === applicationId) {
@@ -126,6 +150,40 @@ export function ApplicationWorkspacePage() {
         setIsGeneratingOptimizedCv(false);
       }
     }
+  }
+
+  async function runOptimizedCvSave() {
+    if (!applicationId || !optimizedCv || isSavingOptimizedCv) return;
+
+    setIsSavingOptimizedCv(true);
+    setOptimizedCvSaveError(null);
+    setOptimizedCvSavedMessage(null);
+    try {
+      const saved = await saveOptimizedCv(applicationId, optimizedCv);
+      if (currentApplicationId.current === applicationId) {
+        setOptimizedCv(saved);
+        setHasSavedOptimizedCv(true);
+        setOptimizedCvSavedMessage("Optimized CV saved.");
+      }
+    } catch (error) {
+      if (currentApplicationId.current === applicationId) {
+        setOptimizedCvSaveError(
+          error instanceof ApiError
+            ? error.message
+            : "Unable to save this Optimized CV.",
+        );
+      }
+    } finally {
+      if (currentApplicationId.current === applicationId) {
+        setIsSavingOptimizedCv(false);
+      }
+    }
+  }
+
+  function handleOptimizedCvChange(next: OptimizedCv) {
+    setOptimizedCv(next);
+    setOptimizedCvSavedMessage(null);
+    setOptimizedCvSaveError(null);
   }
 
   function changeSection(section: WorkspaceSection) {
@@ -181,6 +239,7 @@ export function ApplicationWorkspacePage() {
       activeSection={activeSection}
       isJobAnalysisCompleted={application.jobAnalysis !== null}
       isProfileMatchCompleted={profileComparison !== null}
+      isOptimizedCvCompleted={hasSavedOptimizedCv}
       onSectionChange={changeSection}
     >
       {activeSection === "overview" ? (
@@ -203,8 +262,18 @@ export function ApplicationWorkspacePage() {
         <ApplicationOptimizedCv
           errorMessage={optimizedCvError}
           isLoading={isGeneratingOptimizedCv}
+          isSaving={isSavingOptimizedCv}
+          onChange={handleOptimizedCvChange}
+          onContinueToCoverLetter={
+            hasSavedOptimizedCv
+              ? () => setActiveSection("cover-letter")
+              : undefined
+          }
           onGenerate={() => void runOptimizedCvGeneration()}
+          onSave={() => void runOptimizedCvSave()}
           optimizedCv={optimizedCv}
+          saveErrorMessage={optimizedCvSaveError}
+          savedMessage={optimizedCvSavedMessage}
         />
       ) : activeSection === "cover-letter" ? (
         <ApplicationCoverLetter />

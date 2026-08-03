@@ -98,6 +98,7 @@ describe("App", () => {
           activeSection="overview"
           isJobAnalysisCompleted={false}
           isProfileMatchCompleted={false}
+          isOptimizedCvCompleted={false}
           onSectionChange={() => undefined}
         >
           <ApplicationOverview
@@ -186,6 +187,7 @@ describe("App", () => {
           activeSection="job-analysis"
           isJobAnalysisCompleted
           isProfileMatchCompleted={false}
+          isOptimizedCvCompleted={false}
           onSectionChange={() => undefined}
         >
           <p>Job analysis content</p>
@@ -237,6 +239,47 @@ describe("App", () => {
   });
 
   it("presents the Optimized CV generation and review workflow after Profile Match", () => {
+    const sampleOptimizedCv = {
+      fullName: "Taylor Smith",
+      email: "taylor@example.com",
+      phone: null,
+      location: "Berlin",
+      linkedin: null,
+      portfolio: null,
+      professionalSummary: "TypeScript engineer building APIs.",
+      experience: [
+        {
+          jobTitle: "Software Engineer",
+          company: "Example",
+          location: null,
+          startDate: "2022-01",
+          endDate: null,
+          current: true,
+          description: "Built REST APIs with TypeScript.",
+        },
+      ],
+      education: [
+        {
+          institution: "Example University",
+          degree: "BSc",
+          fieldOfStudy: "Computer Science",
+          startDate: "2018-09",
+          endDate: "2021-06",
+          description: "Focus on distributed systems.",
+        },
+      ],
+      skills: ["TypeScript", "Node.js"],
+      languages: [{ name: "English", proficiency: "Fluent" }],
+      certifications: [
+        {
+          name: "AWS Certified",
+          issuer: "Amazon",
+          issueDate: "2023-01",
+          credentialUrl: null,
+        },
+      ],
+    };
+
     const idleMarkup = renderToStaticMarkup(
       <MemoryRouter>
         <ApplicationWorkspace
@@ -246,11 +289,13 @@ describe("App", () => {
           activeSection="optimized-cv"
           isJobAnalysisCompleted
           isProfileMatchCompleted
+          isOptimizedCvCompleted={false}
           onSectionChange={() => undefined}
         >
           <ApplicationOptimizedCv
             errorMessage={null}
             isLoading={false}
+            onChange={() => undefined}
             onGenerate={() => undefined}
             optimizedCv={null}
           />
@@ -264,6 +309,11 @@ describe("App", () => {
     expect(idleMarkup).toContain(
       "Generate an Optimized CV tailored to this job opportunity",
     );
+    expect(idleMarkup).toContain("Next recommended step:");
+    expect(idleMarkup).toContain("Optimized CV");
+    expect(idleMarkup).toContain("Cover Letter");
+    expect(idleMarkup).toContain("Locked");
+    expect(idleMarkup).not.toContain("Continue to Cover Letter");
     expect(idleMarkup).not.toContain("<textarea");
     expect(idleMarkup).not.toContain('type="text"');
 
@@ -271,6 +321,7 @@ describe("App", () => {
       <ApplicationOptimizedCv
         errorMessage={null}
         isLoading
+        onChange={() => undefined}
         onGenerate={() => undefined}
         optimizedCv={null}
       />,
@@ -281,34 +332,16 @@ describe("App", () => {
       <ApplicationOptimizedCv
         errorMessage={null}
         isLoading={false}
+        onChange={() => undefined}
         onGenerate={() => undefined}
-        optimizedCv={{
-          fullName: "Taylor Smith",
-          email: "taylor@example.com",
-          phone: null,
-          location: "Berlin",
-          linkedin: null,
-          portfolio: null,
-          professionalSummary: "TypeScript engineer building APIs.",
-          experience: [
-            {
-              jobTitle: "Software Engineer",
-              company: "Example",
-              location: null,
-              startDate: "2022-01",
-              endDate: null,
-              current: true,
-              description: "Built REST APIs with TypeScript.",
-            },
-          ],
-          education: [],
-          skills: ["TypeScript", "Node.js"],
-          languages: [],
-          certifications: [],
-        }}
+        onSave={() => undefined}
+        optimizedCv={sampleOptimizedCv}
       />,
     );
     expect(reviewMarkup).toContain("Generate again");
+    expect(reviewMarkup).toContain(">Edit<");
+    expect(reviewMarkup).toContain(">Save<");
+    expect(reviewMarkup).toContain("Review the generated document");
     expect(reviewMarkup).toContain("Personal information");
     expect(reviewMarkup).toContain("Taylor Smith");
     expect(reviewMarkup).toContain("taylor@example.com");
@@ -321,19 +354,131 @@ describe("App", () => {
     expect(reviewMarkup).toContain("Skills");
     expect(reviewMarkup).toContain("TypeScript");
     expect(reviewMarkup).toContain("Node.js");
-    expect(reviewMarkup).not.toContain("Education");
-    expect(reviewMarkup).not.toContain("Languages");
-    expect(reviewMarkup).not.toContain("Certifications");
+    expect(reviewMarkup).toContain("Education");
+    expect(reviewMarkup).toContain("Languages");
+    expect(reviewMarkup).toContain("Certifications");
     expect(reviewMarkup).not.toContain("Not provided");
     expect(reviewMarkup).not.toContain("<textarea");
     expect(reviewMarkup).not.toContain('type="text"');
-    expect(reviewMarkup).not.toContain("Save");
-    expect(reviewMarkup).not.toContain("Edit");
+    expect(reviewMarkup).not.toContain("Done editing");
+    expect(reviewMarkup).not.toContain("Editable");
+    expect(reviewMarkup).not.toContain("Add skill");
+    expect(reviewMarkup).not.toContain("Saving…");
+    expect(reviewMarkup).not.toContain("Optimized CV saved.");
+    expect(reviewMarkup).not.toContain("Continue to Cover Letter");
+
+    const editMarkup = renderToStaticMarkup(
+      <ApplicationOptimizedCv
+        errorMessage={null}
+        initialIsEditing
+        isLoading={false}
+        onChange={() => undefined}
+        onGenerate={() => undefined}
+        onSave={() => undefined}
+        optimizedCv={sampleOptimizedCv}
+      />,
+    );
+    expect(editMarkup).toContain("Done editing");
+    expect(editMarkup).toContain("Generate again");
+    expect(editMarkup).toContain(">Save<");
+    expect(editMarkup).toContain("Editable");
+    expect(editMarkup).toContain('aria-label="Professional summary"');
+    expect(editMarkup).toContain("<textarea");
+    expect(editMarkup).toContain("TypeScript engineer building APIs.");
+    expect(editMarkup).toContain('aria-label="Experience description 1"');
+    expect(editMarkup).toContain("Built REST APIs with TypeScript.");
+    expect(editMarkup).toContain("Add skill");
+    expect(editMarkup).toContain("Remove");
+    expect(editMarkup).toContain("Software Engineer");
+    expect(editMarkup).toContain("2022-01");
+    expect(editMarkup).toContain("Example University");
+    expect(editMarkup).toContain("English");
+    expect(editMarkup).toContain("AWS Certified");
+    expect(editMarkup).not.toContain("Add experience");
+    expect(editMarkup).not.toContain("Remove experience");
+    expect(editMarkup).not.toContain("application-specific notes");
+
+    const savingMarkup = renderToStaticMarkup(
+      <ApplicationOptimizedCv
+        errorMessage={null}
+        isLoading={false}
+        isSaving
+        onChange={() => undefined}
+        onGenerate={() => undefined}
+        onSave={() => undefined}
+        optimizedCv={sampleOptimizedCv}
+      />,
+    );
+    expect(savingMarkup).toContain("Saving…");
+    expect(savingMarkup).toContain('disabled=""');
+
+    const savedMarkup = renderToStaticMarkup(
+      <ApplicationOptimizedCv
+        errorMessage={null}
+        isLoading={false}
+        onChange={() => undefined}
+        onContinueToCoverLetter={() => undefined}
+        onGenerate={() => undefined}
+        onSave={() => undefined}
+        optimizedCv={sampleOptimizedCv}
+        savedMessage="Optimized CV saved."
+      />,
+    );
+    expect(savedMarkup).toContain("Optimized CV saved.");
+    expect(savedMarkup).toContain('role="status"');
+    expect(savedMarkup).toContain("Continue to Cover Letter");
+
+    const continueWorkflowMarkup = renderToStaticMarkup(
+      <MemoryRouter>
+        <ApplicationWorkspace
+          company="Example Company"
+          title="Frontend Engineer"
+          status="NEW"
+          activeSection="optimized-cv"
+          isJobAnalysisCompleted
+          isProfileMatchCompleted
+          isOptimizedCvCompleted
+          onSectionChange={() => undefined}
+        >
+          <ApplicationOptimizedCv
+            errorMessage={null}
+            isLoading={false}
+            onChange={() => undefined}
+            onContinueToCoverLetter={() => undefined}
+            onGenerate={() => undefined}
+            onSave={() => undefined}
+            optimizedCv={sampleOptimizedCv}
+          />
+        </ApplicationWorkspace>
+      </MemoryRouter>,
+    );
+    expect(continueWorkflowMarkup).toContain("Continue to Cover Letter");
+    expect(continueWorkflowMarkup).toContain(
+      "Completed sections: Job Analysis, Profile Match, Optimized CV",
+    );
+    expect(continueWorkflowMarkup).toContain("Next recommended step:");
+    expect(continueWorkflowMarkup).toContain("Cover Letter");
+    expect(continueWorkflowMarkup).not.toContain("Locked");
+
+    const saveErrorMarkup = renderToStaticMarkup(
+      <ApplicationOptimizedCv
+        errorMessage={null}
+        isLoading={false}
+        onChange={() => undefined}
+        onGenerate={() => undefined}
+        onSave={() => undefined}
+        optimizedCv={sampleOptimizedCv}
+        saveErrorMessage="Unable to save this Optimized CV."
+      />,
+    );
+    expect(saveErrorMarkup).toContain("Unable to save this Optimized CV.");
+    expect(saveErrorMarkup).toContain('role="alert"');
 
     const errorMarkup = renderToStaticMarkup(
       <ApplicationOptimizedCv
         errorMessage="Unable to generate this Optimized CV."
         isLoading={false}
+        onChange={() => undefined}
         onGenerate={() => undefined}
         optimizedCv={null}
       />,
@@ -342,7 +487,7 @@ describe("App", () => {
     expect(errorMarkup).toContain("Try again");
   });
 
-  it("makes the Cover Letter placeholder available with Optimized CV", () => {
+  it("makes the Cover Letter placeholder available after a saved Optimized CV", () => {
     const markup = renderToStaticMarkup(
       <MemoryRouter>
         <ApplicationWorkspace
@@ -352,6 +497,7 @@ describe("App", () => {
           activeSection="cover-letter"
           isJobAnalysisCompleted
           isProfileMatchCompleted
+          isOptimizedCvCompleted
           onSectionChange={() => undefined}
         >
           <ApplicationCoverLetter />
@@ -365,9 +511,37 @@ describe("App", () => {
     expect(markup).toContain(
       "Cover Letter generation will be implemented in a future Epic.",
     );
+    expect(markup).toContain(
+      "Completed sections: Job Analysis, Profile Match, Optimized CV",
+    );
     expect(markup).not.toContain('disabled=""');
     expect(markup).not.toContain("Download");
     expect(markup).not.toContain("Live preview");
+  });
+
+  it("keeps Cover Letter locked until a saved Optimized CV exists", () => {
+    const markup = renderToStaticMarkup(
+      <MemoryRouter>
+        <ApplicationWorkspace
+          company="Example Company"
+          title="Frontend Engineer"
+          status="NEW"
+          activeSection="optimized-cv"
+          isJobAnalysisCompleted
+          isProfileMatchCompleted
+          isOptimizedCvCompleted={false}
+          onSectionChange={() => undefined}
+        >
+          <p>Optimized CV content</p>
+        </ApplicationWorkspace>
+      </MemoryRouter>,
+    );
+
+    expect(markup).toContain("Completed sections: Job Analysis, Profile Match");
+    expect(markup).toContain("Next recommended step:");
+    expect(markup).toContain("Optimized CV");
+    expect(markup.match(/<button[^>]*disabled=""/g)).toHaveLength(2);
+    expect(markup).toContain("Locked");
   });
 
   it("makes the Export placeholder available with Cover Letter", () => {
@@ -380,6 +554,7 @@ describe("App", () => {
           activeSection="export"
           isJobAnalysisCompleted
           isProfileMatchCompleted
+          isOptimizedCvCompleted
           onSectionChange={() => undefined}
         >
           <ApplicationExport />

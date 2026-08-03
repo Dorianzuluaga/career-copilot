@@ -17,10 +17,50 @@ vi.mock("./profile-comparison.service.js", () => ({
   comparePreparedProfiles: vi.fn(),
 }));
 
+vi.mock("./application.service.js", () => ({
+  ApplicationError: class ApplicationError extends Error {
+    constructor(
+      message: string,
+      public readonly statusCode: number,
+    ) {
+      super(message);
+    }
+  },
+  getOwnedApplication: vi.fn(),
+}));
+
+vi.mock("./master-cv.service.js", () => ({
+  MasterCvError: class MasterCvError extends Error {
+    constructor(
+      message: string,
+      public readonly statusCode: number,
+    ) {
+      super(message);
+    }
+  },
+  validateMasterCvInput: vi.fn(),
+}));
+
+vi.mock("../repositories/optimized-cv.repository.js", () => ({
+  findOptimizedCvByApplicationId: vi.fn(),
+  upsertOptimizedCv: vi.fn(),
+}));
+
+import {
+  findOptimizedCvByApplicationId,
+  upsertOptimizedCv,
+} from "../repositories/optimized-cv.repository.js";
+import {
+  ApplicationError,
+  getOwnedApplication,
+} from "./application.service.js";
+import { MasterCvError, validateMasterCvInput } from "./master-cv.service.js";
 import { generateOptimizedCvDraft } from "./optimized-cv-ai.service.js";
 import {
   generateOptimizedCv,
+  getOptimizedCv,
   OptimizedCvError,
+  saveOptimizedCv,
 } from "./optimized-cv.service.js";
 import {
   comparePreparedProfiles,
@@ -85,6 +125,14 @@ const optimizedCv = {
   professionalSummary: "TypeScript engineer building APIs.",
 };
 
+const persistedOptimizedCv = {
+  id: "optimized-cv-id",
+  applicationId,
+  ...optimizedCv,
+  createdAt: new Date("2026-08-03T10:00:00.000Z"),
+  updatedAt: new Date("2026-08-03T10:00:00.000Z"),
+};
+
 beforeEach(() => {
   vi.clearAllMocks();
   vi.mocked(prepareProfileComparisonInput).mockResolvedValue({
@@ -93,6 +141,31 @@ beforeEach(() => {
   });
   vi.mocked(comparePreparedProfiles).mockResolvedValue(profileMatch);
   vi.mocked(generateOptimizedCvDraft).mockResolvedValue(optimizedCv);
+  vi.mocked(getOwnedApplication).mockResolvedValue({
+    id: applicationId,
+  } as never);
+  vi.mocked(findOptimizedCvByApplicationId).mockResolvedValue(null);
+  vi.mocked(upsertOptimizedCv).mockResolvedValue(persistedOptimizedCv as never);
+  vi.mocked(validateMasterCvInput).mockImplementation((value) => {
+    if (!value || typeof value !== "object" || !("fullName" in value)) {
+      throw new MasterCvError("fullName is required.", 400);
+    }
+    const input = value as typeof optimizedCv;
+    return {
+      fullName: input.fullName,
+      email: input.email,
+      phone: input.phone,
+      location: input.location,
+      linkedin: input.linkedin,
+      portfolio: input.portfolio,
+      professionalSummary: input.professionalSummary,
+      experience: input.experience,
+      education: input.education,
+      skills: input.skills,
+      languages: input.languages,
+      certifications: input.certifications,
+    };
+  });
 });
 
 describe("generateOptimizedCv", () => {
@@ -126,5 +199,65 @@ describe("generateOptimizedCv", () => {
     );
     expect(comparePreparedProfiles).not.toHaveBeenCalled();
     expect(generateOptimizedCvDraft).not.toHaveBeenCalled();
+  });
+});
+
+describe("getOptimizedCv", () => {
+  it("returns the saved Optimized CV for an owned application", async () => {
+    vi.mocked(findOptimizedCvByApplicationId).mockResolvedValue(
+      persistedOptimizedCv as never,
+    );
+
+    await expect(getOptimizedCv(applicationId, userId)).resolves.toEqual(
+      optimizedCv,
+    );
+    expect(getOwnedApplication).toHaveBeenCalledWith(applicationId, userId);
+    expect(findOptimizedCvByApplicationId).toHaveBeenCalledWith(applicationId);
+  });
+
+  it("returns 404 when no saved Optimized CV exists", async () => {
+    await expect(getOptimizedCv(applicationId, userId)).rejects.toEqual(
+      new OptimizedCvError("Optimized CV not found.", 404),
+    );
+  });
+
+  it("maps missing application ownership to OptimizedCvError", async () => {
+    vi.mocked(getOwnedApplication).mockRejectedValue(
+      new ApplicationError("Application not found.", 404),
+    );
+
+    await expect(getOptimizedCv(applicationId, userId)).rejects.toEqual(
+      new OptimizedCvError("Application not found.", 404),
+    );
+    expect(findOptimizedCvByApplicationId).not.toHaveBeenCalled();
+  });
+});
+
+describe("saveOptimizedCv", () => {
+  it("upserts the Optimized CV for an owned application", async () => {
+    await expect(
+      saveOptimizedCv(applicationId, userId, optimizedCv),
+    ).resolves.toEqual(optimizedCv);
+
+    expect(getOwnedApplication).toHaveBeenCalledWith(applicationId, userId);
+    expect(upsertOptimizedCv).toHaveBeenCalledWith(applicationId, optimizedCv);
+  });
+
+  it("rejects invalid Optimized CV payloads", async () => {
+    await expect(saveOptimizedCv(applicationId, userId, {})).rejects.toEqual(
+      new OptimizedCvError("fullName is required.", 400),
+    );
+    expect(upsertOptimizedCv).not.toHaveBeenCalled();
+  });
+
+  it("maps missing application ownership to OptimizedCvError", async () => {
+    vi.mocked(getOwnedApplication).mockRejectedValue(
+      new ApplicationError("Application not found.", 404),
+    );
+
+    await expect(
+      saveOptimizedCv(applicationId, userId, optimizedCv),
+    ).rejects.toEqual(new OptimizedCvError("Application not found.", 404));
+    expect(upsertOptimizedCv).not.toHaveBeenCalled();
   });
 });

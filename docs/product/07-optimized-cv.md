@@ -90,3 +90,25 @@ Career Copilot generates an optimized version of the user's Master CV using only
 Users remain responsible for reviewing, editing, and validating the generated document before using it in a job application.
 
 Any manual modifications performed after generation become the user's responsibility.
+
+## Editable Content
+
+The Optimized CV allows users to edit only application-specific content.
+
+Editable content includes:
+
+- Professional Summary
+- Experience descriptions
+- Skills
+- User-added application-specific notes (if supported)
+
+The following information remains read-only because it belongs to the Master CV:
+
+- Personal information
+- Employment dates
+- Company names
+- Job titles
+- Education identity
+- Certifications identity
+
+Changes to factual profile information must always be performed in the Master CV.

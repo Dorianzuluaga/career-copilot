@@ -243,6 +243,13 @@ Never assume functionality that is not explicitly documented.
 
 ---
 
+Phase Boundary
+
+The implementation must not introduce UI controls, API behavior, persistence, workflow changes, or business logic belonging to future phases, even if they appear technically convenient.
+
+If implementing the requested phase requires functionality from a future phase, stop and ask for clarification instead of implementing it.
+
+
 ## Validation
 
 Before finishing, validate:
@@ -265,5 +272,97 @@ When finished provide:
 5. Validation performed
 
 Do not implement Phase 3 or any future phase.
+
+
+# Phase 3: Manual Editing
+
+Before writing any code:
+
+1. Read:
+   - docs/engineering/AI_ENGINEERING.md
+   - docs/engineering/PROJECT_RULES.md
+   - docs/engineering/DEVELOPMENT_GUIDE.md
+   - docs/product/07-optimized-cv.md
+   - docs/specs/optimized-cv.md
+
+2. Implement only:
+
+Phase 3 — Manual Editing
+
+3. Respect all documented architecture, responsibilities, AI boundaries, UI requirements, and implementation phases.
+
+Do not implement future phases.
+
+If any product or architectural decision is ambiguous, stop and ask for clarification instead of making assumptions.
+
+When finished provide:
+
+- Summary
+- Files modified
+- Architectural decisions
+- Assumptions (if any)
+- Validation performed
+
+Wait for review before making additional changes.
+
+# Phase 4: Save Optimized Version
+
+Before writing any code:
+
+1. Read:
+   - docs/engineering/AI_ENGINEERING.md
+   - docs/engineering/PROJECT_RULES.md
+   - docs/engineering/DEVELOPMENT_GUIDE.md
+   - docs/product/07-optimized-cv.md
+   - docs/specs/optimized-cv.md
+
+2. Implement only:
+
+Phase 4 — Save Optimized Version
+
+3. Respect all documented architecture, responsibilities, AI boundaries, UI requirements, and implementation phases.
+
+Do not implement future phases.
+
+If any product or architectural decision is ambiguous, stop and ask for clarification instead of making assumptions.
+
+When finished provide:
+
+- Summary
+- Files modified
+- Architectural decisions
+- Assumptions (if any)
+- Validation performed
+
+Wait for review before making additional changes.
+
+# Phase 5: Continue Workflow
+
+Before writing any code:
+
+1. Read:
+   - docs/engineering/AI_ENGINEERING.md
+   - docs/engineering/PROJECT_RULES.md
+   - docs/engineering/DEVELOPMENT_GUIDE.md
+   - docs/product/07-optimized-cv.md
+   - docs/specs/optimized-cv.md
+
+2. Implement only:
+
+Phase 5 — Continue Workflow
+
+3. Respect all documented architecture, responsibilities, UI requirements, AI boundaries, and implementation phases.
+
+Do not implement future phases.
+
+If any product or architectural decision is ambiguous, stop and ask for clarification instead of making assumptions.
+
+When finished provide:
+
+- Summary
+- Files modified
+- Architectural decisions
+- Assumptions (if any)
+- Validation performed
 
 Wait for review before making additional changes.

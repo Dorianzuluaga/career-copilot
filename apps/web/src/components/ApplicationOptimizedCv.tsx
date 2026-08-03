@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 import type {
   CertificationItem,
   EducationItem,
@@ -9,10 +9,20 @@ import type { OptimizedCv } from "../types/optimized-cv";
 
 interface ApplicationOptimizedCvProps {
   errorMessage: string | null;
+  initialIsEditing?: boolean;
   isLoading: boolean;
+  isSaving?: boolean;
+  onChange: (optimizedCv: OptimizedCv) => void;
+  onContinueToCoverLetter?: () => void;
   onGenerate: () => void;
+  onSave?: () => void;
   optimizedCv: OptimizedCv | null;
+  saveErrorMessage?: string | null;
+  savedMessage?: string | null;
 }
+
+const fieldClassName =
+  "mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-950 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100";
 
 function hasText(value: string | null | undefined): value is string {
   return typeof value === "string" && value.trim().length > 0;
@@ -36,21 +46,44 @@ function formatDateRange(
 function DocumentSection({
   title,
   children,
+  editable,
 }: {
   title: string;
   children: ReactNode;
+  editable?: boolean;
 }) {
   return (
     <section className="border-t border-slate-200 pt-6 first:border-t-0 first:pt-0">
-      <h3 className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
-        {title}
-      </h3>
+      <div className="flex items-center gap-2">
+        <h3 className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
+          {title}
+        </h3>
+        {editable ? (
+          <span className="rounded bg-blue-50 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-blue-700">
+            Editable
+          </span>
+        ) : null}
+      </div>
       <div className="mt-3">{children}</div>
     </section>
   );
 }
 
-function PersonalInformationSection({ cv }: { cv: OptimizedCv }) {
+function ReadOnlyValue({ children }: { children: ReactNode }) {
+  return (
+    <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2">
+      {children}
+    </div>
+  );
+}
+
+function PersonalInformationSection({
+  cv,
+  isEditing,
+}: {
+  cv: OptimizedCv;
+  isEditing: boolean;
+}) {
   const contactDetails = [
     cv.email,
     cv.phone,
@@ -59,8 +92,8 @@ function PersonalInformationSection({ cv }: { cv: OptimizedCv }) {
     cv.portfolio,
   ].filter(hasText);
 
-  return (
-    <DocumentSection title="Personal information">
+  const content = (
+    <>
       <p className="text-2xl font-bold tracking-tight text-slate-950">
         {cv.fullName}
       </p>
@@ -69,11 +102,25 @@ function PersonalInformationSection({ cv }: { cv: OptimizedCv }) {
           {contactDetails.join(" · ")}
         </p>
       ) : null}
+    </>
+  );
+
+  return (
+    <DocumentSection title="Personal information">
+      {isEditing ? <ReadOnlyValue>{content}</ReadOnlyValue> : content}
     </DocumentSection>
   );
 }
 
-function ExperienceEntries({ items }: { items: ExperienceItem[] }) {
+function ExperienceEntries({
+  items,
+  isEditing,
+  onDescriptionChange,
+}: {
+  items: ExperienceItem[];
+  isEditing: boolean;
+  onDescriptionChange?: (index: number, description: string) => void;
+}) {
   return (
     <div className="space-y-5">
       {items.map((item, index) => {
@@ -83,19 +130,52 @@ function ExperienceEntries({ items }: { items: ExperienceItem[] }) {
           item.location,
         ].filter(hasText);
 
-        return (
-          <article key={index}>
+        const identity = (
+          <>
             {titleParts.length > 0 ? (
               <h4 className="text-base font-semibold text-slate-950">
                 {titleParts.join(" · ")}
               </h4>
             ) : null}
             {metaParts.length > 0 ? (
-              <p className="mt-1 text-sm text-slate-500">
+              <p
+                className={
+                  titleParts.length > 0
+                    ? "mt-1 text-sm text-slate-500"
+                    : "text-sm text-slate-500"
+                }
+              >
                 {metaParts.join(" · ")}
               </p>
             ) : null}
-            {hasText(item.description) ? (
+          </>
+        );
+        const hasIdentity = titleParts.length > 0 || metaParts.length > 0;
+
+        return (
+          <article key={index}>
+            {hasIdentity ? (
+              isEditing ? (
+                <ReadOnlyValue>{identity}</ReadOnlyValue>
+              ) : (
+                identity
+              )
+            ) : null}
+
+            {isEditing && onDescriptionChange ? (
+              <label className="mt-3 block text-sm font-medium text-slate-700">
+                Description
+                <textarea
+                  value={item.description ?? ""}
+                  onChange={(event) =>
+                    onDescriptionChange(index, event.target.value)
+                  }
+                  rows={5}
+                  aria-label={`Experience description ${index + 1}`}
+                  className={`${fieldClassName} min-h-28 resize-y`}
+                />
+              </label>
+            ) : hasText(item.description) ? (
               <p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-slate-700">
                 {item.description}
               </p>
@@ -107,7 +187,13 @@ function ExperienceEntries({ items }: { items: ExperienceItem[] }) {
   );
 }
 
-function EducationEntries({ items }: { items: EducationItem[] }) {
+function EducationEntries({
+  items,
+  isEditing,
+}: {
+  items: EducationItem[];
+  isEditing: boolean;
+}) {
   return (
     <div className="space-y-5">
       {items.map((item, index) => {
@@ -119,8 +205,8 @@ function EducationEntries({ items }: { items: EducationItem[] }) {
           formatDateRange(item.startDate, item.endDate, null),
         ].filter(hasText);
 
-        return (
-          <article key={index}>
+        const content = (
+          <>
             {title ? (
               <h4 className="text-base font-semibold text-slate-950">
                 {title}
@@ -136,6 +222,12 @@ function EducationEntries({ items }: { items: EducationItem[] }) {
                 {item.description}
               </p>
             ) : null}
+          </>
+        );
+
+        return (
+          <article key={index}>
+            {isEditing ? <ReadOnlyValue>{content}</ReadOnlyValue> : content}
           </article>
         );
       })}
@@ -143,8 +235,14 @@ function EducationEntries({ items }: { items: EducationItem[] }) {
   );
 }
 
-function LanguageEntries({ items }: { items: LanguageItem[] }) {
-  return (
+function LanguageEntries({
+  items,
+  isEditing,
+}: {
+  items: LanguageItem[];
+  isEditing: boolean;
+}) {
+  const list = (
     <ul className="space-y-2 text-sm leading-6 text-slate-700">
       {items.map((item, index) => {
         const label = [item.name, item.proficiency].filter(hasText).join(" — ");
@@ -163,9 +261,17 @@ function LanguageEntries({ items }: { items: LanguageItem[] }) {
       })}
     </ul>
   );
+
+  return isEditing ? <ReadOnlyValue>{list}</ReadOnlyValue> : list;
 }
 
-function CertificationEntries({ items }: { items: CertificationItem[] }) {
+function CertificationEntries({
+  items,
+  isEditing,
+}: {
+  items: CertificationItem[];
+  isEditing: boolean;
+}) {
   return (
     <div className="space-y-4">
       {items.map((item, index) => {
@@ -176,8 +282,8 @@ function CertificationEntries({ items }: { items: CertificationItem[] }) {
           return null;
         }
 
-        return (
-          <article key={index}>
+        const content = (
+          <>
             {title ? (
               <h4 className="text-base font-semibold text-slate-950">
                 {title}
@@ -193,6 +299,12 @@ function CertificationEntries({ items }: { items: CertificationItem[] }) {
                 {item.credentialUrl}
               </p>
             ) : null}
+          </>
+        );
+
+        return (
+          <article key={index}>
+            {isEditing ? <ReadOnlyValue>{content}</ReadOnlyValue> : content}
           </article>
         );
       })}
@@ -200,11 +312,110 @@ function CertificationEntries({ items }: { items: CertificationItem[] }) {
   );
 }
 
-function OptimizedCvDocument({ cv }: { cv: OptimizedCv }) {
-  const showProfessionalSummary = hasText(cv.professionalSummary);
+function SkillsSection({
+  skills,
+  isEditing,
+  onAddSkill,
+  onRemoveSkill,
+}: {
+  skills: string[];
+  isEditing: boolean;
+  onAddSkill?: (skill: string) => void;
+  onRemoveSkill?: (index: number) => void;
+}) {
+  const [newSkill, setNewSkill] = useState("");
+  const visibleSkills = skills.filter(hasText);
+
+  if (!isEditing) {
+    return (
+      <ul className="space-y-2 text-sm leading-6 text-slate-700">
+        {visibleSkills.map((skill) => (
+          <li key={skill} className="flex gap-2">
+            <span aria-hidden="true" className="text-slate-400">
+              •
+            </span>
+            <span>{skill}</span>
+          </li>
+        ))}
+      </ul>
+    );
+  }
+
+  function handleAdd() {
+    if (!onAddSkill) return;
+    const trimmed = newSkill.trim();
+    if (!trimmed) return;
+    onAddSkill(trimmed);
+    setNewSkill("");
+  }
+
+  return (
+    <div className="space-y-3">
+      {skills.length > 0 ? (
+        <ul className="space-y-2">
+          {skills.map((skill, index) => (
+            <li
+              key={`${skill}-${index}`}
+              className="flex items-center gap-3 rounded-lg border border-slate-300 bg-white px-3 py-2"
+            >
+              <span className="flex-1 text-sm text-slate-950">{skill}</span>
+              <button
+                type="button"
+                onClick={() => onRemoveSkill?.(index)}
+                className="text-sm font-semibold text-red-700 hover:text-red-800"
+              >
+                Remove
+              </button>
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <p className="text-sm text-slate-500">No skills yet.</p>
+      )}
+
+      <div className="flex flex-col gap-2 sm:flex-row">
+        <label className="block flex-1 text-sm font-medium text-slate-700">
+          <span className="sr-only">New skill</span>
+          <input
+            type="text"
+            value={newSkill}
+            onChange={(event) => setNewSkill(event.target.value)}
+            onKeyDown={(event) => {
+              if (event.key === "Enter") {
+                event.preventDefault();
+                handleAdd();
+              }
+            }}
+            placeholder="Add a skill"
+            aria-label="New skill"
+            className={fieldClassName}
+          />
+        </label>
+        <button
+          type="button"
+          onClick={handleAdd}
+          className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50 sm:self-end"
+        >
+          Add skill
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function OptimizedCvDocument({
+  cv,
+  isEditing,
+  onChange,
+}: {
+  cv: OptimizedCv;
+  isEditing: boolean;
+  onChange: (optimizedCv: OptimizedCv) => void;
+}) {
+  const showProfessionalSummary = isEditing || hasText(cv.professionalSummary);
   const showExperience = cv.experience.length > 0;
   const showEducation = cv.education.length > 0;
-  const showSkills = cv.skills.some(hasText);
+  const showSkills = isEditing || cv.skills.some(hasText);
   const showLanguages = cv.languages.some(
     (item) => hasText(item.name) || hasText(item.proficiency),
   );
@@ -222,52 +433,103 @@ function OptimizedCvDocument({ cv }: { cv: OptimizedCv }) {
       className="rounded-xl border border-slate-200 bg-white px-6 py-8 shadow-sm sm:px-10 sm:py-10"
     >
       <div className="space-y-8">
-        <PersonalInformationSection cv={cv} />
+        <PersonalInformationSection cv={cv} isEditing={isEditing} />
 
         {showProfessionalSummary ? (
-          <DocumentSection title="Professional summary">
-            <p className="whitespace-pre-wrap text-sm leading-7 text-slate-700">
-              {cv.professionalSummary}
-            </p>
+          <DocumentSection title="Professional summary" editable={isEditing}>
+            {isEditing ? (
+              <label className="block text-sm font-medium text-slate-700">
+                <span className="sr-only">Professional summary</span>
+                <textarea
+                  value={cv.professionalSummary}
+                  onChange={(event) =>
+                    onChange({
+                      ...cv,
+                      professionalSummary: event.target.value,
+                    })
+                  }
+                  rows={6}
+                  aria-label="Professional summary"
+                  className={`${fieldClassName} min-h-36 resize-y`}
+                />
+              </label>
+            ) : (
+              <p className="whitespace-pre-wrap text-sm leading-7 text-slate-700">
+                {cv.professionalSummary}
+              </p>
+            )}
           </DocumentSection>
         ) : null}
 
         {showExperience ? (
-          <DocumentSection title="Experience">
-            <ExperienceEntries items={cv.experience} />
+          <DocumentSection title="Experience" editable={isEditing}>
+            <ExperienceEntries
+              items={cv.experience}
+              isEditing={isEditing}
+              onDescriptionChange={
+                isEditing
+                  ? (index, description) =>
+                      onChange({
+                        ...cv,
+                        experience: cv.experience.map((item, itemIndex) =>
+                          itemIndex === index
+                            ? { ...item, description: description || null }
+                            : item,
+                        ),
+                      })
+                  : undefined
+              }
+            />
           </DocumentSection>
         ) : null}
 
         {showEducation ? (
           <DocumentSection title="Education">
-            <EducationEntries items={cv.education} />
+            <EducationEntries items={cv.education} isEditing={isEditing} />
           </DocumentSection>
         ) : null}
 
         {showSkills ? (
-          <DocumentSection title="Skills">
-            <ul className="space-y-2 text-sm leading-6 text-slate-700">
-              {cv.skills.filter(hasText).map((skill) => (
-                <li key={skill} className="flex gap-2">
-                  <span aria-hidden="true" className="text-slate-400">
-                    •
-                  </span>
-                  <span>{skill}</span>
-                </li>
-              ))}
-            </ul>
+          <DocumentSection title="Skills" editable={isEditing}>
+            <SkillsSection
+              skills={cv.skills}
+              isEditing={isEditing}
+              onAddSkill={
+                isEditing
+                  ? (skill) =>
+                      onChange({
+                        ...cv,
+                        skills: [...cv.skills, skill],
+                      })
+                  : undefined
+              }
+              onRemoveSkill={
+                isEditing
+                  ? (index) =>
+                      onChange({
+                        ...cv,
+                        skills: cv.skills.filter(
+                          (_, skillIndex) => skillIndex !== index,
+                        ),
+                      })
+                  : undefined
+              }
+            />
           </DocumentSection>
         ) : null}
 
         {showLanguages ? (
           <DocumentSection title="Languages">
-            <LanguageEntries items={cv.languages} />
+            <LanguageEntries items={cv.languages} isEditing={isEditing} />
           </DocumentSection>
         ) : null}
 
         {showCertifications ? (
           <DocumentSection title="Certifications">
-            <CertificationEntries items={cv.certifications} />
+            <CertificationEntries
+              items={cv.certifications}
+              isEditing={isEditing}
+            />
           </DocumentSection>
         ) : null}
       </div>
@@ -277,10 +539,19 @@ function OptimizedCvDocument({ cv }: { cv: OptimizedCv }) {
 
 export function ApplicationOptimizedCv({
   errorMessage,
+  initialIsEditing = false,
   isLoading,
+  isSaving = false,
+  onChange,
+  onContinueToCoverLetter,
   onGenerate,
+  onSave,
   optimizedCv,
+  saveErrorMessage = null,
+  savedMessage = null,
 }: ApplicationOptimizedCvProps) {
+  const [isEditing, setIsEditing] = useState(initialIsEditing);
+
   if (isLoading) {
     return (
       <section className="rounded-xl border border-slate-200 bg-white p-8 text-center shadow-sm">
@@ -309,17 +580,85 @@ export function ApplicationOptimizedCv({
             >
               Optimized CV
             </h2>
+            {isEditing ? (
+              <p className="mt-2 max-w-xl text-sm leading-6 text-slate-600">
+                Edit application-specific content only. Personal information,
+                employment dates, company names, job titles, education,
+                languages, and certifications remain read-only.
+              </p>
+            ) : (
+              <p className="mt-2 max-w-xl text-sm leading-6 text-slate-600">
+                Review the generated document. Enter Edit mode to update
+                application-specific content.
+              </p>
+            )}
           </div>
-          <button
-            type="button"
-            onClick={onGenerate}
-            className="rounded-lg border border-slate-300 px-4 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50"
-          >
-            Generate again
-          </button>
+          <div className="flex flex-wrap gap-2">
+            {isEditing ? (
+              <button
+                type="button"
+                onClick={() => setIsEditing(false)}
+                className="rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-blue-700"
+              >
+                Done editing
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={() => setIsEditing(true)}
+                className="rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-blue-700"
+              >
+                Edit
+              </button>
+            )}
+            {onSave ? (
+              <button
+                type="button"
+                onClick={onSave}
+                disabled={isSaving}
+                className="rounded-lg border border-slate-300 px-4 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {isSaving ? "Saving…" : "Save"}
+              </button>
+            ) : null}
+            <button
+              type="button"
+              onClick={() => {
+                setIsEditing(false);
+                onGenerate();
+              }}
+              className="rounded-lg border border-slate-300 px-4 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+            >
+              Generate again
+            </button>
+            {onContinueToCoverLetter ? (
+              <button
+                type="button"
+                onClick={onContinueToCoverLetter}
+                className="rounded-lg border border-slate-300 px-4 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+              >
+                Continue to Cover Letter
+              </button>
+            ) : null}
+          </div>
         </section>
 
-        <OptimizedCvDocument cv={optimizedCv} />
+        {savedMessage ? (
+          <p role="status" className="text-sm font-medium text-green-700">
+            {savedMessage}
+          </p>
+        ) : null}
+        {saveErrorMessage ? (
+          <p role="alert" className="text-sm font-medium text-red-700">
+            {saveErrorMessage}
+          </p>
+        ) : null}
+
+        <OptimizedCvDocument
+          cv={optimizedCv}
+          isEditing={isEditing}
+          onChange={onChange}
+        />
       </div>
     );
   }
