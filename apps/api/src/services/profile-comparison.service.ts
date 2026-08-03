@@ -66,11 +66,9 @@ export async function prepareProfileComparisonInput(
   };
 }
 
-export async function compareProfiles(
-  applicationId: string,
-  userId: string,
+export async function comparePreparedProfiles(
+  input: ProfileComparisonInput,
 ): Promise<ProfileComparisonResult> {
-  const input = await prepareProfileComparisonInput(applicationId, userId);
   const [matchingSkills, missingSkills, strengths, weaknesses] =
     await Promise.all([
       identifyMatchingSkills(input),
@@ -90,4 +88,12 @@ export async function compareProfiles(
   const recommendation = await generateRecommendation(input, alignedComparison);
 
   return { ...alignedComparison, ...recommendation };
+}
+
+export async function compareProfiles(
+  applicationId: string,
+  userId: string,
+): Promise<ProfileComparisonResult> {
+  const input = await prepareProfileComparisonInput(applicationId, userId);
+  return comparePreparedProfiles(input);
 }
