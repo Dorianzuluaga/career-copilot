@@ -99,6 +99,7 @@ describe("App", () => {
           isJobAnalysisCompleted={false}
           isProfileMatchCompleted={false}
           isOptimizedCvCompleted={false}
+          isCoverLetterCompleted={false}
           onSectionChange={() => undefined}
         >
           <ApplicationOverview
@@ -188,6 +189,7 @@ describe("App", () => {
           isJobAnalysisCompleted
           isProfileMatchCompleted={false}
           isOptimizedCvCompleted={false}
+          isCoverLetterCompleted={false}
           onSectionChange={() => undefined}
         >
           <p>Job analysis content</p>
@@ -290,6 +292,7 @@ describe("App", () => {
           isJobAnalysisCompleted
           isProfileMatchCompleted
           isOptimizedCvCompleted={false}
+          isCoverLetterCompleted={false}
           onSectionChange={() => undefined}
         >
           <ApplicationOptimizedCv
@@ -438,6 +441,7 @@ describe("App", () => {
           isJobAnalysisCompleted
           isProfileMatchCompleted
           isOptimizedCvCompleted
+          isCoverLetterCompleted={false}
           onSectionChange={() => undefined}
         >
           <ApplicationOptimizedCv
@@ -458,7 +462,10 @@ describe("App", () => {
     );
     expect(continueWorkflowMarkup).toContain("Next recommended step:");
     expect(continueWorkflowMarkup).toContain("Cover Letter");
-    expect(continueWorkflowMarkup).not.toContain("Locked");
+    expect(continueWorkflowMarkup.match(/<button[^>]*disabled=""/g)).toHaveLength(
+      1,
+    );
+    expect(continueWorkflowMarkup).toContain("Locked");
 
     const saveErrorMarkup = renderToStaticMarkup(
       <ApplicationOptimizedCv
@@ -487,8 +494,26 @@ describe("App", () => {
     expect(errorMarkup).toContain("Try again");
   });
 
-  it("makes the Cover Letter placeholder available after a saved Optimized CV", () => {
-    const markup = renderToStaticMarkup(
+  it("supports Cover Letter generation after a saved Optimized CV", () => {
+    const sampleCoverLetter = {
+      candidateName: "Taylor Smith",
+      email: "taylor@example.com",
+      phone: "+1 555 0100",
+      date: "August 7, 2026",
+      companyName: "Acme",
+      greeting: "Dear Hiring Manager,",
+      introduction:
+        "I am writing to apply for the Software Engineer role at Acme.",
+      professionalValue:
+        "My experience building TypeScript APIs aligns with your requirements.",
+      motivation:
+        "I am interested in contributing to Acme's product engineering team.",
+      closing:
+        "Thank you for your consideration. I am available for an interview.",
+      signature: "Taylor Smith",
+    };
+
+    const idleMarkup = renderToStaticMarkup(
       <MemoryRouter>
         <ApplicationWorkspace
           company="Example Company"
@@ -498,25 +523,231 @@ describe("App", () => {
           isJobAnalysisCompleted
           isProfileMatchCompleted
           isOptimizedCvCompleted
+          isCoverLetterCompleted={false}
           onSectionChange={() => undefined}
         >
-          <ApplicationCoverLetter />
+          <ApplicationCoverLetter
+            coverLetter={null}
+            errorMessage={null}
+            isLoading={false}
+            onChange={() => undefined}
+            onGenerate={() => undefined}
+          />
         </ApplicationWorkspace>
       </MemoryRouter>,
     );
 
-    expect(markup).toContain('aria-current="page"');
-    expect(markup).toContain("Cover Letter");
-    expect(markup).toContain("No cover letter has been generated yet.");
-    expect(markup).toContain(
-      "Cover Letter generation will be implemented in a future Epic.",
+    expect(idleMarkup).toContain('aria-current="page"');
+    expect(idleMarkup).toContain("Cover Letter");
+    expect(idleMarkup).toContain("Generate Cover Letter");
+    expect(idleMarkup).toContain(
+      "Generate a Cover Letter tailored to this job opportunity",
     );
-    expect(markup).toContain(
+    expect(idleMarkup).toContain(
       "Completed sections: Job Analysis, Profile Match, Optimized CV",
     );
-    expect(markup).not.toContain('disabled=""');
-    expect(markup).not.toContain("Download");
-    expect(markup).not.toContain("Live preview");
+    expect(idleMarkup).toContain("Next recommended step:");
+    expect(idleMarkup).toContain("Cover Letter");
+    expect(idleMarkup.match(/<button[^>]*disabled=""/g)).toHaveLength(1);
+    expect(idleMarkup).toContain("Locked");
+    expect(idleMarkup).not.toContain("Continue to Export");
+    expect(idleMarkup).not.toContain("Download");
+    expect(idleMarkup).not.toContain("Live preview");
+    expect(idleMarkup).not.toContain("Dear Hiring Manager,");
+    expect(idleMarkup).not.toContain("<textarea");
+
+    const loadingMarkup = renderToStaticMarkup(
+      <ApplicationCoverLetter
+        coverLetter={null}
+        errorMessage={null}
+        isLoading
+        onChange={() => undefined}
+        onGenerate={() => undefined}
+      />,
+    );
+    expect(loadingMarkup).toContain("Generating your Cover Letter…");
+
+    const reviewMarkup = renderToStaticMarkup(
+      <ApplicationCoverLetter
+        coverLetter={sampleCoverLetter}
+        errorMessage={null}
+        isLoading={false}
+        onChange={() => undefined}
+        onGenerate={() => undefined}
+      />,
+    );
+    expect(reviewMarkup).toContain("Review the generated document.");
+    expect(reviewMarkup).toContain(
+      "Enter Edit mode to update the letter text.",
+    );
+    expect(reviewMarkup).toContain(">Edit<");
+    expect(reviewMarkup).toContain("Generate again");
+    expect(reviewMarkup).toContain("Taylor Smith");
+    expect(reviewMarkup).toContain("taylor@example.com");
+    expect(reviewMarkup).toContain("+1 555 0100");
+    expect(reviewMarkup).toContain("August 7, 2026");
+    expect(reviewMarkup).toContain("Acme");
+    expect(reviewMarkup).toContain("Dear Hiring Manager,");
+    expect(reviewMarkup).toContain(
+      "I am writing to apply for the Software Engineer role at Acme.",
+    );
+    expect(reviewMarkup).toContain(
+      "My experience building TypeScript APIs aligns with your requirements.",
+    );
+    expect(reviewMarkup).toContain(
+      "I am interested in contributing to Acme&#x27;s product engineering team.",
+    );
+    expect(reviewMarkup).toContain(
+      "Thank you for your consideration. I am available for an interview.",
+    );
+    expect(reviewMarkup).not.toContain("Professional Value");
+    expect(reviewMarkup).not.toContain("Introduction");
+    expect(reviewMarkup).not.toContain("Motivation");
+    expect(reviewMarkup).not.toContain("<textarea");
+    expect(reviewMarkup).not.toContain("<input");
+    expect(reviewMarkup).not.toContain("Done editing");
+    expect(reviewMarkup).not.toContain(">Save<");
+    expect(reviewMarkup).not.toContain("Saving…");
+    expect(reviewMarkup).not.toContain("Cover Letter saved.");
+    expect(reviewMarkup).not.toContain("Continue to Export");
+
+    const editMarkup = renderToStaticMarkup(
+      <ApplicationCoverLetter
+        coverLetter={sampleCoverLetter}
+        errorMessage={null}
+        initialIsEditing
+        isLoading={false}
+        onChange={() => undefined}
+        onGenerate={() => undefined}
+        onSave={() => undefined}
+      />,
+    );
+    expect(editMarkup).toContain("Done editing");
+    expect(editMarkup).toContain("Generate again");
+    expect(editMarkup).toContain(">Save<");
+    expect(editMarkup).toContain(
+      "Edit the application-specific letter text. Header details and signature remain read-only.",
+    );
+    expect(editMarkup).toContain("<textarea");
+    expect(editMarkup).toContain('aria-label="Greeting"');
+    expect(editMarkup).toContain('aria-label="Introduction"');
+    expect(editMarkup).toContain('aria-label="Professional value"');
+    expect(editMarkup).toContain('aria-label="Motivation"');
+    expect(editMarkup).toContain('aria-label="Closing"');
+    expect(editMarkup).toContain("Dear Hiring Manager,");
+    expect(editMarkup).toContain(
+      "I am writing to apply for the Software Engineer role at Acme.",
+    );
+    expect(editMarkup).toContain(
+      "My experience building TypeScript APIs aligns with your requirements.",
+    );
+    expect(editMarkup).toContain(
+      "I am interested in contributing to Acme&#x27;s product engineering team.",
+    );
+    expect(editMarkup).toContain(
+      "Thank you for your consideration. I am available for an interview.",
+    );
+    expect(editMarkup).toContain("Taylor Smith");
+    expect(editMarkup).toContain("taylor@example.com");
+    expect(editMarkup).toContain("+1 555 0100");
+    expect(editMarkup).toContain("August 7, 2026");
+    expect(editMarkup).toContain("Acme");
+    expect(editMarkup).not.toContain("Professional Value");
+    expect(editMarkup).not.toContain(">Edit<");
+    expect(editMarkup).not.toContain("Continue to Export");
+    expect(editMarkup).not.toContain('aria-label="Candidate name"');
+    expect(editMarkup).not.toContain('aria-label="Signature"');
+
+    const savingMarkup = renderToStaticMarkup(
+      <ApplicationCoverLetter
+        coverLetter={sampleCoverLetter}
+        errorMessage={null}
+        isLoading={false}
+        isSaving
+        onChange={() => undefined}
+        onGenerate={() => undefined}
+        onSave={() => undefined}
+      />,
+    );
+    expect(savingMarkup).toContain("Saving…");
+    expect(savingMarkup).toContain('disabled=""');
+
+    const savedMarkup = renderToStaticMarkup(
+      <ApplicationCoverLetter
+        coverLetter={sampleCoverLetter}
+        errorMessage={null}
+        isLoading={false}
+        onChange={() => undefined}
+        onContinueToExport={() => undefined}
+        onGenerate={() => undefined}
+        onSave={() => undefined}
+        savedMessage="Cover Letter saved."
+      />,
+    );
+    expect(savedMarkup).toContain("Cover Letter saved.");
+    expect(savedMarkup).toContain('role="status"');
+    expect(savedMarkup).toContain("Continue to Export");
+
+    const continueWorkflowMarkup = renderToStaticMarkup(
+      <MemoryRouter>
+        <ApplicationWorkspace
+          company="Example Company"
+          title="Frontend Engineer"
+          status="NEW"
+          activeSection="cover-letter"
+          isJobAnalysisCompleted
+          isProfileMatchCompleted
+          isOptimizedCvCompleted
+          isCoverLetterCompleted
+          onSectionChange={() => undefined}
+        >
+          <ApplicationCoverLetter
+            coverLetter={sampleCoverLetter}
+            errorMessage={null}
+            isLoading={false}
+            onChange={() => undefined}
+            onContinueToExport={() => undefined}
+            onGenerate={() => undefined}
+            onSave={() => undefined}
+          />
+        </ApplicationWorkspace>
+      </MemoryRouter>,
+    );
+    expect(continueWorkflowMarkup).toContain("Continue to Export");
+    expect(continueWorkflowMarkup).toContain(
+      "Completed sections: Job Analysis, Profile Match, Optimized CV, Cover Letter",
+    );
+    expect(continueWorkflowMarkup).toContain("Next recommended step:");
+    expect(continueWorkflowMarkup).toContain("Export");
+    expect(continueWorkflowMarkup).not.toContain("Locked");
+
+    const saveErrorMarkup = renderToStaticMarkup(
+      <ApplicationCoverLetter
+        coverLetter={sampleCoverLetter}
+        errorMessage={null}
+        isLoading={false}
+        onChange={() => undefined}
+        onGenerate={() => undefined}
+        onSave={() => undefined}
+        saveErrorMessage="Unable to save this Cover Letter."
+      />,
+    );
+    expect(saveErrorMarkup).toContain("Unable to save this Cover Letter.");
+    expect(saveErrorMarkup).toContain('role="alert"');
+
+    const errorMarkup = renderToStaticMarkup(
+      <ApplicationCoverLetter
+        coverLetter={null}
+        errorMessage="Save an Optimized CV before generating a Cover Letter."
+        isLoading={false}
+        onChange={() => undefined}
+        onGenerate={() => undefined}
+      />,
+    );
+    expect(errorMarkup).toContain(
+      "Save an Optimized CV before generating a Cover Letter.",
+    );
+    expect(errorMarkup).toContain("Try again");
   });
 
   it("keeps Cover Letter locked until a saved Optimized CV exists", () => {
@@ -530,6 +761,7 @@ describe("App", () => {
           isJobAnalysisCompleted
           isProfileMatchCompleted
           isOptimizedCvCompleted={false}
+          isCoverLetterCompleted={false}
           onSectionChange={() => undefined}
         >
           <p>Optimized CV content</p>
@@ -544,7 +776,35 @@ describe("App", () => {
     expect(markup).toContain("Locked");
   });
 
-  it("makes the Export placeholder available with Cover Letter", () => {
+  it("keeps Export locked until a saved Cover Letter exists", () => {
+    const markup = renderToStaticMarkup(
+      <MemoryRouter>
+        <ApplicationWorkspace
+          company="Example Company"
+          title="Frontend Engineer"
+          status="NEW"
+          activeSection="cover-letter"
+          isJobAnalysisCompleted
+          isProfileMatchCompleted
+          isOptimizedCvCompleted
+          isCoverLetterCompleted={false}
+          onSectionChange={() => undefined}
+        >
+          <p>Cover Letter content</p>
+        </ApplicationWorkspace>
+      </MemoryRouter>,
+    );
+
+    expect(markup).toContain(
+      "Completed sections: Job Analysis, Profile Match, Optimized CV",
+    );
+    expect(markup).toContain("Next recommended step:");
+    expect(markup).toContain("Cover Letter");
+    expect(markup.match(/<button[^>]*disabled=""/g)).toHaveLength(1);
+    expect(markup).toContain("Locked");
+  });
+
+  it("makes the Export placeholder available after a saved Cover Letter", () => {
     const markup = renderToStaticMarkup(
       <MemoryRouter>
         <ApplicationWorkspace
@@ -555,6 +815,7 @@ describe("App", () => {
           isJobAnalysisCompleted
           isProfileMatchCompleted
           isOptimizedCvCompleted
+          isCoverLetterCompleted
           onSectionChange={() => undefined}
         >
           <ApplicationExport />
@@ -564,6 +825,10 @@ describe("App", () => {
 
     expect(markup).toContain('aria-current="page"');
     expect(markup).toContain("Export");
+    expect(markup).toContain(
+      "Completed sections: Job Analysis, Profile Match, Optimized CV, Cover Letter",
+    );
+    expect(markup).toContain("Next recommended step:");
     expect(markup).toContain(
       "No exportable documents are currently available.",
     );

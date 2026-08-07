@@ -14,6 +14,7 @@ interface WorkspaceNavigationProps {
   isJobAnalysisCompleted: boolean;
   isProfileMatchCompleted: boolean;
   isOptimizedCvCompleted: boolean;
+  isCoverLetterCompleted: boolean;
   onSectionChange: (section: WorkspaceSection) => void;
 }
 
@@ -22,12 +23,14 @@ export function WorkspaceNavigation({
   isJobAnalysisCompleted,
   isProfileMatchCompleted,
   isOptimizedCvCompleted,
+  isCoverLetterCompleted,
   onSectionChange,
 }: WorkspaceNavigationProps) {
   const completedSections = [
     isJobAnalysisCompleted ? "Job Analysis" : null,
     isProfileMatchCompleted ? "Profile Match" : null,
     isOptimizedCvCompleted ? "Optimized CV" : null,
+    isCoverLetterCompleted ? "Cover Letter" : null,
   ].filter((section): section is string => section !== null);
 
   const nextRecommendedStep = !isJobAnalysisCompleted
@@ -36,7 +39,9 @@ export function WorkspaceNavigation({
       ? "Profile Match"
       : !isOptimizedCvCompleted
         ? "Optimized CV"
-        : "Cover Letter";
+        : !isCoverLetterCompleted
+          ? "Cover Letter"
+          : "Export";
 
   return (
     <nav
@@ -47,17 +52,19 @@ export function WorkspaceNavigation({
         {workspaceSections.map((section) => {
           const isCurrent = section.id === activeSection;
           const isCoverLetterAvailable = isOptimizedCvCompleted;
+          const isExportAvailable = isCoverLetterCompleted;
           const isAvailable =
             section.id === "overview" ||
             section.id === "job-analysis" ||
             (section.id === "profile-match" && isJobAnalysisCompleted) ||
             (section.id === "optimized-cv" && isProfileMatchCompleted) ||
             (section.id === "cover-letter" && isCoverLetterAvailable) ||
-            (section.id === "export" && isCoverLetterAvailable);
+            (section.id === "export" && isExportAvailable);
           const isCompleted =
             (section.id === "job-analysis" && isJobAnalysisCompleted) ||
             (section.id === "profile-match" && isProfileMatchCompleted) ||
-            (section.id === "optimized-cv" && isOptimizedCvCompleted);
+            (section.id === "optimized-cv" && isOptimizedCvCompleted) ||
+            (section.id === "cover-letter" && isCoverLetterCompleted);
 
           return (
             <li key={section.id}>

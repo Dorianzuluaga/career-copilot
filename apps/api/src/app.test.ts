@@ -92,6 +92,20 @@ vi.mock("./services/optimized-cv.service.js", () => ({
   saveOptimizedCv: vi.fn(),
 }));
 
+vi.mock("./services/cover-letter.service.js", () => ({
+  CoverLetterError: class CoverLetterError extends Error {
+    constructor(
+      message: string,
+      public readonly statusCode: number,
+    ) {
+      super(message);
+    }
+  },
+  generateCoverLetter: vi.fn(),
+  getCoverLetter: vi.fn(),
+  saveCoverLetter: vi.fn(),
+}));
+
 import { app } from "./app.js";
 import {
   addApplication,
@@ -105,6 +119,12 @@ import {
   AuthenticationError,
   getAuthenticatedUser,
 } from "./services/auth.service.js";
+import {
+  CoverLetterError,
+  generateCoverLetter,
+  getCoverLetter,
+  saveCoverLetter,
+} from "./services/cover-letter.service.js";
 import {
   analyzeJobOffer,
   JobAnalysisError,
@@ -296,6 +316,7 @@ describe("Job Analysis API", () => {
       request(app).post("/api/applications/application-id/job-analysis"),
       request(app).post("/api/applications/application-id/profile-comparison"),
       request(app).post("/api/applications/application-id/optimized-cv"),
+      request(app).post("/api/applications/application-id/cover-letter"),
     ]);
 
     for (const response of responses) {
@@ -647,6 +668,151 @@ describe("Job Analysis API", () => {
 
     expect(response.status).toBe(400);
     expect(response.body).toEqual({ message: "fullName is required." });
+  });
+
+  it("returns the generated Cover Letter for the authenticated user", async () => {
+    const coverLetter = {
+      candidateName: "Taylor Smith",
+      email: "taylor@example.com",
+      phone: "+1 555 0100",
+      date: "August 7, 2026",
+      companyName: "Acme",
+      greeting: "Dear Hiring Manager,",
+      introduction:
+        "I am writing to apply for the Software Engineer role at Acme.",
+      professionalValue:
+        "My experience building TypeScript APIs aligns with your requirements.",
+      motivation:
+        "I am interested in contributing to Acme's product engineering team.",
+      closing:
+        "Thank you for your consideration. I am available for an interview.",
+      signature: "Taylor Smith",
+    };
+    vi.mocked(getAuthenticatedUser).mockResolvedValue(user);
+    vi.mocked(generateCoverLetter).mockResolvedValue(coverLetter);
+
+    const response = await request(app)
+      .post("/api/applications/application-id/cover-letter")
+      .set("Cookie", "career_copilot_session=opaque-session-id");
+
+    expect(response.status).toBe(200);
+    expect(response.body).toEqual({ coverLetter });
+    expect(generateCoverLetter).toHaveBeenCalledWith("application-id", user.id);
+  });
+
+  it.each([
+    "Master CV not found.",
+    "Job analysis not found.",
+    "Optimized CV not found.",
+  ])(
+    "returns 404 when Cover Letter generation input is missing: %s",
+    async (message) => {
+      vi.mocked(getAuthenticatedUser).mockResolvedValue(user);
+      vi.mocked(generateCoverLetter).mockRejectedValue(
+        new CoverLetterError(message, 404),
+      );
+
+      const response = await request(app)
+        .post("/api/applications/application-id/cover-letter")
+        .set("Cookie", "career_copilot_session=opaque-session-id");
+
+      expect(response.status).toBe(404);
+      expect(response.body).toEqual({ message });
+    },
+  );
+
+  it("returns the saved Cover Letter for the authenticated user", async () => {
+    const coverLetter = {
+      candidateName: "Taylor Smith",
+      email: "taylor@example.com",
+      phone: "+1 555 0100",
+      date: "August 7, 2026",
+      companyName: "Acme",
+      greeting: "Dear Hiring Manager,",
+      introduction:
+        "I am writing to apply for the Software Engineer role at Acme.",
+      professionalValue:
+        "My experience building TypeScript APIs aligns with your requirements.",
+      motivation:
+        "I am interested in contributing to Acme's product engineering team.",
+      closing:
+        "Thank you for your consideration. I am available for an interview.",
+      signature: "Taylor Smith",
+    };
+    vi.mocked(getAuthenticatedUser).mockResolvedValue(user);
+    vi.mocked(getCoverLetter).mockResolvedValue(coverLetter);
+
+    const response = await request(app)
+      .get("/api/applications/application-id/cover-letter")
+      .set("Cookie", "career_copilot_session=opaque-session-id");
+
+    expect(response.status).toBe(200);
+    expect(response.body).toEqual({ coverLetter });
+    expect(getCoverLetter).toHaveBeenCalledWith("application-id", user.id);
+  });
+
+  it("returns 404 when no saved Cover Letter exists", async () => {
+    vi.mocked(getAuthenticatedUser).mockResolvedValue(user);
+    vi.mocked(getCoverLetter).mockRejectedValue(
+      new CoverLetterError("Cover Letter not found.", 404),
+    );
+
+    const response = await request(app)
+      .get("/api/applications/application-id/cover-letter")
+      .set("Cookie", "career_copilot_session=opaque-session-id");
+
+    expect(response.status).toBe(404);
+    expect(response.body).toEqual({ message: "Cover Letter not found." });
+  });
+
+  it("saves the Cover Letter for the authenticated user", async () => {
+    const coverLetter = {
+      candidateName: "Taylor Smith",
+      email: "taylor@example.com",
+      phone: "+1 555 0100",
+      date: "August 7, 2026",
+      companyName: "Acme",
+      greeting: "Dear Hiring Manager,",
+      introduction:
+        "I am writing to apply for the Software Engineer role at Acme.",
+      professionalValue:
+        "My experience building TypeScript APIs aligns with your requirements.",
+      motivation:
+        "I am interested in contributing to Acme's product engineering team.",
+      closing:
+        "Thank you for your consideration. I am available for an interview.",
+      signature: "Taylor Smith",
+    };
+    vi.mocked(getAuthenticatedUser).mockResolvedValue(user);
+    vi.mocked(saveCoverLetter).mockResolvedValue(coverLetter);
+
+    const response = await request(app)
+      .put("/api/applications/application-id/cover-letter")
+      .set("Cookie", "career_copilot_session=opaque-session-id")
+      .send(coverLetter);
+
+    expect(response.status).toBe(200);
+    expect(response.body).toEqual({ coverLetter });
+    expect(saveCoverLetter).toHaveBeenCalledWith(
+      "application-id",
+      user.id,
+      coverLetter,
+    );
+  });
+
+  it("returns 400 when Cover Letter save payload is invalid", async () => {
+    vi.mocked(getAuthenticatedUser).mockResolvedValue(user);
+    vi.mocked(saveCoverLetter).mockRejectedValue(
+      new CoverLetterError("candidateName is required.", 400),
+    );
+
+    const response = await request(app)
+      .put("/api/applications/application-id/cover-letter")
+      .set("Cookie", "career_copilot_session=opaque-session-id")
+      .send({});
+
+    expect(response.status).toBe(400);
+    expect(response.body).toEqual({ message: "candidateName is required." });
   });
 
   it("does not reveal applications owned by another user", async () => {

@@ -97,10 +97,10 @@ Job Analysis Completed
 Profile Match Completed
         │
         ▼
-Optimized CV Generated
+Optimized CV Saved
         │
         ▼
-Cover Letter Generated
+Cover Letter Saved
         │
         ▼
 Ready for Export
