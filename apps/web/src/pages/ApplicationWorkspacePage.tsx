@@ -11,11 +11,17 @@ import type { WorkspaceSection } from "../components/WorkspaceNavigation";
 import { ApiError } from "../services/api";
 import { getApplication } from "../services/job-analysis";
 import {
+  generateCoverLetter,
+  getCoverLetter,
+  saveCoverLetter,
+} from "../services/cover-letter";
+import {
   generateOptimizedCv,
   getOptimizedCv,
   saveOptimizedCv,
 } from "../services/optimized-cv";
 import { compareProfile } from "../services/profile-comparison";
+import type { CoverLetter } from "../types/cover-letter";
 import type { PersistedApplication } from "../types/job-analysis";
 import type { OptimizedCv } from "../types/optimized-cv";
 import type { ProfileComparison } from "../types/profile-comparison";
@@ -48,6 +54,17 @@ export function ApplicationWorkspacePage() {
     string | null
   >(null);
   const [hasSavedOptimizedCv, setHasSavedOptimizedCv] = useState(false);
+  const [coverLetter, setCoverLetter] = useState<CoverLetter | null>(null);
+  const [coverLetterError, setCoverLetterError] = useState<string | null>(null);
+  const [isGeneratingCoverLetter, setIsGeneratingCoverLetter] = useState(false);
+  const [isSavingCoverLetter, setIsSavingCoverLetter] = useState(false);
+  const [coverLetterSaveError, setCoverLetterSaveError] = useState<
+    string | null
+  >(null);
+  const [coverLetterSavedMessage, setCoverLetterSavedMessage] = useState<
+    string | null
+  >(null);
+  const [hasSavedCoverLetter, setHasSavedCoverLetter] = useState(false);
 
   useEffect(() => {
     setApplication(null);
@@ -64,6 +81,13 @@ export function ApplicationWorkspacePage() {
     setOptimizedCvSaveError(null);
     setOptimizedCvSavedMessage(null);
     setHasSavedOptimizedCv(false);
+    setCoverLetter(null);
+    setCoverLetterError(null);
+    setIsGeneratingCoverLetter(false);
+    setIsSavingCoverLetter(false);
+    setCoverLetterSaveError(null);
+    setCoverLetterSavedMessage(null);
+    setHasSavedCoverLetter(false);
 
     if (!applicationId) {
       setErrorMessage("Application not found.");
@@ -75,12 +99,15 @@ export function ApplicationWorkspacePage() {
     void Promise.all([
       getApplication(applicationId),
       getOptimizedCv(applicationId),
+      getCoverLetter(applicationId),
     ])
-      .then(([result, savedOptimizedCv]) => {
+      .then(([result, savedOptimizedCv, savedCoverLetter]) => {
         if (!isActive) return;
         setApplication(result);
         setOptimizedCv(savedOptimizedCv);
         setHasSavedOptimizedCv(savedOptimizedCv !== null);
+        setCoverLetter(savedCoverLetter);
+        setHasSavedCoverLetter(savedCoverLetter !== null);
       })
       .catch((error: unknown) => {
         if (isActive) {
@@ -180,10 +207,74 @@ export function ApplicationWorkspacePage() {
     }
   }
 
+  async function runCoverLetterGeneration() {
+    if (!applicationId || isGeneratingCoverLetter) return;
+
+    setIsGeneratingCoverLetter(true);
+    setCoverLetterError(null);
+    setCoverLetterSaveError(null);
+    setCoverLetterSavedMessage(null);
+    try {
+      const result = await generateCoverLetter(applicationId);
+      if (currentApplicationId.current === applicationId) {
+        setCoverLetter(result);
+      }
+    } catch (error) {
+      if (currentApplicationId.current === applicationId) {
+        setCoverLetter(null);
+        setCoverLetterError(
+          error instanceof ApiError
+            ? error.message === "Optimized CV not found."
+              ? "Save an Optimized CV before generating a Cover Letter."
+              : error.message
+            : "Unexpected error. Try again later.",
+        );
+      }
+    } finally {
+      if (currentApplicationId.current === applicationId) {
+        setIsGeneratingCoverLetter(false);
+      }
+    }
+  }
+
+  async function runCoverLetterSave() {
+    if (!applicationId || !coverLetter || isSavingCoverLetter) return;
+
+    setIsSavingCoverLetter(true);
+    setCoverLetterSaveError(null);
+    setCoverLetterSavedMessage(null);
+    try {
+      const saved = await saveCoverLetter(applicationId, coverLetter);
+      if (currentApplicationId.current === applicationId) {
+        setCoverLetter(saved);
+        setHasSavedCoverLetter(true);
+        setCoverLetterSavedMessage("Cover Letter saved.");
+      }
+    } catch (error) {
+      if (currentApplicationId.current === applicationId) {
+        setCoverLetterSaveError(
+          error instanceof ApiError
+            ? error.message
+            : "Unable to save this Cover Letter.",
+        );
+      }
+    } finally {
+      if (currentApplicationId.current === applicationId) {
+        setIsSavingCoverLetter(false);
+      }
+    }
+  }
+
   function handleOptimizedCvChange(next: OptimizedCv) {
     setOptimizedCv(next);
     setOptimizedCvSavedMessage(null);
     setOptimizedCvSaveError(null);
+  }
+
+  function handleCoverLetterChange(next: CoverLetter) {
+    setCoverLetter(next);
+    setCoverLetterSavedMessage(null);
+    setCoverLetterSaveError(null);
   }
 
   function changeSection(section: WorkspaceSection) {
@@ -240,6 +331,7 @@ export function ApplicationWorkspacePage() {
       isJobAnalysisCompleted={application.jobAnalysis !== null}
       isProfileMatchCompleted={profileComparison !== null}
       isOptimizedCvCompleted={hasSavedOptimizedCv}
+      isCoverLetterCompleted={hasSavedCoverLetter}
       onSectionChange={changeSection}
     >
       {activeSection === "overview" ? (
@@ -276,7 +368,22 @@ export function ApplicationWorkspacePage() {
           savedMessage={optimizedCvSavedMessage}
         />
       ) : activeSection === "cover-letter" ? (
-        <ApplicationCoverLetter />
+        <ApplicationCoverLetter
+          coverLetter={coverLetter}
+          errorMessage={coverLetterError}
+          isLoading={isGeneratingCoverLetter}
+          isSaving={isSavingCoverLetter}
+          onChange={handleCoverLetterChange}
+          onContinueToExport={
+            hasSavedCoverLetter
+              ? () => setActiveSection("export")
+              : undefined
+          }
+          onGenerate={() => void runCoverLetterGeneration()}
+          onSave={() => void runCoverLetterSave()}
+          saveErrorMessage={coverLetterSaveError}
+          savedMessage={coverLetterSavedMessage}
+        />
       ) : activeSection === "export" ? (
         <ApplicationExport />
       ) : null}

@@ -65,6 +65,7 @@ model Application {
   jobOffer    JobOffer?
   jobAnalysis JobAnalysis?
   optimizedCv OptimizedCv?
+  coverLetter CoverLetter?
   createdAt   DateTime          @default(now())
   updatedAt   DateTime          @updatedAt
 
@@ -124,6 +125,27 @@ model OptimizedCv {
   certifications      Json
   createdAt           DateTime    @default(now())
   updatedAt           DateTime    @updatedAt
+
+  @@index([applicationId])
+}
+
+model CoverLetter {
+  id                String      @id @default(uuid()) @db.Uuid
+  applicationId     String      @unique @db.Uuid
+  application       Application @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  candidateName     String
+  email             String
+  phone             String?
+  date              String
+  companyName       String?
+  greeting          String
+  introduction      String
+  professionalValue String
+  motivation        String
+  closing           String
+  signature         String
+  createdAt         DateTime    @default(now())
+  updatedAt         DateTime    @updatedAt
 
   @@index([applicationId])
 }

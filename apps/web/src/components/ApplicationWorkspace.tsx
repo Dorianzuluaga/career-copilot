@@ -13,6 +13,7 @@ interface ApplicationWorkspaceProps {
   isJobAnalysisCompleted: boolean;
   isProfileMatchCompleted: boolean;
   isOptimizedCvCompleted: boolean;
+  isCoverLetterCompleted: boolean;
   onSectionChange: (section: WorkspaceSection) => void;
   children: ReactNode;
 }
@@ -25,6 +26,7 @@ export function ApplicationWorkspace({
   isJobAnalysisCompleted,
   isProfileMatchCompleted,
   isOptimizedCvCompleted,
+  isCoverLetterCompleted,
   onSectionChange,
   children,
 }: ApplicationWorkspaceProps) {
@@ -56,6 +58,7 @@ export function ApplicationWorkspace({
         isJobAnalysisCompleted={isJobAnalysisCompleted}
         isProfileMatchCompleted={isProfileMatchCompleted}
         isOptimizedCvCompleted={isOptimizedCvCompleted}
+        isCoverLetterCompleted={isCoverLetterCompleted}
         onSectionChange={onSectionChange}
       />
 

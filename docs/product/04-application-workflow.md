@@ -51,7 +51,7 @@ The workspace contains:
 * AI analysis
 * Suggested improvements
 * Generated CV version
-* Cover letter (future)
+* Cover letter 
 * Generated PDF
 
 The Master CV is never modified automatically.
@@ -174,63 +174,29 @@ Career Copilot follows these principles:
 * Every generated application is linked to a specific job opportunity.
 
 # flowcharts
+FAST APPLY
 
-# FAST APPLY
-
-Paste job offer
-
-↓
-
-AI analysis
-
-↓
-
-Automatic adaptation of the Master CV
-
-↓
-
-Preview
-
-↓
-
-Manual edition (optional)
-
-↓
-
-Generate PDF
-
-↓
-
-Save version of the application
-
-# GUIDED APPLY
-
-Paste job offer 
-
-↓
-
-Analysis IA
-
-↓
-
-IA recomendations
-
-↓
-
-Accept / Reject / Edit recommendations
-
-↓
-
-Preview
-
-↓
-
-Manual edition (optional)
-
-↓
-
-Generate PDF
-
-↓
-
-Save version of the application
+Paste Job Offer
+        │
+        ▼
+Job Analysis
+        │
+        ▼
+Profile Match
+        │
+        ▼
+Optimized CV
+ ├─ Generate
+ ├─ Review
+ ├─ Edit
+ └─ Save
+        │
+        ▼
+Cover Letter
+ ├─ Generate
+ ├─ Review
+ ├─ Edit
+ └─ Save
+        │
+        ▼
+Export

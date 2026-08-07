@@ -8,6 +8,11 @@ import {
 import { createJobAnalysis } from "../controllers/job-analysis.controller.js";
 import { createJobOffer } from "../controllers/job-offer.controller.js";
 import {
+  createCoverLetter,
+  replaceCoverLetter,
+  showCoverLetter,
+} from "../controllers/cover-letter.controller.js";
+import {
   createOptimizedCv,
   replaceOptimizedCv,
   showOptimizedCv,
@@ -28,3 +33,6 @@ applicationRouter.post("/:id/profile-comparison", prepareProfileComparison);
 applicationRouter.post("/:id/optimized-cv", createOptimizedCv);
 applicationRouter.get("/:id/optimized-cv", showOptimizedCv);
 applicationRouter.put("/:id/optimized-cv", replaceOptimizedCv);
+applicationRouter.post("/:id/cover-letter", createCoverLetter);
+applicationRouter.get("/:id/cover-letter", showCoverLetter);
+applicationRouter.put("/:id/cover-letter", replaceCoverLetter);
