@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { getCurrentUser, signInWithGoogle } from "../services/auth";
+import { getCurrentUser, logout, signInWithGoogle } from "../services/auth";
 import type { AuthenticatedUser } from "../types/auth";
 import { AuthContext } from "./auth-context";
 
@@ -37,9 +37,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setUser(response.user);
   }, []);
 
+  const signOut = useCallback(async () => {
+    await logout();
+    setUser(null);
+  }, []);
+
   const value = useMemo(
-    () => ({ user, isLoading, signIn }),
-    [isLoading, signIn, user],
+    () => ({ user, isLoading, signIn, signOut }),
+    [isLoading, signIn, signOut, user],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

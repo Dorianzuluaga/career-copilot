@@ -49,3 +49,9 @@ export async function findUserBySessionId(
 
   return session?.user ?? null;
 }
+
+export async function deleteUserSession(sessionId: string): Promise<void> {
+  await prisma.session.deleteMany({
+    where: { id: sessionId },
+  });
+}

@@ -39,6 +39,7 @@ function renderApp(
           user,
           isLoading: false,
           signIn: () => Promise.resolve(),
+          signOut: () => Promise.resolve(),
         }}
       >
         <App />
@@ -54,6 +55,18 @@ describe("App", () => {
     expect(markup).toContain("Application dashboard");
     expect(markup).toContain("New Application");
     expect(markup).toContain("Loading applications");
+  });
+
+  it("renders the read-only profile page for the authenticated user", () => {
+    const markup = renderApp("/profile");
+
+    expect(markup).toContain("Profile");
+    expect(markup).toContain("Taylor Smith");
+    expect(markup).toContain("taylor@example.com");
+    expect(markup).toContain("Google");
+    expect(markup).toContain("Log out");
+    expect(markup).not.toContain("Member since");
+    expect(markup).not.toContain("Edit Profile");
   });
 
   it("renders persisted application actions without metadata editing", () => {

@@ -3,6 +3,7 @@ import type { User } from "../../generated/prisma/index.js";
 import { firebaseAuth } from "../lib/firebase-admin.js";
 import {
   createUserSession,
+  deleteUserSession,
   findUserBySessionId,
 } from "../repositories/auth.repository.js";
 
@@ -64,4 +65,8 @@ export async function getAuthenticatedUser(
   const user = await findUserBySessionId(sessionId);
 
   return user ? toAuthenticatedUser(user) : null;
+}
+
+export async function logout(sessionId: string): Promise<void> {
+  await deleteUserSession(sessionId);
 }

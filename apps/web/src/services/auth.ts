@@ -47,3 +47,14 @@ export async function getCurrentUser(): Promise<AuthenticationResponse | null> {
 
   return readAuthenticationResponse(response);
 }
+
+export async function logout(): Promise<void> {
+  const response = await fetch(`${apiUrl}/api/auth/logout`, {
+    method: "POST",
+    credentials: "include",
+  });
+
+  if (!response.ok) {
+    throw new Error("Logout failed.");
+  }
+}
