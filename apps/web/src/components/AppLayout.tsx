@@ -24,6 +24,12 @@ export function AppLayout() {
             >
               Dashboard
             </Link>
+            <Link
+              to="/profile"
+              className="text-sm font-medium text-slate-600 transition hover:text-slate-950"
+            >
+              Profile
+            </Link>
           </nav>
         </div>
       </header>

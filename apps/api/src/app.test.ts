@@ -7,6 +7,7 @@ vi.mock("./services/auth.service.js", () => ({
   AuthenticationError: class AuthenticationError extends Error {},
   authenticateWithGoogle: vi.fn(),
   getAuthenticatedUser: vi.fn(),
+  logout: vi.fn(),
 }));
 
 vi.mock("./services/master-cv.service.js", () => ({
@@ -140,6 +141,7 @@ import {
   authenticateWithGoogle,
   AuthenticationError,
   getAuthenticatedUser,
+  logout,
 } from "./services/auth.service.js";
 import {
   CoverLetterError,
@@ -238,6 +240,22 @@ describe("authentication API", () => {
       authenticated: false,
       message: "Authentication failed.",
     });
+  });
+
+  it("clears the application session on logout", async () => {
+    vi.mocked(logout).mockResolvedValue();
+
+    const response = await request(app)
+      .post("/api/auth/logout")
+      .set("Cookie", "career_copilot_session=opaque-session-id");
+
+    expect(response.status).toBe(200);
+    expect(response.body).toEqual({ authenticated: false });
+    expect(logout).toHaveBeenCalledWith("opaque-session-id");
+    expect(response.headers["set-cookie"]?.[0]).toContain(
+      "career_copilot_session=",
+    );
+    expect(response.headers["set-cookie"]?.[0]).toMatch(/Max-Age=0|Expires=/i);
   });
 });
 

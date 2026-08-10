@@ -3,6 +3,7 @@ import {
   authenticateWithGoogle,
   AuthenticationError,
   getAuthenticatedUser,
+  logout as logoutSession,
   SESSION_COOKIE_NAME,
   SESSION_MAX_AGE_MS,
 } from "../services/auth.service.js";
@@ -86,6 +87,29 @@ export async function currentUser(
     }
 
     response.status(200).json({ authenticated: true, user });
+  } catch {
+    response.status(500).json({ message: "Internal server error." });
+  }
+}
+
+export async function logout(
+  request: Request,
+  response: Response,
+): Promise<void> {
+  const sessionId = getCookie(request, SESSION_COOKIE_NAME);
+
+  try {
+    if (sessionId) {
+      await logoutSession(sessionId);
+    }
+
+    response.clearCookie(SESSION_COOKIE_NAME, {
+      httpOnly: true,
+      sameSite: "lax",
+      secure: process.env.NODE_ENV === "production",
+      path: "/",
+    });
+    response.status(200).json({ authenticated: false });
   } catch {
     response.status(500).json({ message: "Internal server error." });
   }

@@ -8,6 +8,7 @@ import { JobAnalysisPage } from "./pages/JobAnalysisPage";
 import { LoginPage } from "./pages/LoginPage";
 import { MasterCvEditorPage } from "./pages/MasterCvEditorPage";
 import { MasterCvOnboardingPage } from "./pages/MasterCvOnboardingPage";
+import { ProfilePage } from "./pages/ProfilePage";
 import { getMasterCv } from "./services/master-cv";
 
 function RootRedirect() {
@@ -69,6 +70,7 @@ function App() {
         />
         <Route path="master-cv" element={<MasterCvEditorPage />} />
         <Route path="dashboard" element={<DashboardPage />} />
+        <Route path="profile" element={<ProfilePage />} />
         <Route path="applications/new" element={<JobAnalysisPage />} />
         <Route
           path="applications/:applicationId"
