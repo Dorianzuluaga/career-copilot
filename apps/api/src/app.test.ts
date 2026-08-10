@@ -106,6 +106,28 @@ vi.mock("./services/cover-letter.service.js", () => ({
   saveCoverLetter: vi.fn(),
 }));
 
+vi.mock("./services/export.service.js", () => ({
+  ExportError: class ExportError extends Error {
+    constructor(
+      message: string,
+      public readonly statusCode: number,
+    ) {
+      super(message);
+    }
+  },
+  validateExportDocumentType: vi.fn((value: unknown) => {
+    if (value === "optimized-cv" || value === "cover-letter") {
+      return value;
+    }
+    const error = new Error(
+      'document must be "optimized-cv" or "cover-letter".',
+    ) as Error & { statusCode: number };
+    error.statusCode = 400;
+    throw error;
+  }),
+  exportApplicationDocument: vi.fn(),
+}));
+
 import { app } from "./app.js";
 import {
   addApplication,
@@ -142,6 +164,10 @@ import {
   compareProfiles,
   ProfileComparisonError,
 } from "./services/profile-comparison.service.js";
+import {
+  exportApplicationDocument,
+  ExportError,
+} from "./services/export.service.js";
 
 const user = {
   id: "4e9c843b-5c3d-4e65-8514-7de898b2aca6",
@@ -831,5 +857,52 @@ describe("Job Analysis API", () => {
       "another-users-application",
       user.id,
     );
+  });
+
+  it("returns a downloadable PDF for a selected export document", async () => {
+    vi.mocked(getAuthenticatedUser).mockResolvedValue(user);
+    vi.mocked(exportApplicationDocument).mockResolvedValue({
+      buffer: Buffer.from("%PDF-1.4 export"),
+      filename: "juan-perez_cv.pdf",
+      contentType: "application/pdf",
+    });
+
+    const response = await request(app)
+      .post("/api/applications/application-id/export")
+      .set("Cookie", "career_copilot_session=opaque-session-id")
+      .send({ document: "optimized-cv" });
+
+    expect(response.status).toBe(200);
+    expect(response.headers["content-type"]).toContain("application/pdf");
+    expect(response.headers["content-disposition"]).toBe(
+      'attachment; filename="juan-perez_cv.pdf"',
+    );
+    expect(response.body.toString()).toContain("%PDF-1.4 export");
+    expect(exportApplicationDocument).toHaveBeenCalledWith(
+      "application-id",
+      user.id,
+      "optimized-cv",
+    );
+  });
+
+  it("returns 400 when export prerequisites are missing", async () => {
+    vi.mocked(getAuthenticatedUser).mockResolvedValue(user);
+    vi.mocked(exportApplicationDocument).mockRejectedValue(
+      new ExportError(
+        "A saved Optimized CV and Cover Letter are required before export.",
+        400,
+      ),
+    );
+
+    const response = await request(app)
+      .post("/api/applications/application-id/export")
+      .set("Cookie", "career_copilot_session=opaque-session-id")
+      .send({ document: "cover-letter" });
+
+    expect(response.status).toBe(400);
+    expect(response.body).toEqual({
+      message:
+        "A saved Optimized CV and Cover Letter are required before export.",
+    });
   });
 });

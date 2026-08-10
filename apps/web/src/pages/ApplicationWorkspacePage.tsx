@@ -44,6 +44,9 @@ export function ApplicationWorkspacePage() {
   >(null);
   const [isComparingProfile, setIsComparingProfile] = useState(false);
   const [optimizedCv, setOptimizedCv] = useState<OptimizedCv | null>(null);
+  const [savedOptimizedCv, setSavedOptimizedCv] = useState<OptimizedCv | null>(
+    null,
+  );
   const [optimizedCvError, setOptimizedCvError] = useState<string | null>(null);
   const [isGeneratingOptimizedCv, setIsGeneratingOptimizedCv] = useState(false);
   const [isSavingOptimizedCv, setIsSavingOptimizedCv] = useState(false);
@@ -53,8 +56,10 @@ export function ApplicationWorkspacePage() {
   const [optimizedCvSavedMessage, setOptimizedCvSavedMessage] = useState<
     string | null
   >(null);
-  const [hasSavedOptimizedCv, setHasSavedOptimizedCv] = useState(false);
   const [coverLetter, setCoverLetter] = useState<CoverLetter | null>(null);
+  const [savedCoverLetter, setSavedCoverLetter] = useState<CoverLetter | null>(
+    null,
+  );
   const [coverLetterError, setCoverLetterError] = useState<string | null>(null);
   const [isGeneratingCoverLetter, setIsGeneratingCoverLetter] = useState(false);
   const [isSavingCoverLetter, setIsSavingCoverLetter] = useState(false);
@@ -64,7 +69,6 @@ export function ApplicationWorkspacePage() {
   const [coverLetterSavedMessage, setCoverLetterSavedMessage] = useState<
     string | null
   >(null);
-  const [hasSavedCoverLetter, setHasSavedCoverLetter] = useState(false);
 
   useEffect(() => {
     setApplication(null);
@@ -75,19 +79,19 @@ export function ApplicationWorkspacePage() {
     setProfileComparisonError(null);
     setIsComparingProfile(false);
     setOptimizedCv(null);
+    setSavedOptimizedCv(null);
     setOptimizedCvError(null);
     setIsGeneratingOptimizedCv(false);
     setIsSavingOptimizedCv(false);
     setOptimizedCvSaveError(null);
     setOptimizedCvSavedMessage(null);
-    setHasSavedOptimizedCv(false);
     setCoverLetter(null);
+    setSavedCoverLetter(null);
     setCoverLetterError(null);
     setIsGeneratingCoverLetter(false);
     setIsSavingCoverLetter(false);
     setCoverLetterSaveError(null);
     setCoverLetterSavedMessage(null);
-    setHasSavedCoverLetter(false);
 
     if (!applicationId) {
       setErrorMessage("Application not found.");
@@ -105,9 +109,9 @@ export function ApplicationWorkspacePage() {
         if (!isActive) return;
         setApplication(result);
         setOptimizedCv(savedOptimizedCv);
-        setHasSavedOptimizedCv(savedOptimizedCv !== null);
+        setSavedOptimizedCv(savedOptimizedCv);
         setCoverLetter(savedCoverLetter);
-        setHasSavedCoverLetter(savedCoverLetter !== null);
+        setSavedCoverLetter(savedCoverLetter);
       })
       .catch((error: unknown) => {
         if (isActive) {
@@ -189,7 +193,7 @@ export function ApplicationWorkspacePage() {
       const saved = await saveOptimizedCv(applicationId, optimizedCv);
       if (currentApplicationId.current === applicationId) {
         setOptimizedCv(saved);
-        setHasSavedOptimizedCv(true);
+        setSavedOptimizedCv(saved);
         setOptimizedCvSavedMessage("Optimized CV saved.");
       }
     } catch (error) {
@@ -247,7 +251,7 @@ export function ApplicationWorkspacePage() {
       const saved = await saveCoverLetter(applicationId, coverLetter);
       if (currentApplicationId.current === applicationId) {
         setCoverLetter(saved);
-        setHasSavedCoverLetter(true);
+        setSavedCoverLetter(saved);
         setCoverLetterSavedMessage("Cover Letter saved.");
       }
     } catch (error) {
@@ -321,6 +325,8 @@ export function ApplicationWorkspacePage() {
     application.jobAnalysis?.company ??
     application.jobOffer?.company ??
     "Company not identified";
+  const hasSavedOptimizedCv = savedOptimizedCv !== null;
+  const hasSavedCoverLetter = savedCoverLetter !== null;
 
   return (
     <ApplicationWorkspace
@@ -385,7 +391,11 @@ export function ApplicationWorkspacePage() {
           savedMessage={coverLetterSavedMessage}
         />
       ) : activeSection === "export" ? (
-        <ApplicationExport />
+        <ApplicationExport
+          applicationId={application.id}
+          coverLetter={savedCoverLetter}
+          optimizedCv={savedOptimizedCv}
+        />
       ) : null}
     </ApplicationWorkspace>
   );

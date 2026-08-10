@@ -403,14 +403,14 @@ function SkillsSection({
   );
 }
 
-function OptimizedCvDocument({
+export function OptimizedCvDocument({
   cv,
-  isEditing,
+  isEditing = false,
   onChange,
 }: {
   cv: OptimizedCv;
-  isEditing: boolean;
-  onChange: (optimizedCv: OptimizedCv) => void;
+  isEditing?: boolean;
+  onChange?: (optimizedCv: OptimizedCv) => void;
 }) {
   const showProfessionalSummary = isEditing || hasText(cv.professionalSummary);
   const showExperience = cv.experience.length > 0;
@@ -437,7 +437,7 @@ function OptimizedCvDocument({
 
         {showProfessionalSummary ? (
           <DocumentSection title="Professional summary" editable={isEditing}>
-            {isEditing ? (
+            {isEditing && onChange ? (
               <label className="block text-sm font-medium text-slate-700">
                 <span className="sr-only">Professional summary</span>
                 <textarea
@@ -467,7 +467,7 @@ function OptimizedCvDocument({
               items={cv.experience}
               isEditing={isEditing}
               onDescriptionChange={
-                isEditing
+                isEditing && onChange
                   ? (index, description) =>
                       onChange({
                         ...cv,
@@ -495,7 +495,7 @@ function OptimizedCvDocument({
               skills={cv.skills}
               isEditing={isEditing}
               onAddSkill={
-                isEditing
+                isEditing && onChange
                   ? (skill) =>
                       onChange({
                         ...cv,
@@ -504,7 +504,7 @@ function OptimizedCvDocument({
                   : undefined
               }
               onRemoveSkill={
-                isEditing
+                isEditing && onChange
                   ? (index) =>
                       onChange({
                         ...cv,

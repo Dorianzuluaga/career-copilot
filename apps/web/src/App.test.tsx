@@ -4,7 +4,10 @@ import { describe, expect, it } from "vitest";
 import App from "./App";
 import { ApplicationCard } from "./components/ApplicationCard";
 import { ApplicationCoverLetter } from "./components/ApplicationCoverLetter";
-import { ApplicationExport } from "./components/ApplicationExport";
+import {
+  ApplicationExport,
+  updateDocumentSelection,
+} from "./components/ApplicationExport";
 import { ApplicationJobAnalysis } from "./components/ApplicationJobAnalysis";
 import { ApplicationOptimizedCv } from "./components/ApplicationOptimizedCv";
 import { ApplicationOverview } from "./components/ApplicationOverview";
@@ -804,7 +807,65 @@ describe("App", () => {
     expect(markup).toContain("Locked");
   });
 
-  it("makes the Export placeholder available after a saved Cover Letter", () => {
+  it("previews saved application documents in Export without editing controls", () => {
+    const sampleOptimizedCv = {
+      fullName: "Taylor Smith",
+      email: "taylor@example.com",
+      phone: null,
+      location: "Berlin",
+      linkedin: null,
+      portfolio: null,
+      professionalSummary: "TypeScript engineer building APIs.",
+      experience: [
+        {
+          jobTitle: "Software Engineer",
+          company: "Example",
+          location: null,
+          startDate: "2022-01",
+          endDate: null,
+          current: true,
+          description: "Built REST APIs with TypeScript.",
+        },
+      ],
+      education: [
+        {
+          institution: "Example University",
+          degree: "BSc",
+          fieldOfStudy: "Computer Science",
+          startDate: "2018-09",
+          endDate: "2021-06",
+          description: "Focus on distributed systems.",
+        },
+      ],
+      skills: ["TypeScript", "Node.js"],
+      languages: [{ name: "English", proficiency: "Fluent" }],
+      certifications: [
+        {
+          name: "AWS Certified",
+          issuer: "Amazon",
+          issueDate: "2023-01",
+          credentialUrl: null,
+        },
+      ],
+    };
+    const sampleCoverLetter = {
+      candidateName: "Taylor Smith",
+      email: "taylor@example.com",
+      phone: "+1 555 0100",
+      date: "August 7, 2026",
+      companyName: "Acme",
+      greeting: "Dear Hiring Manager,",
+      introduction:
+        "I am writing to apply for the Software Engineer role at Acme.",
+      professionalValue:
+        "My experience building TypeScript APIs aligns with your requirements.",
+      motivation:
+        "I am interested in contributing to Acme's product engineering team.",
+      closing:
+        "Thank you for your consideration. I am available for an interview.",
+      signature: "Taylor Smith",
+    };
+
     const markup = renderToStaticMarkup(
       <MemoryRouter>
         <ApplicationWorkspace
@@ -818,7 +879,11 @@ describe("App", () => {
           isCoverLetterCompleted
           onSectionChange={() => undefined}
         >
-          <ApplicationExport />
+          <ApplicationExport
+            applicationId="application-id"
+            coverLetter={sampleCoverLetter}
+            optimizedCv={sampleOptimizedCv}
+          />
         </ApplicationWorkspace>
       </MemoryRouter>,
     );
@@ -830,14 +895,73 @@ describe("App", () => {
     );
     expect(markup).toContain("Next recommended step:");
     expect(markup).toContain(
+      "Preview the latest saved application documents and choose which ones will be downloaded.",
+    );
+    expect(markup).toContain("Documents to download");
+    expect(markup).toContain(
+      '<label class="flex items-center gap-2 text-sm font-medium text-slate-700"><input type="checkbox" checked=""',
+    );
+    expect(markup).toContain(">Optimized CV</label>");
+    expect(markup).toContain(">Cover Letter</label>");
+    expect(markup).toContain(">Download</button>");
+    expect(markup).toContain('role="tablist"');
+    expect(markup).toContain('aria-label="Document preview"');
+    expect(markup).toContain('aria-selected="true"');
+    expect(markup).toContain('aria-label="Optimized CV"');
+    expect(markup).toContain("Taylor Smith");
+    expect(markup).toContain("TypeScript engineer building APIs.");
+    expect(markup).toContain("Built REST APIs with TypeScript.");
+    expect(markup).not.toContain('aria-label="Cover Letter"');
+    expect(markup).not.toContain("Dear Hiring Manager,");
+    expect(markup).not.toContain(">Edit<");
+    expect(markup).not.toContain(">Save<");
+    expect(markup).not.toContain("Generate again");
+    expect(markup).not.toContain("<textarea");
+    expect(markup).not.toContain("Export progress");
+    expect(markup).not.toContain(
       "No exportable documents are currently available.",
     );
-    expect(markup).toContain(
-      "PDF generation and document export will be implemented in a future Epic.",
-    );
-    expect(markup).not.toContain('disabled=""');
-    expect(markup).not.toContain("Download");
-    expect(markup).not.toContain("Export progress");
+  });
+
+  it("keeps at least one export document selected", () => {
+    const bothSelected = { optimizedCv: true, coverLetter: true };
+
+    expect(
+      updateDocumentSelection(bothSelected, "optimizedCv", false),
+    ).toEqual({
+      optimizedCv: false,
+      coverLetter: true,
+    });
+    expect(
+      updateDocumentSelection(
+        { optimizedCv: false, coverLetter: true },
+        "coverLetter",
+        false,
+      ),
+    ).toEqual({
+      optimizedCv: false,
+      coverLetter: true,
+    });
+    expect(
+      updateDocumentSelection(
+        { optimizedCv: true, coverLetter: false },
+        "optimizedCv",
+        false,
+      ),
+    ).toEqual({
+      optimizedCv: true,
+      coverLetter: false,
+    });
+    expect(
+      updateDocumentSelection(
+        { optimizedCv: false, coverLetter: true },
+        "optimizedCv",
+        true,
+      ),
+    ).toEqual({
+      optimizedCv: true,
+      coverLetter: true,
+    });
   });
 
   it("renders Google sign in", () => {

@@ -62,16 +62,17 @@ function EditableParagraph({
   return <p className="whitespace-pre-wrap">{value}</p>;
 }
 
-function CoverLetterDocument({
+export function CoverLetterDocument({
   coverLetter,
-  isEditing,
+  isEditing = false,
   onChange,
 }: {
   coverLetter: CoverLetter;
-  isEditing: boolean;
-  onChange: (coverLetter: CoverLetter) => void;
+  isEditing?: boolean;
+  onChange?: (coverLetter: CoverLetter) => void;
 }) {
   const contactDetails = [coverLetter.email, coverLetter.phone].filter(hasText);
+  const canEdit = isEditing && onChange !== undefined;
 
   const header = (
     <header>
@@ -101,52 +102,52 @@ function CoverLetterDocument({
       aria-label="Cover Letter"
       className="rounded-xl border border-slate-200 bg-white px-6 py-8 shadow-sm sm:px-10 sm:py-10"
     >
-      {isEditing ? <ReadOnlyBlock>{header}</ReadOnlyBlock> : header}
+      {canEdit ? <ReadOnlyBlock>{header}</ReadOnlyBlock> : header}
 
       <div className="mt-8 space-y-5 text-sm leading-7 text-slate-700">
         <EditableParagraph
           ariaLabel="Greeting"
-          isEditing={isEditing}
+          isEditing={canEdit}
           value={coverLetter.greeting}
           rows={2}
-          onChange={(greeting) => onChange({ ...coverLetter, greeting })}
+          onChange={(greeting) => onChange?.({ ...coverLetter, greeting })}
         />
         <EditableParagraph
           ariaLabel="Introduction"
-          isEditing={isEditing}
+          isEditing={canEdit}
           value={coverLetter.introduction}
           rows={4}
           onChange={(introduction) =>
-            onChange({ ...coverLetter, introduction })
+            onChange?.({ ...coverLetter, introduction })
           }
         />
         <EditableParagraph
           ariaLabel="Professional value"
-          isEditing={isEditing}
+          isEditing={canEdit}
           value={coverLetter.professionalValue}
           rows={5}
           onChange={(professionalValue) =>
-            onChange({ ...coverLetter, professionalValue })
+            onChange?.({ ...coverLetter, professionalValue })
           }
         />
         <EditableParagraph
           ariaLabel="Motivation"
-          isEditing={isEditing}
+          isEditing={canEdit}
           value={coverLetter.motivation}
           rows={4}
-          onChange={(motivation) => onChange({ ...coverLetter, motivation })}
+          onChange={(motivation) => onChange?.({ ...coverLetter, motivation })}
         />
         <EditableParagraph
           ariaLabel="Closing"
-          isEditing={isEditing}
+          isEditing={canEdit}
           value={coverLetter.closing}
           rows={3}
-          onChange={(closing) => onChange({ ...coverLetter, closing })}
+          onChange={(closing) => onChange?.({ ...coverLetter, closing })}
         />
       </div>
 
       <div className="mt-8">
-        {isEditing ? <ReadOnlyBlock>{signature}</ReadOnlyBlock> : signature}
+        {canEdit ? <ReadOnlyBlock>{signature}</ReadOnlyBlock> : signature}
       </div>
     </article>
   );
