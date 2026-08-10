@@ -12,6 +12,7 @@ import {
   replaceCoverLetter,
   showCoverLetter,
 } from "../controllers/cover-letter.controller.js";
+import { createExport } from "../controllers/export.controller.js";
 import {
   createOptimizedCv,
   replaceOptimizedCv,
@@ -36,3 +37,4 @@ applicationRouter.put("/:id/optimized-cv", replaceOptimizedCv);
 applicationRouter.post("/:id/cover-letter", createCoverLetter);
 applicationRouter.get("/:id/cover-letter", showCoverLetter);
 applicationRouter.put("/:id/cover-letter", replaceCoverLetter);
+applicationRouter.post("/:id/export", createExport);

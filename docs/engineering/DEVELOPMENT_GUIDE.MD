@@ -328,3 +328,18 @@ Always launch Prisma Studio from the API workspace to ensure the correct Prisma 
 ```bash
 npm exec --workspace=api -- prisma studio
 ```
+
+## PDF Rendering
+
+The project uses:
+
+- @react-pdf/renderer
+
+Reasons:
+
+- React-based document components.
+- Backend rendering.
+- Reusable rendering service.
+- Future support for email delivery.
+- Future support for ZIP export.
+- Future support for additional document formats.
