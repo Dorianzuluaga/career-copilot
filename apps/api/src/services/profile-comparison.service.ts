@@ -1,9 +1,16 @@
+import {
+  findProfileMatchByApplicationId,
+  upsertProfileMatch,
+} from "../repositories/profile-match.repository.js";
 import type { JobAnalysisData } from "../types/job-analysis.js";
 import type {
   ProfileComparisonInput,
   ProfileComparisonResult,
 } from "../types/profile-comparison.js";
-import { getOwnedApplication } from "./application.service.js";
+import {
+  ApplicationError,
+  getOwnedApplication,
+} from "./application.service.js";
 import { getMasterCv, validateMasterCvInput } from "./master-cv.service.js";
 import {
   evaluateProfileAlignment,
@@ -49,6 +56,37 @@ function toJobAnalysisData(
   };
 }
 
+function toProfileMatchDocument(value: {
+  matchingSkills: unknown;
+  missingSkills: unknown;
+  strengths: unknown;
+  weaknesses: unknown;
+  alignmentScore: number;
+  alignmentReasoning: string;
+  recommendation: string;
+}): ProfileComparisonResult {
+  return {
+    matchingSkills: toStringArray(value.matchingSkills),
+    missingSkills: toStringArray(value.missingSkills),
+    strengths: toStringArray(value.strengths),
+    weaknesses: toStringArray(value.weaknesses),
+    alignmentScore: value.alignmentScore,
+    alignmentReasoning: value.alignmentReasoning,
+    recommendation: value.recommendation,
+  };
+}
+
+async function requireOwnedApplication(applicationId: string, userId: string) {
+  try {
+    await getOwnedApplication(applicationId, userId);
+  } catch (error) {
+    if (error instanceof ApplicationError) {
+      throw new ProfileComparisonError(error.message, error.statusCode);
+    }
+    throw error;
+  }
+}
+
 export async function prepareProfileComparisonInput(
   applicationId: string,
   userId: string,
@@ -90,10 +128,31 @@ export async function comparePreparedProfiles(
   return { ...alignedComparison, ...recommendation };
 }
 
+export async function getProfileComparison(
+  applicationId: string,
+  userId: string,
+): Promise<ProfileComparisonResult> {
+  await requireOwnedApplication(applicationId, userId);
+  const profileMatch = await findProfileMatchByApplicationId(applicationId);
+  if (!profileMatch) {
+    throw new ProfileComparisonError("Profile Match not found.", 404);
+  }
+  return toProfileMatchDocument(profileMatch);
+}
+
 export async function compareProfiles(
   applicationId: string,
   userId: string,
 ): Promise<ProfileComparisonResult> {
+  await requireOwnedApplication(applicationId, userId);
+
+  const existing = await findProfileMatchByApplicationId(applicationId);
+  if (existing) {
+    return toProfileMatchDocument(existing);
+  }
+
   const input = await prepareProfileComparisonInput(applicationId, userId);
-  return comparePreparedProfiles(input);
+  const comparison = await comparePreparedProfiles(input);
+  const saved = await upsertProfileMatch(applicationId, comparison);
+  return toProfileMatchDocument(saved);
 }

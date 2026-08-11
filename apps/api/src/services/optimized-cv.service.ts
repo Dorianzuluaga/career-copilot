@@ -10,7 +10,7 @@ import {
 import { MasterCvError, validateMasterCvInput } from "./master-cv.service.js";
 import { generateOptimizedCvDraft } from "./optimized-cv-ai.service.js";
 import {
-  comparePreparedProfiles,
+  getProfileComparison,
   prepareProfileComparisonInput,
   ProfileComparisonError,
 } from "./profile-comparison.service.js";
@@ -52,7 +52,7 @@ export async function generateOptimizedCv(
 ): Promise<OptimizedCv> {
   try {
     const input = await prepareProfileComparisonInput(applicationId, userId);
-    const profileMatch = await comparePreparedProfiles(input);
+    const profileMatch = await getProfileComparison(applicationId, userId);
     return generateOptimizedCvDraft({
       masterCv: input.masterCv,
       jobAnalysis: input.jobAnalysis,

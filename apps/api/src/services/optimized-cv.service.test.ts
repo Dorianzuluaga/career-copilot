@@ -14,7 +14,7 @@ vi.mock("./profile-comparison.service.js", () => ({
     }
   },
   prepareProfileComparisonInput: vi.fn(),
-  comparePreparedProfiles: vi.fn(),
+  getProfileComparison: vi.fn(),
 }));
 
 vi.mock("./application.service.js", () => ({
@@ -63,7 +63,7 @@ import {
   saveOptimizedCv,
 } from "./optimized-cv.service.js";
 import {
-  comparePreparedProfiles,
+  getProfileComparison,
   prepareProfileComparisonInput,
   ProfileComparisonError,
 } from "./profile-comparison.service.js";
@@ -139,7 +139,7 @@ beforeEach(() => {
     masterCv,
     jobAnalysis,
   });
-  vi.mocked(comparePreparedProfiles).mockResolvedValue(profileMatch);
+  vi.mocked(getProfileComparison).mockResolvedValue(profileMatch);
   vi.mocked(generateOptimizedCvDraft).mockResolvedValue(optimizedCv);
   vi.mocked(getOwnedApplication).mockResolvedValue({
     id: applicationId,
@@ -169,7 +169,7 @@ beforeEach(() => {
 });
 
 describe("generateOptimizedCv", () => {
-  it("generates an Optimized CV from Master CV, Job Analysis, and Profile Match", async () => {
+  it("generates an Optimized CV from Master CV, Job Analysis, and saved Profile Match", async () => {
     await expect(generateOptimizedCv(applicationId, userId)).resolves.toEqual(
       optimizedCv,
     );
@@ -178,10 +178,7 @@ describe("generateOptimizedCv", () => {
       applicationId,
       userId,
     );
-    expect(comparePreparedProfiles).toHaveBeenCalledWith({
-      masterCv,
-      jobAnalysis,
-    });
+    expect(getProfileComparison).toHaveBeenCalledWith(applicationId, userId);
     expect(generateOptimizedCvDraft).toHaveBeenCalledWith({
       masterCv,
       jobAnalysis,
@@ -197,7 +194,18 @@ describe("generateOptimizedCv", () => {
     await expect(generateOptimizedCv(applicationId, userId)).rejects.toEqual(
       new OptimizedCvError("Job analysis not found.", 404),
     );
-    expect(comparePreparedProfiles).not.toHaveBeenCalled();
+    expect(getProfileComparison).not.toHaveBeenCalled();
+    expect(generateOptimizedCvDraft).not.toHaveBeenCalled();
+  });
+
+  it("maps missing Profile Match errors to OptimizedCvError", async () => {
+    vi.mocked(getProfileComparison).mockRejectedValue(
+      new ProfileComparisonError("Profile Match not found.", 404),
+    );
+
+    await expect(generateOptimizedCv(applicationId, userId)).rejects.toEqual(
+      new OptimizedCvError("Profile Match not found.", 404),
+    );
     expect(generateOptimizedCvDraft).not.toHaveBeenCalled();
   });
 });

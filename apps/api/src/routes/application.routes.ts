@@ -18,7 +18,10 @@ import {
   replaceOptimizedCv,
   showOptimizedCv,
 } from "../controllers/optimized-cv.controller.js";
-import { prepareProfileComparison } from "../controllers/profile-comparison.controller.js";
+import {
+  prepareProfileComparison,
+  showProfileComparison,
+} from "../controllers/profile-comparison.controller.js";
 import { requireAuth } from "../middleware/require-auth.js";
 
 export const applicationRouter = Router();
@@ -31,6 +34,7 @@ applicationRouter.delete("/:id", deleteApplication);
 applicationRouter.post("/:id/job-offer", createJobOffer);
 applicationRouter.post("/:id/job-analysis", createJobAnalysis);
 applicationRouter.post("/:id/profile-comparison", prepareProfileComparison);
+applicationRouter.get("/:id/profile-comparison", showProfileComparison);
 applicationRouter.post("/:id/optimized-cv", createOptimizedCv);
 applicationRouter.get("/:id/optimized-cv", showOptimizedCv);
 applicationRouter.put("/:id/optimized-cv", replaceOptimizedCv);

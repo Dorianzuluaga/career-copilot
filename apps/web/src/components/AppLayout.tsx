@@ -1,35 +1,36 @@
-import { Link, Outlet } from "react-router";
+import { Outlet } from "react-router";
+import { GuardedLink } from "../context/UnsavedChangesGuardProvider";
 
 export function AppLayout() {
   return (
     <div className="flex min-h-screen flex-col bg-slate-50 text-slate-950">
       <header className="border-b border-slate-200 bg-white">
         <div className="mx-auto flex w-full max-w-6xl items-center justify-between px-4 py-4 sm:px-6 lg:px-8">
-          <Link
+          <GuardedLink
             to="/"
             className="text-lg font-bold tracking-tight text-slate-950"
           >
             Career Copilot
-          </Link>
+          </GuardedLink>
           <nav className="flex items-center gap-5">
-            <Link
+            <GuardedLink
               to="/master-cv"
               className="text-sm font-medium text-slate-600 transition hover:text-slate-950"
             >
               Master CV
-            </Link>
-            <Link
+            </GuardedLink>
+            <GuardedLink
               to="/dashboard"
               className="text-sm font-medium text-slate-600 transition hover:text-slate-950"
             >
               Dashboard
-            </Link>
-            <Link
+            </GuardedLink>
+            <GuardedLink
               to="/profile"
               className="text-sm font-medium text-slate-600 transition hover:text-slate-950"
             >
               Profile
-            </Link>
+            </GuardedLink>
           </nav>
         </div>
       </header>

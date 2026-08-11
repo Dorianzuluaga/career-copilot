@@ -58,16 +58,17 @@ enum ApplicationStatus {
 }
 
 model Application {
-  id          String            @id @default(uuid()) @db.Uuid
-  userId      String            @db.Uuid
-  user        User              @relation(fields: [userId], references: [id], onDelete: Cascade)
-  status      ApplicationStatus @default(NEW)
-  jobOffer    JobOffer?
-  jobAnalysis JobAnalysis?
-  optimizedCv OptimizedCv?
-  coverLetter CoverLetter?
-  createdAt   DateTime          @default(now())
-  updatedAt   DateTime          @updatedAt
+  id           String            @id @default(uuid()) @db.Uuid
+  userId       String            @db.Uuid
+  user         User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  status       ApplicationStatus @default(NEW)
+  jobOffer     JobOffer?
+  jobAnalysis  JobAnalysis?
+  profileMatch ProfileMatch?
+  optimizedCv  OptimizedCv?
+  coverLetter  CoverLetter?
+  createdAt    DateTime          @default(now())
+  updatedAt    DateTime          @updatedAt
 
   @@index([userId])
 }
@@ -103,6 +104,23 @@ model JobAnalysis {
   analysisVersion  Int         @default(1)
   createdAt        DateTime    @default(now())
   updatedAt        DateTime    @updatedAt
+
+  @@index([applicationId])
+}
+
+model ProfileMatch {
+  id                 String      @id @default(uuid()) @db.Uuid
+  applicationId      String      @unique @db.Uuid
+  application        Application @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  matchingSkills     Json
+  missingSkills      Json
+  strengths          Json
+  weaknesses         Json
+  alignmentScore     Int
+  alignmentReasoning String
+  recommendation     String
+  createdAt          DateTime    @default(now())
+  updatedAt          DateTime    @updatedAt
 
   @@index([applicationId])
 }

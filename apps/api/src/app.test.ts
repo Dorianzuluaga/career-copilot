@@ -77,6 +77,7 @@ vi.mock("./services/profile-comparison.service.js", () => ({
     }
   },
   compareProfiles: vi.fn(),
+  getProfileComparison: vi.fn(),
 }));
 
 vi.mock("./services/optimized-cv.service.js", () => ({
@@ -164,6 +165,7 @@ import {
 } from "./services/optimized-cv.service.js";
 import {
   compareProfiles,
+  getProfileComparison,
   ProfileComparisonError,
 } from "./services/profile-comparison.service.js";
 import {
@@ -359,8 +361,11 @@ describe("Job Analysis API", () => {
       request(app).post("/api/applications/application-id/job-offer"),
       request(app).post("/api/applications/application-id/job-analysis"),
       request(app).post("/api/applications/application-id/profile-comparison"),
+      request(app).get("/api/applications/application-id/profile-comparison"),
       request(app).post("/api/applications/application-id/optimized-cv"),
+      request(app).get("/api/applications/application-id/optimized-cv"),
       request(app).post("/api/applications/application-id/cover-letter"),
+      request(app).get("/api/applications/application-id/cover-letter"),
     ]);
 
     for (const response of responses) {
@@ -374,6 +379,7 @@ describe("Job Analysis API", () => {
     expect(addJobOffer).not.toHaveBeenCalled();
     expect(analyzeJobOffer).not.toHaveBeenCalled();
     expect(compareProfiles).not.toHaveBeenCalled();
+    expect(getProfileComparison).not.toHaveBeenCalled();
     expect(generateOptimizedCv).not.toHaveBeenCalled();
   });
 
@@ -551,6 +557,64 @@ describe("Job Analysis API", () => {
       expect(response.body).toEqual({ message });
     },
   );
+
+  it("returns the saved Profile Match for the authenticated user", async () => {
+    vi.mocked(getAuthenticatedUser).mockResolvedValue(user);
+    vi.mocked(getProfileComparison).mockResolvedValue({
+      matchingSkills: ["TypeScript", "REST APIs"],
+      missingSkills: ["Docker", "AWS"],
+      strengths: [
+        "TypeScript experience directly supports the role's core requirement.",
+      ],
+      weaknesses: [
+        "Docker is required by the role but is not demonstrated in the Master CV.",
+      ],
+      alignmentScore: 72,
+      alignmentReasoning:
+        "Relevant backend experience supports the role, but missing cloud skills limit readiness.",
+      recommendation:
+        "Good opportunity. Improve your CV before applying so the supported experience is clear.",
+    });
+
+    const response = await request(app)
+      .get("/api/applications/application-id/profile-comparison")
+      .set("Cookie", "career_copilot_session=opaque-session-id");
+
+    expect(response.status).toBe(200);
+    expect(response.body).toEqual({
+      matchingSkills: ["TypeScript", "REST APIs"],
+      missingSkills: ["Docker", "AWS"],
+      strengths: [
+        "TypeScript experience directly supports the role's core requirement.",
+      ],
+      weaknesses: [
+        "Docker is required by the role but is not demonstrated in the Master CV.",
+      ],
+      alignmentScore: 72,
+      alignmentReasoning:
+        "Relevant backend experience supports the role, but missing cloud skills limit readiness.",
+      recommendation:
+        "Good opportunity. Improve your CV before applying so the supported experience is clear.",
+    });
+    expect(getProfileComparison).toHaveBeenCalledWith(
+      "application-id",
+      user.id,
+    );
+  });
+
+  it("returns 404 when no saved Profile Match exists", async () => {
+    vi.mocked(getAuthenticatedUser).mockResolvedValue(user);
+    vi.mocked(getProfileComparison).mockRejectedValue(
+      new ProfileComparisonError("Profile Match not found.", 404),
+    );
+
+    const response = await request(app)
+      .get("/api/applications/application-id/profile-comparison")
+      .set("Cookie", "career_copilot_session=opaque-session-id");
+
+    expect(response.status).toBe(404);
+    expect(response.body).toEqual({ message: "Profile Match not found." });
+  });
 
   it("returns the generated Optimized CV for the authenticated user", async () => {
     const optimizedCv = {

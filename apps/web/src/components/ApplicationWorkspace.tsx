@@ -1,9 +1,9 @@
 import type { ReactNode } from "react";
-import { Link } from "react-router";
 import {
   WorkspaceNavigation,
   type WorkspaceSection,
 } from "./WorkspaceNavigation";
+import { GuardedLink } from "../context/UnsavedChangesGuardProvider";
 
 interface ApplicationWorkspaceProps {
   company: string;
@@ -33,12 +33,12 @@ export function ApplicationWorkspace({
   return (
     <div className="space-y-8">
       <header className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
-        <Link
+        <GuardedLink
           to="/dashboard"
           className="text-sm font-semibold text-blue-700 hover:text-blue-800"
         >
           ← Dashboard
-        </Link>
+        </GuardedLink>
 
         <div className="mt-6 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
           <div>

@@ -43,7 +43,7 @@ vi.mock("./profile-comparison.service.js", () => ({
     }
   },
   prepareProfileComparisonInput: vi.fn(),
-  comparePreparedProfiles: vi.fn(),
+  getProfileComparison: vi.fn(),
 }));
 
 import {
@@ -63,7 +63,7 @@ import {
 } from "./cover-letter.service.js";
 import { getOptimizedCv, OptimizedCvError } from "./optimized-cv.service.js";
 import {
-  comparePreparedProfiles,
+  getProfileComparison,
   prepareProfileComparisonInput,
   ProfileComparisonError,
 } from "./profile-comparison.service.js";
@@ -161,12 +161,12 @@ beforeEach(() => {
     jobAnalysis,
   });
   vi.mocked(getOptimizedCv).mockResolvedValue(optimizedCv);
-  vi.mocked(comparePreparedProfiles).mockResolvedValue(profileMatch);
+  vi.mocked(getProfileComparison).mockResolvedValue(profileMatch);
   vi.mocked(generateCoverLetterDraft).mockResolvedValue(coverLetter);
 });
 
 describe("generateCoverLetter", () => {
-  it("generates a Cover Letter from Master CV, Job Analysis, Profile Match, and saved Optimized CV", async () => {
+  it("generates a Cover Letter from Master CV, Job Analysis, saved Profile Match, and saved Optimized CV", async () => {
     await expect(generateCoverLetter(applicationId, userId)).resolves.toEqual(
       coverLetter,
     );
@@ -176,10 +176,7 @@ describe("generateCoverLetter", () => {
       userId,
     );
     expect(getOptimizedCv).toHaveBeenCalledWith(applicationId, userId);
-    expect(comparePreparedProfiles).toHaveBeenCalledWith({
-      masterCv,
-      jobAnalysis,
-    });
+    expect(getProfileComparison).toHaveBeenCalledWith(applicationId, userId);
     expect(generateCoverLetterDraft).toHaveBeenCalledWith({
       masterCv,
       jobAnalysis,
@@ -196,7 +193,18 @@ describe("generateCoverLetter", () => {
     await expect(generateCoverLetter(applicationId, userId)).rejects.toEqual(
       new CoverLetterError("Optimized CV not found.", 404),
     );
-    expect(comparePreparedProfiles).not.toHaveBeenCalled();
+    expect(getProfileComparison).not.toHaveBeenCalled();
+    expect(generateCoverLetterDraft).not.toHaveBeenCalled();
+  });
+
+  it("returns an error when no saved Profile Match exists", async () => {
+    vi.mocked(getProfileComparison).mockRejectedValue(
+      new ProfileComparisonError("Profile Match not found.", 404),
+    );
+
+    await expect(generateCoverLetter(applicationId, userId)).rejects.toEqual(
+      new CoverLetterError("Profile Match not found.", 404),
+    );
     expect(generateCoverLetterDraft).not.toHaveBeenCalled();
   });
 
@@ -209,7 +217,7 @@ describe("generateCoverLetter", () => {
       new CoverLetterError("Job analysis not found.", 404),
     );
     expect(getOptimizedCv).not.toHaveBeenCalled();
-    expect(comparePreparedProfiles).not.toHaveBeenCalled();
+    expect(getProfileComparison).not.toHaveBeenCalled();
     expect(generateCoverLetterDraft).not.toHaveBeenCalled();
   });
 });

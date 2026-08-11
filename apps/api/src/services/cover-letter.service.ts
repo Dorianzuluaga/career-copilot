@@ -11,7 +11,7 @@ import {
 import { generateCoverLetterDraft } from "./cover-letter-ai.service.js";
 import { getOptimizedCv, OptimizedCvError } from "./optimized-cv.service.js";
 import {
-  comparePreparedProfiles,
+  getProfileComparison,
   prepareProfileComparisonInput,
   ProfileComparisonError,
 } from "./profile-comparison.service.js";
@@ -109,7 +109,7 @@ export async function generateCoverLetter(
   try {
     const input = await prepareProfileComparisonInput(applicationId, userId);
     const optimizedCv = await requireSavedOptimizedCv(applicationId, userId);
-    const profileMatch = await comparePreparedProfiles(input);
+    const profileMatch = await getProfileComparison(applicationId, userId);
     return generateCoverLetterDraft({
       masterCv: input.masterCv,
       jobAnalysis: input.jobAnalysis,

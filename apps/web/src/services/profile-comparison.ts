@@ -1,5 +1,5 @@
 import type { ProfileComparison } from "../types/profile-comparison";
-import { apiUrl, readResponse } from "./api";
+import { apiUrl, ApiError, readResponse } from "./api";
 
 export async function compareProfile(
   applicationId: string,
@@ -14,3 +14,18 @@ export async function compareProfile(
 
   return readResponse<ProfileComparison>(response);
 }
+
+export async function getProfileComparison(
+  applicationId: string,
+): Promise<ProfileComparison | null> {
+  const response = await fetch(
+    `${apiUrl}/api/applications/${applicationId}/profile-comparison`,
+    {
+      credentials: "include",
+    },
+  );
+  if (response.status === 404) return null;
+  return readResponse<ProfileComparison>(response);
+}
+
+export { ApiError };

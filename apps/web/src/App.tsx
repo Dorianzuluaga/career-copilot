@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Navigate, Route, Routes } from "react-router";
 import { AppLayout } from "./components/AppLayout";
+import { UnsavedChangesGuardProvider } from "./context/UnsavedChangesGuardProvider";
 import { useAuth } from "./hooks/useAuth";
 import { ApplicationWorkspacePage } from "./pages/ApplicationWorkspacePage";
 import { DashboardPage } from "./pages/DashboardPage";
@@ -55,7 +56,13 @@ function RequireAuthentication() {
       </main>
     );
   }
-  return user ? <AppLayout /> : <Navigate to="/login" replace />;
+  return user ? (
+    <UnsavedChangesGuardProvider>
+      <AppLayout />
+    </UnsavedChangesGuardProvider>
+  ) : (
+    <Navigate to="/login" replace />
+  );
 }
 
 function App() {

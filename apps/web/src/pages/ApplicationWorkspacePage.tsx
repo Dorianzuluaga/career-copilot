@@ -8,6 +8,14 @@ import { ApplicationOverview } from "../components/ApplicationOverview";
 import { ApplicationProfileMatch } from "../components/ApplicationProfileMatch";
 import { ApplicationWorkspace } from "../components/ApplicationWorkspace";
 import type { WorkspaceSection } from "../components/WorkspaceNavigation";
+import { useUnsavedChangesGuard } from "../context/UnsavedChangesGuardProvider";
+import { useUnsavedChangesRegistration } from "../hooks/useUnsavedChangesRegistration";
+import {
+  getDocumentsBlockingSectionLeave,
+  getDocumentsBlockingWorkspaceExit,
+  type UnsavedDocument,
+  type UnsavedDocumentDescriptor,
+} from "../lib/unsaved-documents";
 import { ApiError } from "../services/api";
 import { getApplication } from "../services/job-analysis";
 import {
@@ -20,16 +28,23 @@ import {
   getOptimizedCv,
   saveOptimizedCv,
 } from "../services/optimized-cv";
-import { compareProfile } from "../services/profile-comparison";
+import {
+  compareProfile,
+  getProfileComparison,
+} from "../services/profile-comparison";
 import type { CoverLetter } from "../types/cover-letter";
 import type { PersistedApplication } from "../types/job-analysis";
 import type { OptimizedCv } from "../types/optimized-cv";
 import type { ProfileComparison } from "../types/profile-comparison";
 
+const OPTIMIZED_CV_DOCUMENT_ID = "optimized-cv";
+const COVER_LETTER_DOCUMENT_ID = "cover-letter";
+
 export function ApplicationWorkspacePage() {
   const { applicationId } = useParams();
   const currentApplicationId = useRef(applicationId);
   currentApplicationId.current = applicationId;
+  const { requestNavigation } = useUnsavedChangesGuard();
   const [application, setApplication] = useState<PersistedApplication | null>(
     null,
   );
@@ -70,6 +85,23 @@ export function ApplicationWorkspacePage() {
     string | null
   >(null);
 
+  const documentDescriptors: UnsavedDocumentDescriptor[] = [
+    {
+      id: OPTIMIZED_CV_DOCUMENT_ID,
+      label: "Optimized CV",
+      section: "optimized-cv",
+      working: optimizedCv,
+      saved: savedOptimizedCv,
+    },
+    {
+      id: COVER_LETTER_DOCUMENT_ID,
+      label: "Cover Letter",
+      section: "cover-letter",
+      working: coverLetter,
+      saved: savedCoverLetter,
+    },
+  ];
+
   useEffect(() => {
     setApplication(null);
     setErrorMessage(null);
@@ -102,17 +134,26 @@ export function ApplicationWorkspacePage() {
     let isActive = true;
     void Promise.all([
       getApplication(applicationId),
+      getProfileComparison(applicationId),
       getOptimizedCv(applicationId),
       getCoverLetter(applicationId),
     ])
-      .then(([result, savedOptimizedCv, savedCoverLetter]) => {
-        if (!isActive) return;
-        setApplication(result);
-        setOptimizedCv(savedOptimizedCv);
-        setSavedOptimizedCv(savedOptimizedCv);
-        setCoverLetter(savedCoverLetter);
-        setSavedCoverLetter(savedCoverLetter);
-      })
+      .then(
+        ([
+          result,
+          savedProfileComparison,
+          savedOptimizedCv,
+          savedCoverLetter,
+        ]) => {
+          if (!isActive) return;
+          setApplication(result);
+          setProfileComparison(savedProfileComparison);
+          setOptimizedCv(savedOptimizedCv);
+          setSavedOptimizedCv(savedOptimizedCv);
+          setCoverLetter(savedCoverLetter);
+          setSavedCoverLetter(savedCoverLetter);
+        },
+      )
       .catch((error: unknown) => {
         if (isActive) {
           setErrorMessage(
@@ -183,8 +224,8 @@ export function ApplicationWorkspacePage() {
     }
   }
 
-  async function runOptimizedCvSave() {
-    if (!applicationId || !optimizedCv || isSavingOptimizedCv) return;
+  async function runOptimizedCvSave(): Promise<boolean> {
+    if (!applicationId || !optimizedCv || isSavingOptimizedCv) return false;
 
     setIsSavingOptimizedCv(true);
     setOptimizedCvSaveError(null);
@@ -196,6 +237,7 @@ export function ApplicationWorkspacePage() {
         setSavedOptimizedCv(saved);
         setOptimizedCvSavedMessage("Optimized CV saved.");
       }
+      return true;
     } catch (error) {
       if (currentApplicationId.current === applicationId) {
         setOptimizedCvSaveError(
@@ -204,6 +246,7 @@ export function ApplicationWorkspacePage() {
             : "Unable to save this Optimized CV.",
         );
       }
+      return false;
     } finally {
       if (currentApplicationId.current === applicationId) {
         setIsSavingOptimizedCv(false);
@@ -241,8 +284,8 @@ export function ApplicationWorkspacePage() {
     }
   }
 
-  async function runCoverLetterSave() {
-    if (!applicationId || !coverLetter || isSavingCoverLetter) return;
+  async function runCoverLetterSave(): Promise<boolean> {
+    if (!applicationId || !coverLetter || isSavingCoverLetter) return false;
 
     setIsSavingCoverLetter(true);
     setCoverLetterSaveError(null);
@@ -254,6 +297,7 @@ export function ApplicationWorkspacePage() {
         setSavedCoverLetter(saved);
         setCoverLetterSavedMessage("Cover Letter saved.");
       }
+      return true;
     } catch (error) {
       if (currentApplicationId.current === applicationId) {
         setCoverLetterSaveError(
@@ -262,6 +306,7 @@ export function ApplicationWorkspacePage() {
             : "Unable to save this Cover Letter.",
         );
       }
+      return false;
     } finally {
       if (currentApplicationId.current === applicationId) {
         setIsSavingCoverLetter(false);
@@ -281,15 +326,49 @@ export function ApplicationWorkspacePage() {
     setCoverLetterSaveError(null);
   }
 
-  function changeSection(section: WorkspaceSection) {
-    setActiveSection(section);
-    if (
-      section === "profile-match" &&
-      !profileComparison &&
-      !profileComparisonError
-    ) {
-      void runProfileComparison();
+  function discardDocuments(documents: UnsavedDocument[]) {
+    for (const document of documents) {
+      if (document.id === OPTIMIZED_CV_DOCUMENT_ID) {
+        setOptimizedCv(savedOptimizedCv);
+        setOptimizedCvSavedMessage(null);
+        setOptimizedCvSaveError(null);
+      }
+      if (document.id === COVER_LETTER_DOCUMENT_ID) {
+        setCoverLetter(savedCoverLetter);
+        setCoverLetterSavedMessage(null);
+        setCoverLetterSaveError(null);
+      }
     }
+  }
+
+  async function saveDocuments(documents: UnsavedDocument[]): Promise<boolean> {
+    for (const document of documents) {
+      if (document.id === OPTIMIZED_CV_DOCUMENT_ID) {
+        const saved = await runOptimizedCvSave();
+        if (!saved) return false;
+      }
+      if (document.id === COVER_LETTER_DOCUMENT_ID) {
+        const saved = await runCoverLetterSave();
+        if (!saved) return false;
+      }
+    }
+    return true;
+  }
+
+  useUnsavedChangesRegistration({
+    getBlockingDocuments: () =>
+      getDocumentsBlockingWorkspaceExit(documentDescriptors),
+    saveDocuments,
+    discardDocuments,
+  });
+
+  function changeSection(section: WorkspaceSection) {
+    if (section === activeSection) return;
+    const blockingDocuments = getDocumentsBlockingSectionLeave(
+      activeSection,
+      documentDescriptors,
+    );
+    requestNavigation(() => setActiveSection(section), blockingDocuments);
   }
 
   if (isLoading) {
@@ -354,7 +433,7 @@ export function ApplicationWorkspacePage() {
           errorMessage={profileComparisonError}
           isLoading={isComparingProfile}
           onCompare={() => void runProfileComparison()}
-          onReturnToJobAnalysis={() => setActiveSection("job-analysis")}
+          onReturnToJobAnalysis={() => changeSection("job-analysis")}
         />
       ) : activeSection === "optimized-cv" ? (
         <ApplicationOptimizedCv
@@ -364,7 +443,7 @@ export function ApplicationWorkspacePage() {
           onChange={handleOptimizedCvChange}
           onContinueToCoverLetter={
             hasSavedOptimizedCv
-              ? () => setActiveSection("cover-letter")
+              ? () => changeSection("cover-letter")
               : undefined
           }
           onGenerate={() => void runOptimizedCvGeneration()}
@@ -381,9 +460,7 @@ export function ApplicationWorkspacePage() {
           isSaving={isSavingCoverLetter}
           onChange={handleCoverLetterChange}
           onContinueToExport={
-            hasSavedCoverLetter
-              ? () => setActiveSection("export")
-              : undefined
+            hasSavedCoverLetter ? () => changeSection("export") : undefined
           }
           onGenerate={() => void runCoverLetterGeneration()}
           onSave={() => void runCoverLetterSave()}

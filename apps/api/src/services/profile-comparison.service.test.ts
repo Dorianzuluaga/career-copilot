@@ -1,6 +1,14 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("./application.service.js", () => ({
+  ApplicationError: class ApplicationError extends Error {
+    constructor(
+      message: string,
+      public readonly statusCode: number,
+    ) {
+      super(message);
+    }
+  },
   getOwnedApplication: vi.fn(),
 }));
 
@@ -18,7 +26,19 @@ vi.mock("./profile-comparison-ai.service.js", () => ({
   identifyWeaknesses: vi.fn(),
 }));
 
-import { getOwnedApplication } from "./application.service.js";
+vi.mock("../repositories/profile-match.repository.js", () => ({
+  findProfileMatchByApplicationId: vi.fn(),
+  upsertProfileMatch: vi.fn(),
+}));
+
+import {
+  findProfileMatchByApplicationId,
+  upsertProfileMatch,
+} from "../repositories/profile-match.repository.js";
+import {
+  ApplicationError,
+  getOwnedApplication,
+} from "./application.service.js";
 import { getMasterCv, validateMasterCvInput } from "./master-cv.service.js";
 import {
   evaluateProfileAlignment,
@@ -30,6 +50,7 @@ import {
 } from "./profile-comparison-ai.service.js";
 import {
   compareProfiles,
+  getProfileComparison,
   prepareProfileComparisonInput,
   ProfileComparisonError,
 } from "./profile-comparison.service.js";
@@ -76,6 +97,29 @@ const masterCvInput = {
   certifications: [],
 };
 
+const profileMatch = {
+  matchingSkills: ["TypeScript", "REST APIs"],
+  missingSkills: ["Docker"],
+  strengths: [
+    "TypeScript experience directly supports the role's core requirement.",
+  ],
+  weaknesses: [
+    "Docker is required by the role but is not demonstrated in the Master CV.",
+  ],
+  alignmentScore: 72,
+  alignmentReasoning:
+    "Relevant backend experience supports the role, but Docker is missing.",
+  recommendation: "Good opportunity. Improve your CV before applying.",
+};
+
+const persistedProfileMatch = {
+  id: "profile-match-id",
+  applicationId,
+  ...profileMatch,
+  createdAt: new Date("2026-08-11T10:00:00.000Z"),
+  updatedAt: new Date("2026-08-11T10:00:00.000Z"),
+};
+
 beforeEach(() => {
   vi.clearAllMocks();
   vi.mocked(getOwnedApplication).mockResolvedValue({
@@ -87,6 +131,10 @@ beforeEach(() => {
     ...masterCvInput,
   } as never);
   vi.mocked(validateMasterCvInput).mockReturnValue(masterCvInput);
+  vi.mocked(findProfileMatchByApplicationId).mockResolvedValue(null);
+  vi.mocked(upsertProfileMatch).mockResolvedValue(
+    persistedProfileMatch as never,
+  );
   vi.mocked(evaluateProfileAlignment).mockResolvedValue({
     alignmentScore: 72,
     alignmentReasoning:
@@ -137,8 +185,39 @@ describe("prepareProfileComparisonInput", () => {
   });
 });
 
+describe("getProfileComparison", () => {
+  it("returns the saved Profile Match for an owned application", async () => {
+    vi.mocked(findProfileMatchByApplicationId).mockResolvedValue(
+      persistedProfileMatch as never,
+    );
+
+    await expect(getProfileComparison(applicationId, userId)).resolves.toEqual(
+      profileMatch,
+    );
+    expect(getOwnedApplication).toHaveBeenCalledWith(applicationId, userId);
+    expect(findProfileMatchByApplicationId).toHaveBeenCalledWith(applicationId);
+  });
+
+  it("returns 404 when no saved Profile Match exists", async () => {
+    await expect(getProfileComparison(applicationId, userId)).rejects.toEqual(
+      new ProfileComparisonError("Profile Match not found.", 404),
+    );
+  });
+
+  it("maps missing application ownership to ProfileComparisonError", async () => {
+    vi.mocked(getOwnedApplication).mockRejectedValue(
+      new ApplicationError("Application not found.", 404),
+    );
+
+    await expect(getProfileComparison(applicationId, userId)).rejects.toEqual(
+      new ProfileComparisonError("Application not found.", 404),
+    );
+    expect(findProfileMatchByApplicationId).not.toHaveBeenCalled();
+  });
+});
+
 describe("compareProfiles", () => {
-  it("generates the recommendation after the complete aligned comparison", async () => {
+  it("generates, persists, and returns the Profile Match when none exists", async () => {
     vi.mocked(identifyMatchingSkills).mockResolvedValue({
       matchingSkills: ["TypeScript", "REST APIs"],
     });
@@ -156,20 +235,9 @@ describe("compareProfiles", () => {
       ],
     });
 
-    await expect(compareProfiles(applicationId, userId)).resolves.toEqual({
-      matchingSkills: ["TypeScript", "REST APIs"],
-      missingSkills: ["Docker"],
-      strengths: [
-        "TypeScript experience directly supports the role's core requirement.",
-      ],
-      weaknesses: [
-        "Docker is required by the role but is not demonstrated in the Master CV.",
-      ],
-      alignmentScore: 72,
-      alignmentReasoning:
-        "Relevant backend experience supports the role, but Docker is missing.",
-      recommendation: "Good opportunity. Improve your CV before applying.",
-    });
+    await expect(compareProfiles(applicationId, userId)).resolves.toEqual(
+      profileMatch,
+    );
     expect(identifyMatchingSkills).toHaveBeenCalledWith({
       masterCv: masterCvInput,
       jobAnalysis,
@@ -221,12 +289,46 @@ describe("compareProfiles", () => {
           "Relevant backend experience supports the role, but Docker is missing.",
       },
     );
+    expect(upsertProfileMatch).toHaveBeenCalledWith(
+      applicationId,
+      profileMatch,
+    );
     expect(
       vi.mocked(evaluateProfileAlignment).mock.invocationCallOrder[0],
-    ).toBeLessThan(vi.mocked(generateRecommendation).mock.invocationCallOrder[0]!);
+    ).toBeLessThan(
+      vi.mocked(generateRecommendation).mock.invocationCallOrder[0]!,
+    );
+  });
+
+  it("returns the saved Profile Match without calling AI when one already exists", async () => {
+    vi.mocked(findProfileMatchByApplicationId).mockResolvedValue(
+      persistedProfileMatch as never,
+    );
+
+    await expect(compareProfiles(applicationId, userId)).resolves.toEqual(
+      profileMatch,
+    );
+    expect(identifyMatchingSkills).not.toHaveBeenCalled();
+    expect(identifyMissingSkills).not.toHaveBeenCalled();
+    expect(identifyStrengths).not.toHaveBeenCalled();
+    expect(identifyWeaknesses).not.toHaveBeenCalled();
+    expect(evaluateProfileAlignment).not.toHaveBeenCalled();
+    expect(generateRecommendation).not.toHaveBeenCalled();
+    expect(upsertProfileMatch).not.toHaveBeenCalled();
+    expect(getMasterCv).not.toHaveBeenCalled();
   });
 
   it("returns empty lists when the comparison finds no supported evidence", async () => {
+    const emptyComparison = {
+      matchingSkills: [],
+      missingSkills: [],
+      strengths: [],
+      weaknesses: [],
+      alignmentScore: 72,
+      alignmentReasoning:
+        "Relevant backend experience supports the role, but Docker is missing.",
+      recommendation: "Good opportunity. Improve your CV before applying.",
+    };
     vi.mocked(identifyMatchingSkills).mockResolvedValue({
       matchingSkills: [],
     });
@@ -239,17 +341,17 @@ describe("compareProfiles", () => {
     vi.mocked(identifyWeaknesses).mockResolvedValue({
       weaknesses: [],
     });
+    vi.mocked(upsertProfileMatch).mockResolvedValue({
+      id: "profile-match-id",
+      applicationId,
+      ...emptyComparison,
+      createdAt: new Date("2026-08-11T10:00:00.000Z"),
+      updatedAt: new Date("2026-08-11T10:00:00.000Z"),
+    } as never);
 
-    await expect(compareProfiles(applicationId, userId)).resolves.toEqual({
-      matchingSkills: [],
-      missingSkills: [],
-      strengths: [],
-      weaknesses: [],
-      alignmentScore: 72,
-      alignmentReasoning:
-        "Relevant backend experience supports the role, but Docker is missing.",
-      recommendation: "Good opportunity. Improve your CV before applying.",
-    });
+    await expect(compareProfiles(applicationId, userId)).resolves.toEqual(
+      emptyComparison,
+    );
     expect(evaluateProfileAlignment).toHaveBeenCalledWith(expect.any(Object), {
       matchingSkills: [],
       missingSkills: [],
@@ -265,5 +367,9 @@ describe("compareProfiles", () => {
       alignmentReasoning:
         "Relevant backend experience supports the role, but Docker is missing.",
     });
+    expect(upsertProfileMatch).toHaveBeenCalledWith(
+      applicationId,
+      emptyComparison,
+    );
   });
 });

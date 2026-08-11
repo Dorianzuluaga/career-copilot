@@ -13,6 +13,7 @@ import { ApplicationOptimizedCv } from "./components/ApplicationOptimizedCv";
 import { ApplicationOverview } from "./components/ApplicationOverview";
 import { ApplicationProfileMatch } from "./components/ApplicationProfileMatch";
 import { ApplicationWorkspace } from "./components/ApplicationWorkspace";
+import { ConfirmDialog } from "./components/ConfirmDialog";
 import { jobDescriptionError } from "./components/JobAnalysisForm";
 import { MasterCvForm } from "./components/MasterCvForm";
 import { MasterCvImport } from "./components/MasterCvImport";
@@ -142,6 +143,34 @@ describe("App", () => {
     expect(markup).toContain("Next recommended step:");
     expect(markup.match(/<button[^>]*disabled=""/g)).toHaveLength(4);
     expect(markup).not.toContain("Coming Soon");
+  });
+
+  it("renders the unsaved changes confirmation dialog actions", () => {
+    const markup = renderToStaticMarkup(
+      <ConfirmDialog
+        open
+        title="Unsaved changes"
+        description={<p>You have unsaved changes.</p>}
+        cancelAction={{ label: "Cancel", onClick: () => undefined }}
+        secondaryAction={{
+          label: "Leave Without Saving",
+          onClick: () => undefined,
+          variant: "danger",
+        }}
+        primaryAction={{
+          label: "Save and Continue",
+          onClick: () => undefined,
+          variant: "primary",
+        }}
+      />,
+    );
+
+    expect(markup).toContain('role="dialog"');
+    expect(markup).toContain("Unsaved changes");
+    expect(markup).toContain("You have unsaved changes.");
+    expect(markup).toContain("Save and Continue");
+    expect(markup).toContain("Leave Without Saving");
+    expect(markup).toContain("Cancel");
   });
 
   it("renders the existing structured analysis inside the workspace section", () => {
@@ -478,9 +507,9 @@ describe("App", () => {
     );
     expect(continueWorkflowMarkup).toContain("Next recommended step:");
     expect(continueWorkflowMarkup).toContain("Cover Letter");
-    expect(continueWorkflowMarkup.match(/<button[^>]*disabled=""/g)).toHaveLength(
-      1,
-    );
+    expect(
+      continueWorkflowMarkup.match(/<button[^>]*disabled=""/g),
+    ).toHaveLength(1);
     expect(continueWorkflowMarkup).toContain("Locked");
 
     const saveErrorMarkup = renderToStaticMarkup(
@@ -939,12 +968,12 @@ describe("App", () => {
   it("keeps at least one export document selected", () => {
     const bothSelected = { optimizedCv: true, coverLetter: true };
 
-    expect(
-      updateDocumentSelection(bothSelected, "optimizedCv", false),
-    ).toEqual({
-      optimizedCv: false,
-      coverLetter: true,
-    });
+    expect(updateDocumentSelection(bothSelected, "optimizedCv", false)).toEqual(
+      {
+        optimizedCv: false,
+        coverLetter: true,
+      },
+    );
     expect(
       updateDocumentSelection(
         { optimizedCv: false, coverLetter: true },
