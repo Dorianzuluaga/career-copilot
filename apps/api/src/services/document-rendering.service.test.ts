@@ -24,10 +24,26 @@ describe("document rendering service", () => {
             description: "Built REST APIs with TypeScript.",
           },
         ],
-        education: [],
+        education: [
+          {
+            institution: "Example University",
+            degree: "BSc",
+            fieldOfStudy: "Computer Science",
+            startDate: "2016",
+            endDate: "2020",
+            description: "Studied software engineering.",
+          },
+        ],
         skills: ["TypeScript", "React"],
-        languages: [],
-        certifications: [],
+        languages: [{ name: "English", proficiency: "Fluent" }],
+        certifications: [
+          {
+            name: "AWS Cloud Practitioner",
+            issuer: "Amazon",
+            issueDate: "2022",
+            credentialUrl: null,
+          },
+        ],
       },
     });
 

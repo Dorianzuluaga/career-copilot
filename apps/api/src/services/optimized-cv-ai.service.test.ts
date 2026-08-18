@@ -208,6 +208,20 @@ describe("generateOptimizedCvDraft", () => {
       ],
     });
     expect(createResponse).toHaveBeenCalledOnce();
+    const prompt = createResponse.mock.calls[0][0].input[0].content[0]
+      .text as string;
+    expect(prompt).toContain("single A4 page");
+    expect(prompt).toContain("one-page fit");
+    expect(prompt).toContain("3-4 bullets");
+    expect(prompt).toContain(
+      "Do not invent professional experience, projects, achievements, skills, education, languages, or certifications.",
+    );
+    expect(prompt).toContain(
+      "Do not modify personal information, employment dates, company names, job titles",
+    );
+    expect(prompt).toContain(
+      "Do not control fonts, margins, spacing, columns, or visual layout.",
+    );
   });
 
   it("throws when OpenAI is not configured", async () => {

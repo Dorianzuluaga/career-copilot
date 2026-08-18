@@ -39,6 +39,7 @@ The generated document must:
 - Use only factual information available in the application context.
 - Adapt existing content without inventing professional experience.
 - Be structured into logical document sections.
+- Use a concise structure suitable for a single-page A4 CV.
 
 No manual editing should be implemented.
 
@@ -68,6 +69,43 @@ The AI must never:
 - Create fictitious projects.
 - Fabricate certifications.
 - Alter factual meaning.
+
+---
+
+## One-Page CV Constraint
+
+The generated Optimized CV must be designed to fit within a single A4 page when rendered using the application's PDF renderer.
+
+This is a hard content constraint.
+
+The AI must prioritize:
+
+1. One-page fit.
+2. Relevance to the target job.
+3. ATS compatibility.
+4. Readability.
+
+To achieve this, the AI should:
+
+- Condense verbose descriptions.
+- Remove redundant information.
+- Prioritize the most relevant experience and achievements.
+- Use concise bullet points.
+- Prefer high-information sentences over explanatory paragraphs.
+- Avoid repeating the same skills, technologies, responsibilities, or achievements across sections.
+- Reduce or omit low-relevance information when necessary.
+- Keep the professional summary concise.
+- Keep experience descriptions focused on the strongest and most relevant points.
+- Prefer compact skill groupings instead of unnecessarily repetitive skill entries.
+
+The AI must not:
+
+- Invent information to fill available space.
+- Remove relevant factual information solely for brevity when it is important to the target position.
+- Modify employment dates, company names, job titles, or other factual information.
+- Guarantee one-page rendering by manipulating fonts, margins, spacing, or visual layout.
+
+Content optimization is the responsibility of the AI. Visual layout remains the responsibility of the application's PDF renderer.
 
 ---
 
@@ -249,7 +287,6 @@ The implementation must not introduce UI controls, API behavior, persistence, wo
 
 If implementing the requested phase requires functionality from a future phase, stop and ask for clarification instead of implementing it.
 
-
 ## Validation
 
 Before finishing, validate:
@@ -272,7 +309,6 @@ When finished provide:
 5. Validation performed
 
 Do not implement Phase 3 or any future phase.
-
 
 # Phase 3: Manual Editing
 

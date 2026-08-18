@@ -47,13 +47,15 @@ function DocumentSection({
   title,
   children,
   editable,
+  first,
 }: {
   title: string;
   children: ReactNode;
   editable?: boolean;
+  first?: boolean;
 }) {
   return (
-    <section className="border-t border-slate-200 pt-6 first:border-t-0 first:pt-0">
+    <section className={first ? "" : "border-t border-slate-200 pt-5"}>
       <div className="flex items-center gap-2">
         <h3 className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
           {title}
@@ -64,7 +66,7 @@ function DocumentSection({
           </span>
         ) : null}
       </div>
-      <div className="mt-3">{children}</div>
+      <div className="mt-2">{children}</div>
     </section>
   );
 }
@@ -77,7 +79,7 @@ function ReadOnlyValue({ children }: { children: ReactNode }) {
   );
 }
 
-function PersonalInformationSection({
+function DocumentHeader({
   cv,
   isEditing,
 }: {
@@ -106,9 +108,9 @@ function PersonalInformationSection({
   );
 
   return (
-    <DocumentSection title="Personal information">
+    <header>
       {isEditing ? <ReadOnlyValue>{content}</ReadOnlyValue> : content}
-    </DocumentSection>
+    </header>
   );
 }
 
@@ -176,7 +178,7 @@ function ExperienceEntries({
                 />
               </label>
             ) : hasText(item.description) ? (
-              <p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-slate-700">
+              <p className="mt-2 whitespace-pre-wrap text-left text-sm leading-6 text-slate-700">
                 {item.description}
               </p>
             ) : null}
@@ -195,7 +197,7 @@ function EducationEntries({
   isEditing: boolean;
 }) {
   return (
-    <div className="space-y-5">
+    <div className="space-y-3">
       {items.map((item, index) => {
         const title =
           [item.degree, item.fieldOfStudy].filter(hasText).join(" · ") ||
@@ -243,23 +245,16 @@ function LanguageEntries({
   isEditing: boolean;
 }) {
   const list = (
-    <ul className="space-y-2 text-sm leading-6 text-slate-700">
+    <div className="space-y-1 text-left text-sm leading-6 text-slate-700">
       {items.map((item, index) => {
-        const label = [item.name, item.proficiency].filter(hasText).join(" — ");
+        const label = [item.name, item.proficiency].filter(hasText).join(" · ");
         if (!label) {
           return null;
         }
 
-        return (
-          <li key={index} className="flex gap-2">
-            <span aria-hidden="true" className="text-slate-400">
-              •
-            </span>
-            <span>{label}</span>
-          </li>
-        );
+        return <p key={index}>{label}</p>;
       })}
-    </ul>
+    </div>
   );
 
   return isEditing ? <ReadOnlyValue>{list}</ReadOnlyValue> : list;
@@ -328,16 +323,9 @@ function SkillsSection({
 
   if (!isEditing) {
     return (
-      <ul className="space-y-2 text-sm leading-6 text-slate-700">
-        {visibleSkills.map((skill) => (
-          <li key={skill} className="flex gap-2">
-            <span aria-hidden="true" className="text-slate-400">
-              •
-            </span>
-            <span>{skill}</span>
-          </li>
-        ))}
-      </ul>
+      <p className="text-left text-sm leading-6 text-slate-700">
+        {visibleSkills.join(" · ")}
+      </p>
     );
   }
 
@@ -426,113 +414,164 @@ export function OptimizedCvDocument({
       hasText(item.issueDate) ||
       hasText(item.credentialUrl),
   );
+  const showLeft = showProfessionalSummary || showExperience;
+  const showRight =
+    showEducation || showSkills || showLanguages || showCertifications;
+  const leftFirst = showProfessionalSummary ? "summary" : "experience";
+  const rightFirst = showEducation
+    ? "education"
+    : showSkills
+      ? "skills"
+      : showLanguages
+        ? "languages"
+        : "certifications";
 
   return (
     <article
       aria-label="Optimized CV"
       className="rounded-xl border border-slate-200 bg-white px-6 py-8 shadow-sm sm:px-10 sm:py-10"
     >
-      <div className="space-y-8">
-        <PersonalInformationSection cv={cv} isEditing={isEditing} />
+      <DocumentHeader cv={cv} isEditing={isEditing} />
 
-        {showProfessionalSummary ? (
-          <DocumentSection title="Professional summary" editable={isEditing}>
-            {isEditing && onChange ? (
-              <label className="block text-sm font-medium text-slate-700">
-                <span className="sr-only">Professional summary</span>
-                <textarea
-                  value={cv.professionalSummary}
-                  onChange={(event) =>
-                    onChange({
-                      ...cv,
-                      professionalSummary: event.target.value,
-                    })
-                  }
-                  rows={6}
-                  aria-label="Professional summary"
-                  className={`${fieldClassName} min-h-36 resize-y`}
-                />
-              </label>
-            ) : (
-              <p className="whitespace-pre-wrap text-sm leading-7 text-slate-700">
-                {cv.professionalSummary}
-              </p>
-            )}
-          </DocumentSection>
-        ) : null}
+      {showLeft || showRight ? (
+        <div className="mt-6 grid grid-cols-[minmax(0,68fr)_minmax(0,32fr)] items-start gap-x-8 gap-y-6">
+          {showLeft ? (
+            <div className="space-y-5">
+              {showProfessionalSummary ? (
+                <DocumentSection
+                  title="Professional summary"
+                  editable={isEditing}
+                  first={leftFirst === "summary"}
+                >
+                  {isEditing && onChange ? (
+                    <label className="block text-sm font-medium text-slate-700">
+                      <span className="sr-only">Professional summary</span>
+                      <textarea
+                        value={cv.professionalSummary}
+                        onChange={(event) =>
+                          onChange({
+                            ...cv,
+                            professionalSummary: event.target.value,
+                          })
+                        }
+                        rows={6}
+                        aria-label="Professional summary"
+                        className={`${fieldClassName} min-h-36 resize-y`}
+                      />
+                    </label>
+                  ) : (
+                    <p className="whitespace-pre-wrap text-justify text-sm leading-7 text-slate-700">
+                      {cv.professionalSummary}
+                    </p>
+                  )}
+                </DocumentSection>
+              ) : null}
 
-        {showExperience ? (
-          <DocumentSection title="Experience" editable={isEditing}>
-            <ExperienceEntries
-              items={cv.experience}
-              isEditing={isEditing}
-              onDescriptionChange={
-                isEditing && onChange
-                  ? (index, description) =>
-                      onChange({
-                        ...cv,
-                        experience: cv.experience.map((item, itemIndex) =>
-                          itemIndex === index
-                            ? { ...item, description: description || null }
-                            : item,
-                        ),
-                      })
-                  : undefined
-              }
-            />
-          </DocumentSection>
-        ) : null}
+              {showExperience ? (
+                <DocumentSection
+                  title="Experience"
+                  editable={isEditing}
+                  first={leftFirst === "experience"}
+                >
+                  <ExperienceEntries
+                    items={cv.experience}
+                    isEditing={isEditing}
+                    onDescriptionChange={
+                      isEditing && onChange
+                        ? (index, description) =>
+                            onChange({
+                              ...cv,
+                              experience: cv.experience.map(
+                                (item, itemIndex) =>
+                                  itemIndex === index
+                                    ? {
+                                        ...item,
+                                        description: description || null,
+                                      }
+                                    : item,
+                              ),
+                            })
+                        : undefined
+                    }
+                  />
+                </DocumentSection>
+              ) : null}
+            </div>
+          ) : (
+            <div />
+          )}
 
-        {showEducation ? (
-          <DocumentSection title="Education">
-            <EducationEntries items={cv.education} isEditing={isEditing} />
-          </DocumentSection>
-        ) : null}
+          {showRight ? (
+            <aside className="space-y-5">
+              {showEducation ? (
+                <DocumentSection
+                  title="Education"
+                  first={rightFirst === "education"}
+                >
+                  <EducationEntries
+                    items={cv.education}
+                    isEditing={isEditing}
+                  />
+                </DocumentSection>
+              ) : null}
 
-        {showSkills ? (
-          <DocumentSection title="Skills" editable={isEditing}>
-            <SkillsSection
-              skills={cv.skills}
-              isEditing={isEditing}
-              onAddSkill={
-                isEditing && onChange
-                  ? (skill) =>
-                      onChange({
-                        ...cv,
-                        skills: [...cv.skills, skill],
-                      })
-                  : undefined
-              }
-              onRemoveSkill={
-                isEditing && onChange
-                  ? (index) =>
-                      onChange({
-                        ...cv,
-                        skills: cv.skills.filter(
-                          (_, skillIndex) => skillIndex !== index,
-                        ),
-                      })
-                  : undefined
-              }
-            />
-          </DocumentSection>
-        ) : null}
+              {showSkills ? (
+                <DocumentSection
+                  title="Skills"
+                  editable={isEditing}
+                  first={rightFirst === "skills"}
+                >
+                  <SkillsSection
+                    skills={cv.skills}
+                    isEditing={isEditing}
+                    onAddSkill={
+                      isEditing && onChange
+                        ? (skill) =>
+                            onChange({
+                              ...cv,
+                              skills: [...cv.skills, skill],
+                            })
+                        : undefined
+                    }
+                    onRemoveSkill={
+                      isEditing && onChange
+                        ? (index) =>
+                            onChange({
+                              ...cv,
+                              skills: cv.skills.filter(
+                                (_, skillIndex) => skillIndex !== index,
+                              ),
+                            })
+                        : undefined
+                    }
+                  />
+                </DocumentSection>
+              ) : null}
 
-        {showLanguages ? (
-          <DocumentSection title="Languages">
-            <LanguageEntries items={cv.languages} isEditing={isEditing} />
-          </DocumentSection>
-        ) : null}
+              {showLanguages ? (
+                <DocumentSection
+                  title="Languages"
+                  first={rightFirst === "languages"}
+                >
+                  <LanguageEntries items={cv.languages} isEditing={isEditing} />
+                </DocumentSection>
+              ) : null}
 
-        {showCertifications ? (
-          <DocumentSection title="Certifications">
-            <CertificationEntries
-              items={cv.certifications}
-              isEditing={isEditing}
-            />
-          </DocumentSection>
-        ) : null}
-      </div>
+              {showCertifications ? (
+                <DocumentSection
+                  title="Certifications"
+                  first={rightFirst === "certifications"}
+                >
+                  <CertificationEntries
+                    items={cv.certifications}
+                    isEditing={isEditing}
+                  />
+                </DocumentSection>
+              ) : null}
+            </aside>
+          ) : null}
+        </div>
+      ) : null}
     </article>
   );
 }
