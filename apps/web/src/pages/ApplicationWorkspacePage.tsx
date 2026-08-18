@@ -18,6 +18,7 @@ import {
 } from "../lib/unsaved-documents";
 import { ApiError } from "../services/api";
 import { getApplication } from "../services/job-analysis";
+import { getMasterCv } from "../services/master-cv";
 import {
   generateCoverLetter,
   getCoverLetter,
@@ -34,6 +35,7 @@ import {
 } from "../services/profile-comparison";
 import type { CoverLetter } from "../types/cover-letter";
 import type { PersistedApplication } from "../types/job-analysis";
+import type { PersonalProjectItem } from "../types/master-cv";
 import type { OptimizedCv } from "../types/optimized-cv";
 import type { ProfileComparison } from "../types/profile-comparison";
 
@@ -84,6 +86,9 @@ export function ApplicationWorkspacePage() {
   const [coverLetterSavedMessage, setCoverLetterSavedMessage] = useState<
     string | null
   >(null);
+  const [masterCvPersonalProjects, setMasterCvPersonalProjects] = useState<
+    PersonalProjectItem[]
+  >([]);
 
   const documentDescriptors: UnsavedDocumentDescriptor[] = [
     {
@@ -124,6 +129,7 @@ export function ApplicationWorkspacePage() {
     setIsSavingCoverLetter(false);
     setCoverLetterSaveError(null);
     setCoverLetterSavedMessage(null);
+    setMasterCvPersonalProjects([]);
 
     if (!applicationId) {
       setErrorMessage("Application not found.");
@@ -137,6 +143,7 @@ export function ApplicationWorkspacePage() {
       getProfileComparison(applicationId),
       getOptimizedCv(applicationId),
       getCoverLetter(applicationId),
+      getMasterCv(),
     ])
       .then(
         ([
@@ -144,6 +151,7 @@ export function ApplicationWorkspacePage() {
           savedProfileComparison,
           savedOptimizedCv,
           savedCoverLetter,
+          masterCv,
         ]) => {
           if (!isActive) return;
           setApplication(result);
@@ -152,6 +160,7 @@ export function ApplicationWorkspacePage() {
           setSavedOptimizedCv(savedOptimizedCv);
           setCoverLetter(savedCoverLetter);
           setSavedCoverLetter(savedCoverLetter);
+          setMasterCvPersonalProjects(masterCv?.personalProjects ?? []);
         },
       )
       .catch((error: unknown) => {
@@ -448,6 +457,7 @@ export function ApplicationWorkspacePage() {
           }
           onGenerate={() => void runOptimizedCvGeneration()}
           onSave={() => void runOptimizedCvSave()}
+          masterCvPersonalProjects={masterCvPersonalProjects}
           optimizedCv={optimizedCv}
           saveErrorMessage={optimizedCvSaveError}
           savedMessage={optimizedCvSavedMessage}

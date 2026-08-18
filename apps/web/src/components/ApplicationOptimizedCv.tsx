@@ -4,6 +4,7 @@ import type {
   EducationItem,
   ExperienceItem,
   LanguageItem,
+  PersonalProjectItem,
 } from "../types/master-cv";
 import type { OptimizedCv } from "../types/optimized-cv";
 
@@ -12,6 +13,7 @@ interface ApplicationOptimizedCvProps {
   initialIsEditing?: boolean;
   isLoading: boolean;
   isSaving?: boolean;
+  masterCvPersonalProjects?: PersonalProjectItem[];
   onChange: (optimizedCv: OptimizedCv) => void;
   onContinueToCoverLetter?: () => void;
   onGenerate: () => void;
@@ -26,6 +28,39 @@ const fieldClassName =
 
 function hasText(value: string | null | undefined): value is string {
   return typeof value === "string" && value.trim().length > 0;
+}
+
+function personalProjectKey(project: PersonalProjectItem): string | null {
+  const name = project.name?.trim();
+  return name ? name.toLocaleLowerCase() : null;
+}
+
+export function availableMasterPersonalProjects(
+  masterProjects: PersonalProjectItem[],
+  selectedProjects: PersonalProjectItem[],
+): PersonalProjectItem[] {
+  const selectedKeys = new Set(
+    selectedProjects.flatMap((project) => {
+      const key = personalProjectKey(project);
+      return key ? [key] : [];
+    }),
+  );
+
+  return masterProjects.filter((project) => {
+    const key = personalProjectKey(project);
+    return key !== null && !selectedKeys.has(key);
+  });
+}
+
+export function personalProjectFromMasterCv(
+  project: PersonalProjectItem,
+): PersonalProjectItem {
+  return {
+    name: project.name,
+    description: project.description,
+    technologies: project.technologies,
+    url: project.url,
+  };
 }
 
 function formatDateRange(
@@ -307,6 +342,133 @@ function CertificationEntries({
   );
 }
 
+function AddPersonalProjectControls({
+  availableProjects,
+  onAdd,
+}: {
+  availableProjects: PersonalProjectItem[];
+  onAdd: (project: PersonalProjectItem) => void;
+}) {
+  const [selectedIndex, setSelectedIndex] = useState(0);
+  if (availableProjects.length === 0) return null;
+
+  const selectedProject =
+    availableProjects[selectedIndex] ?? availableProjects[0];
+
+  return (
+    <div className="mt-4 flex flex-col gap-2 sm:flex-row">
+      <label className="block flex-1 text-sm font-medium text-slate-700">
+        <span className="sr-only">Add a Personal Project</span>
+        <select
+          value={String(Math.min(selectedIndex, availableProjects.length - 1))}
+          onChange={(event) => setSelectedIndex(Number(event.target.value))}
+          aria-label="Add a Personal Project"
+          className={fieldClassName}
+        >
+          {availableProjects.map((project, index) => (
+            <option
+              key={`${personalProjectKey(project)}-${index}`}
+              value={index}
+            >
+              {project.name}
+            </option>
+          ))}
+        </select>
+      </label>
+      <button
+        type="button"
+        onClick={() => onAdd(personalProjectFromMasterCv(selectedProject))}
+        className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50 sm:self-end"
+      >
+        Add project
+      </button>
+    </div>
+  );
+}
+
+function PersonalProjectEntries({
+  items,
+  isEditing,
+  onDescriptionChange,
+  onRemove,
+}: {
+  items: PersonalProjectItem[];
+  isEditing: boolean;
+  onDescriptionChange?: (index: number, description: string) => void;
+  onRemove?: (index: number) => void;
+}) {
+  return (
+    <div className="space-y-5">
+      {items.map((item, index) => {
+        const title = hasText(item.name) ? item.name : null;
+        const metaParts = [item.technologies, item.url].filter(hasText);
+        const identity = (
+          <>
+            {title ? (
+              <h4 className="text-base font-semibold text-slate-950">
+                {title}
+              </h4>
+            ) : null}
+            {metaParts.length > 0 ? (
+              <p
+                className={
+                  title
+                    ? "mt-1 text-sm text-slate-500"
+                    : "text-sm text-slate-500"
+                }
+              >
+                {metaParts.join(" · ")}
+              </p>
+            ) : null}
+          </>
+        );
+        const hasIdentity = Boolean(title) || metaParts.length > 0;
+
+        return (
+          <article key={index}>
+            {hasIdentity ? (
+              isEditing ? (
+                <ReadOnlyValue>{identity}</ReadOnlyValue>
+              ) : (
+                identity
+              )
+            ) : null}
+
+            {isEditing && onDescriptionChange ? (
+              <label className="mt-3 block text-sm font-medium text-slate-700">
+                Description
+                <textarea
+                  value={item.description ?? ""}
+                  onChange={(event) =>
+                    onDescriptionChange(index, event.target.value)
+                  }
+                  rows={4}
+                  aria-label={`Personal project description ${index + 1}`}
+                  className={`${fieldClassName} min-h-24 resize-y`}
+                />
+              </label>
+            ) : hasText(item.description) ? (
+              <p className="mt-2 whitespace-pre-wrap text-left text-sm leading-6 text-slate-700">
+                {item.description}
+              </p>
+            ) : null}
+
+            {isEditing && onRemove ? (
+              <button
+                type="button"
+                onClick={() => onRemove(index)}
+                className="mt-3 text-sm font-semibold text-red-700 hover:text-red-800"
+              >
+                Remove project
+              </button>
+            ) : null}
+          </article>
+        );
+      })}
+    </div>
+  );
+}
+
 function SkillsSection({
   skills,
   isEditing,
@@ -394,10 +556,12 @@ function SkillsSection({
 export function OptimizedCvDocument({
   cv,
   isEditing = false,
+  masterCvPersonalProjects = [],
   onChange,
 }: {
   cv: OptimizedCv;
   isEditing?: boolean;
+  masterCvPersonalProjects?: PersonalProjectItem[];
   onChange?: (optimizedCv: OptimizedCv) => void;
 }) {
   const showProfessionalSummary = isEditing || hasText(cv.professionalSummary);
@@ -414,6 +578,15 @@ export function OptimizedCvDocument({
       hasText(item.issueDate) ||
       hasText(item.credentialUrl),
   );
+  const personalProjects = cv.personalProjects ?? [];
+  const availableProjects = isEditing
+    ? availableMasterPersonalProjects(
+        masterCvPersonalProjects,
+        personalProjects,
+      )
+    : [];
+  const showPersonalProjects =
+    personalProjects.length > 0 || availableProjects.length > 0;
   const showLeft = showProfessionalSummary || showExperience;
   const showRight =
     showEducation || showSkills || showLanguages || showCertifications;
@@ -572,6 +745,68 @@ export function OptimizedCvDocument({
           ) : null}
         </div>
       ) : null}
+
+      {showPersonalProjects ? (
+        <div className={showLeft || showRight ? undefined : "mt-6"}>
+          <DocumentSection
+            title="Personal projects"
+            editable={isEditing}
+            first={!showLeft && !showRight}
+          >
+            <PersonalProjectEntries
+              items={personalProjects}
+              isEditing={isEditing}
+              onDescriptionChange={
+                isEditing && onChange
+                  ? (index, description) =>
+                      onChange({
+                        ...cv,
+                        personalProjects: personalProjects.map(
+                          (item, itemIndex) =>
+                            itemIndex === index
+                              ? {
+                                  ...item,
+                                  description: description || null,
+                                }
+                              : item,
+                        ),
+                      })
+                  : undefined
+              }
+              onRemove={
+                isEditing && onChange
+                  ? (index) =>
+                      onChange({
+                        ...cv,
+                        personalProjects: personalProjects.filter(
+                          (_, itemIndex) => itemIndex !== index,
+                        ),
+                      })
+                  : undefined
+              }
+            />
+            {isEditing && onChange ? (
+              <AddPersonalProjectControls
+                availableProjects={availableProjects}
+                onAdd={(project) => {
+                  if (
+                    availableMasterPersonalProjects(
+                      [project],
+                      personalProjects,
+                    ).length === 0
+                  ) {
+                    return;
+                  }
+                  onChange({
+                    ...cv,
+                    personalProjects: [...personalProjects, project],
+                  });
+                }}
+              />
+            ) : null}
+          </DocumentSection>
+        </div>
+      ) : null}
     </article>
   );
 }
@@ -581,6 +816,7 @@ export function ApplicationOptimizedCv({
   initialIsEditing = false,
   isLoading,
   isSaving = false,
+  masterCvPersonalProjects = [],
   onChange,
   onContinueToCoverLetter,
   onGenerate,
@@ -623,7 +859,8 @@ export function ApplicationOptimizedCv({
               <p className="mt-2 max-w-xl text-sm leading-6 text-slate-600">
                 Edit application-specific content only. Personal information,
                 employment dates, company names, job titles, education,
-                languages, and certifications remain read-only.
+                languages, certifications, and Personal Project names,
+                technologies, and URLs remain read-only.
               </p>
             ) : (
               <p className="mt-2 max-w-xl text-sm leading-6 text-slate-600">
@@ -696,6 +933,7 @@ export function ApplicationOptimizedCv({
         <OptimizedCvDocument
           cv={optimizedCv}
           isEditing={isEditing}
+          masterCvPersonalProjects={masterCvPersonalProjects}
           onChange={onChange}
         />
       </div>

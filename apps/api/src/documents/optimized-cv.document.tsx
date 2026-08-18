@@ -143,6 +143,14 @@ export function OptimizedCvPdfDocument({ cv }: { cv: OptimizedCv }) {
       hasText(item.issueDate) ||
       hasText(item.credentialUrl),
   );
+  const personalProjects = cv.personalProjects ?? [];
+  const showPersonalProjects = personalProjects.some(
+    (item) =>
+      hasText(item.name) ||
+      hasText(item.technologies) ||
+      hasText(item.url) ||
+      hasText(item.description),
+  );
   const showLeft = showProfessionalSummary || showExperience;
   const showRight =
     showEducation || showSkills || showLanguages || showCertifications;
@@ -317,6 +325,38 @@ export function OptimizedCvPdfDocument({ cv }: { cv: OptimizedCv }) {
               </View>
             ) : null}
           </View>
+        ) : null}
+
+        {showPersonalProjects ? (
+          <Section title="Personal projects" first={!showLeft && !showRight}>
+            {personalProjects.map((item, index) => {
+              const title = hasText(item.name) ? item.name : null;
+              const metaParts = [item.technologies, item.url].filter(hasText);
+              if (
+                !title &&
+                metaParts.length === 0 &&
+                !hasText(item.description)
+              ) {
+                return null;
+              }
+
+              return (
+                <View key={index} style={styles.entry}>
+                  {title ? (
+                    <Text style={styles.entryTitle}>{title}</Text>
+                  ) : null}
+                  {metaParts.length > 0 ? (
+                    <Text style={styles.entryMeta}>
+                      {metaParts.join(" · ")}
+                    </Text>
+                  ) : null}
+                  {hasText(item.description) ? (
+                    <Text style={styles.entryBody}>{item.description}</Text>
+                  ) : null}
+                </View>
+              );
+            })}
+          </Section>
         ) : null}
       </Page>
     </Document>

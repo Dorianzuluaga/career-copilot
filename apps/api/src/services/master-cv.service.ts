@@ -9,6 +9,7 @@ import type {
   ExperienceItem,
   LanguageItem,
   MasterCvInput,
+  PersonalProjectItem,
 } from "../types/master-cv.js";
 
 export class MasterCvError extends Error {
@@ -68,6 +69,17 @@ function isCertification(value: unknown): value is CertificationItem {
   );
 }
 
+function isPersonalProject(value: unknown): value is PersonalProjectItem {
+  if (!value || typeof value !== "object") return false;
+  const item = value as Record<string, unknown>;
+  return (
+    isNullableString(item.name) &&
+    isNullableString(item.description) &&
+    isNullableString(item.technologies) &&
+    isNullableString(item.url)
+  );
+}
+
 function requiredString(input: Record<string, unknown>, field: string): string {
   const value = input[field];
   if (typeof value !== "string" || value.trim() === "") {
@@ -104,6 +116,17 @@ function arrayOf<T>(
   return value;
 }
 
+function optionalArrayOf<T>(
+  input: Record<string, unknown>,
+  field: string,
+  guard: (value: unknown) => value is T,
+): T[] | undefined {
+  if (!(field in input) || input[field] === undefined) {
+    return undefined;
+  }
+  return arrayOf(input, field, guard);
+}
+
 export function validateMasterCvInput(value: unknown): MasterCvInput {
   if (!value || typeof value !== "object" || Array.isArray(value)) {
     throw new MasterCvError("Master CV data is required.", 400);
@@ -117,6 +140,11 @@ export function validateMasterCvInput(value: unknown): MasterCvInput {
     },
     true,
   ).map((skill) => skill.trim());
+  const personalProjects = optionalArrayOf(
+    input,
+    "personalProjects",
+    isPersonalProject,
+  );
 
   return {
     fullName: requiredString(input, "fullName"),
@@ -131,6 +159,7 @@ export function validateMasterCvInput(value: unknown): MasterCvInput {
     skills,
     languages: arrayOf(input, "languages", isLanguage),
     certifications: arrayOf(input, "certifications", isCertification),
+    ...(personalProjects === undefined ? {} : { personalProjects }),
   };
 }
 

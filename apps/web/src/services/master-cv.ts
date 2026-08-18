@@ -22,6 +22,7 @@ export function masterCvInputFromExtraction(
     skills: extraction.skills,
     languages: extraction.languages,
     certifications: extraction.certifications,
+    personalProjects: extraction.personalProjects,
   };
 }
 

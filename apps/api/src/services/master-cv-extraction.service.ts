@@ -15,6 +15,7 @@ const extractionSchema = {
     "skills",
     "languages",
     "certifications",
+    "personalProjects",
   ],
   properties: {
     personalInformation: {
@@ -113,6 +114,20 @@ const extractionSchema = {
         },
       },
     },
+    personalProjects: {
+      type: "array",
+      items: {
+        type: "object",
+        additionalProperties: false,
+        required: ["name", "description", "technologies", "url"],
+        properties: {
+          name: nullableString,
+          description: nullableString,
+          technologies: nullableString,
+          url: nullableString,
+        },
+      },
+    },
   },
 } as const;
 
@@ -187,6 +202,10 @@ function isExtraction(value: unknown): value is MasterCvExtraction {
         "issueDate",
         "credentialUrl",
       ]),
+    ) &&
+    Array.isArray(data.personalProjects) &&
+    data.personalProjects.every((item) =>
+      hasNullableStrings(item, ["name", "description", "technologies", "url"]),
     )
   );
 }
@@ -218,6 +237,10 @@ export async function extractMasterCv(
               "Never infer or invent information.",
               "Use null for unknown scalar values and an empty array when a section has no entries.",
               "Preserve the source wording where possible.",
+              "Preserve the order in which Experience, Education, and Personal Projects appear in the document.",
+              "Extract Personal Projects only when they are explicitly present.",
+              "Never invent projects or project information.",
+              "If no Personal Projects are present, return an empty personalProjects array.",
             ].join(" "),
           },
         ],

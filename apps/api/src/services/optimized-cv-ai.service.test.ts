@@ -58,6 +58,26 @@ const input: OptimizedCvGenerationInput = {
         credentialUrl: null,
       },
     ],
+    personalProjects: [
+      {
+        name: "Career Copilot",
+        description: "AI career assistant built with TypeScript.",
+        technologies: "TypeScript, React",
+        url: "https://example.com/career-copilot",
+      },
+      {
+        name: "Humidity Project",
+        description: "IoT humidity monitor.",
+        technologies: "Python",
+        url: null,
+      },
+      {
+        name: "Unrelated Project",
+        description: "A personal blog.",
+        technologies: "WordPress",
+        url: null,
+      },
+    ],
   },
   jobAnalysis: {
     title: "Software Engineer",
@@ -134,6 +154,20 @@ describe("enforceMasterCvIntegrity", () => {
           credentialUrl: "https://example.com",
         },
       ],
+      personalProjects: [
+        {
+          name: "Career Copilot",
+          description: "Job-specific TypeScript career assistant.",
+          technologies: "Invented Tech",
+          url: "https://invented.example.com",
+        },
+        {
+          name: "Invented Project",
+          description: "Does not exist in the Master CV.",
+          technologies: "Rust",
+          url: null,
+        },
+      ],
     };
 
     expect(enforceMasterCvIntegrity(input.masterCv, generated)).toEqual({
@@ -175,7 +209,74 @@ describe("enforceMasterCvIntegrity", () => {
           credentialUrl: null,
         },
       ],
+      personalProjects: [
+        {
+          name: "Career Copilot",
+          description: "Job-specific TypeScript career assistant.",
+          technologies: "TypeScript, React",
+          url: "https://example.com/career-copilot",
+        },
+      ],
     });
+  });
+
+  it("omits Personal Projects when none are selected", () => {
+    expect(
+      enforceMasterCvIntegrity(input.masterCv, {
+        ...input.masterCv,
+        personalProjects: [],
+      }),
+    ).toMatchObject({ personalProjects: [] });
+  });
+
+  it("drops invented Personal Projects and preserves Master CV identity fields", () => {
+    const result = enforceMasterCvIntegrity(input.masterCv, {
+      ...input.masterCv,
+      personalProjects: [
+        {
+          name: "Humidity Project",
+          description: "Relevant IoT monitoring for the role.",
+          technologies: "Invented",
+          url: "https://invented.example.com",
+        },
+        {
+          name: "Missing Project",
+          description: "Invented",
+          technologies: null,
+          url: null,
+        },
+      ],
+    });
+
+    expect(result.personalProjects).toEqual([
+      {
+        name: "Humidity Project",
+        description: "Relevant IoT monitoring for the role.",
+        technologies: "Python",
+        url: null,
+      },
+    ]);
+  });
+
+  it("keeps Personal Projects empty when the Master CV has none", () => {
+    const masterCv = {
+      ...input.masterCv,
+      personalProjects: [],
+    };
+
+    expect(
+      enforceMasterCvIntegrity(masterCv, {
+        ...masterCv,
+        personalProjects: [
+          {
+            name: "Invented Project",
+            description: "Should not appear.",
+            technologies: null,
+            url: null,
+          },
+        ],
+      }).personalProjects,
+    ).toEqual([]);
   });
 });
 
@@ -194,6 +295,20 @@ describe("generateOptimizedCvDraft", () => {
           },
         ],
         skills: ["TypeScript", "REST APIs", "PostgreSQL"],
+        personalProjects: [
+          {
+            name: "Career Copilot",
+            description: "Job-specific TypeScript career assistant.",
+            technologies: "Invented Tech",
+            url: "https://invented.example.com",
+          },
+          {
+            name: "Unrelated Project",
+            description: "A personal blog.",
+            technologies: "WordPress",
+            url: null,
+          },
+        ],
       }),
     });
 
@@ -204,6 +319,20 @@ describe("generateOptimizedCvDraft", () => {
         {
           ...input.masterCv.experience[0],
           description: "Delivered TypeScript REST APIs for product teams.",
+        },
+      ],
+      personalProjects: [
+        {
+          name: "Career Copilot",
+          description: "Job-specific TypeScript career assistant.",
+          technologies: "TypeScript, React",
+          url: "https://example.com/career-copilot",
+        },
+        {
+          name: "Unrelated Project",
+          description: "A personal blog.",
+          technologies: "WordPress",
+          url: null,
         },
       ],
     });
@@ -219,6 +348,11 @@ describe("generateOptimizedCvDraft", () => {
     expect(prompt).toContain(
       "Do not modify personal information, employment dates, company names, job titles",
     );
+    expect(prompt).toContain(
+      "Evaluate Master CV personalProjects against the Job Analysis and Profile Match.",
+    );
+    expect(prompt).toContain("Include only relevant Personal Projects.");
+    expect(prompt).toContain("Omit irrelevant Personal Projects.");
     expect(prompt).toContain(
       "Do not control fonts, margins, spacing, columns, or visual layout.",
     );
