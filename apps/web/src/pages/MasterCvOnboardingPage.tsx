@@ -23,6 +23,7 @@ const emptyMasterCv = (): MasterCvInput => ({
   skills: [],
   languages: [],
   certifications: [],
+  personalProjects: [],
 });
 
 type Step = "choice" | "upload" | "form";

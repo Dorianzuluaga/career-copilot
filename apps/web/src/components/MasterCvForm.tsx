@@ -5,6 +5,7 @@ import type {
   ExperienceItem,
   LanguageItem,
   MasterCvInput,
+  PersonalProjectItem,
 } from "../types/master-cv";
 
 const fieldClassName =
@@ -19,6 +20,31 @@ const emptyExperience = (): ExperienceItem => ({
   current: false,
   description: null,
 });
+
+const emptyEducation = (): EducationItem => ({
+  institution: null,
+  degree: null,
+  fieldOfStudy: null,
+  startDate: null,
+  endDate: null,
+  description: null,
+});
+
+const emptyPersonalProject = (): PersonalProjectItem => ({
+  name: null,
+  description: null,
+  technologies: null,
+  url: null,
+});
+
+function moveItem<T>(items: T[], index: number, offset: number): T[] {
+  const nextIndex = index + offset;
+  if (nextIndex < 0 || nextIndex >= items.length) return items;
+  const next = [...items];
+  const [item] = next.splice(index, 1);
+  next.splice(nextIndex, 0, item);
+  return next;
+}
 
 function nullable(value: string): string | null {
   return value.trim() || null;
@@ -75,6 +101,60 @@ function SectionHeader({
   );
 }
 
+function CollectionActions({
+  index,
+  total,
+  label,
+  onMove,
+  onRemove,
+  removeLabel,
+}: {
+  index: number;
+  total: number;
+  label: string;
+  onMove: (offset: number) => void;
+  onRemove?: () => void;
+  removeLabel?: string;
+}) {
+  if (total <= 1 && !onRemove) return null;
+
+  return (
+    <div className="mt-3 flex flex-wrap items-center gap-3">
+      {total > 1 ? (
+        <>
+          <button
+            type="button"
+            disabled={index === 0}
+            onClick={() => onMove(-1)}
+            aria-label={`Move ${label} up`}
+            className="rounded-lg border border-slate-300 px-3 py-1.5 text-sm font-semibold text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            Move up
+          </button>
+          <button
+            type="button"
+            disabled={index === total - 1}
+            onClick={() => onMove(1)}
+            aria-label={`Move ${label} down`}
+            className="rounded-lg border border-slate-300 px-3 py-1.5 text-sm font-semibold text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            Move down
+          </button>
+        </>
+      ) : null}
+      {onRemove ? (
+        <button
+          type="button"
+          onClick={onRemove}
+          className="text-sm font-semibold text-red-700"
+        >
+          {removeLabel}
+        </button>
+      ) : null}
+    </div>
+  );
+}
+
 export function MasterCvForm({
   initialValue,
   submitLabel,
@@ -105,6 +185,9 @@ export function MasterCvForm({
       : [emptyExperience()],
   );
   const [education, setEducation] = useState(initialValue.education);
+  const [personalProjects, setPersonalProjects] = useState(
+    initialValue.personalProjects ?? [],
+  );
   const [skills, setSkills] = useState(initialValue.skills.join(", "));
   const [languages, setLanguages] = useState(initialValue.languages);
   const [certifications, setCertifications] = useState(
@@ -121,6 +204,17 @@ export function MasterCvForm({
 
   function updateEducation(index: number, patch: Partial<EducationItem>) {
     setEducation((items) =>
+      items.map((item, itemIndex) =>
+        itemIndex === index ? { ...item, ...patch } : item,
+      ),
+    );
+  }
+
+  function updatePersonalProject(
+    index: number,
+    patch: Partial<PersonalProjectItem>,
+  ) {
+    setPersonalProjects((items) =>
       items.map((item, itemIndex) =>
         itemIndex === index ? { ...item, ...patch } : item,
       ),
@@ -157,6 +251,7 @@ export function MasterCvForm({
       professionalSummary: professionalSummary.trim(),
       experience,
       education,
+      personalProjects,
       skills: skills
         .split(",")
         .map((skill) => skill.trim())
@@ -310,19 +405,23 @@ export function MasterCvForm({
                   className={fieldClassName}
                 />
               </label>
-              {experience.length > 1 ? (
-                <button
-                  type="button"
-                  onClick={() =>
-                    setExperience((items) =>
-                      items.filter((_, itemIndex) => itemIndex !== index),
-                    )
-                  }
-                  className="mt-3 text-sm font-semibold text-red-700"
-                >
-                  Remove experience
-                </button>
-              ) : null}
+              <CollectionActions
+                index={index}
+                total={experience.length}
+                label="experience"
+                onMove={(offset) =>
+                  setExperience((items) => moveItem(items, index, offset))
+                }
+                onRemove={
+                  experience.length > 1
+                    ? () =>
+                        setExperience((items) =>
+                          items.filter((_, itemIndex) => itemIndex !== index),
+                        )
+                    : undefined
+                }
+                removeLabel="Remove experience"
+              />
             </div>
           ))}
         </div>
@@ -331,19 +430,7 @@ export function MasterCvForm({
       <section className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
         <SectionHeader
           title="Education"
-          onAdd={() =>
-            setEducation((items) => [
-              ...items,
-              {
-                institution: null,
-                degree: null,
-                fieldOfStudy: null,
-                startDate: null,
-                endDate: null,
-                description: null,
-              },
-            ])
-          }
+          onAdd={() => setEducation((items) => [...items, emptyEducation()])}
         />
         <div className="mt-5 space-y-5">
           {education.map((item, index) => (
@@ -401,17 +488,92 @@ export function MasterCvForm({
                   className={fieldClassName}
                 />
               </label>
-              <button
-                type="button"
-                onClick={() =>
+              <CollectionActions
+                index={index}
+                total={education.length}
+                label="education"
+                onMove={(offset) =>
+                  setEducation((items) => moveItem(items, index, offset))
+                }
+                onRemove={() =>
                   setEducation((items) =>
                     items.filter((_, itemIndex) => itemIndex !== index),
                   )
                 }
-                className="mt-3 text-sm font-semibold text-red-700"
-              >
-                Remove education
-              </button>
+                removeLabel="Remove education"
+              />
+            </div>
+          ))}
+        </div>
+      </section>
+
+      <section className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+        <SectionHeader
+          title="Personal projects"
+          onAdd={() =>
+            setPersonalProjects((items) => [...items, emptyPersonalProject()])
+          }
+        />
+        <div className="mt-5 space-y-5">
+          {personalProjects.map((item, index) => (
+            <div
+              key={index}
+              className="rounded-lg border border-slate-200 bg-slate-50 p-4"
+            >
+              <div className="grid gap-4 sm:grid-cols-2">
+                <TextField
+                  label="Project name"
+                  value={item.name}
+                  onChange={(value) =>
+                    updatePersonalProject(index, { name: nullable(value) })
+                  }
+                />
+                <TextField
+                  label="Project URL"
+                  value={item.url}
+                  onChange={(value) =>
+                    updatePersonalProject(index, { url: nullable(value) })
+                  }
+                />
+              </div>
+              <label className="mt-4 block text-sm font-medium text-slate-700">
+                Brief description
+                <textarea
+                  value={item.description ?? ""}
+                  onChange={(event) =>
+                    updatePersonalProject(index, {
+                      description: nullable(event.target.value),
+                    })
+                  }
+                  rows={3}
+                  className={fieldClassName}
+                />
+              </label>
+              <div className="mt-4">
+                <TextField
+                  label="Technologies"
+                  value={item.technologies}
+                  onChange={(value) =>
+                    updatePersonalProject(index, {
+                      technologies: nullable(value),
+                    })
+                  }
+                />
+              </div>
+              <CollectionActions
+                index={index}
+                total={personalProjects.length}
+                label="personal project"
+                onMove={(offset) =>
+                  setPersonalProjects((items) => moveItem(items, index, offset))
+                }
+                onRemove={() =>
+                  setPersonalProjects((items) =>
+                    items.filter((_, itemIndex) => itemIndex !== index),
+                  )
+                }
+                removeLabel="Remove project"
+              />
             </div>
           ))}
         </div>

@@ -334,6 +334,7 @@ describe("Master CV API", () => {
       skills: [],
       languages: [],
       certifications: [],
+      personalProjects: [],
     };
     vi.mocked(getAuthenticatedUser).mockResolvedValue(user);
     vi.mocked(extractMasterCv).mockResolvedValue(extraction);

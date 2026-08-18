@@ -9,7 +9,11 @@ import {
   updateDocumentSelection,
 } from "./components/ApplicationExport";
 import { ApplicationJobAnalysis } from "./components/ApplicationJobAnalysis";
-import { ApplicationOptimizedCv } from "./components/ApplicationOptimizedCv";
+import {
+  ApplicationOptimizedCv,
+  availableMasterPersonalProjects,
+  personalProjectFromMasterCv,
+} from "./components/ApplicationOptimizedCv";
 import { ApplicationOverview } from "./components/ApplicationOverview";
 import { ApplicationProfileMatch } from "./components/ApplicationProfileMatch";
 import { ApplicationWorkspace } from "./components/ApplicationWorkspace";
@@ -407,6 +411,7 @@ describe("App", () => {
     expect(reviewMarkup).toContain("Education");
     expect(reviewMarkup).toContain("Languages");
     expect(reviewMarkup).toContain("Certifications");
+    expect(reviewMarkup).not.toContain("Personal projects");
     expect(reviewMarkup).not.toContain("Personal information");
     expect(reviewMarkup).not.toContain("Not provided");
     expect(reviewMarkup).not.toContain("<textarea");
@@ -447,6 +452,8 @@ describe("App", () => {
     expect(editMarkup).toContain("AWS Certified");
     expect(editMarkup).not.toContain("Add experience");
     expect(editMarkup).not.toContain("Remove experience");
+    expect(editMarkup).not.toContain("Add project");
+    expect(editMarkup).not.toContain("Remove project");
     expect(editMarkup).not.toContain("application-specific notes");
 
     const savingMarkup = renderToStaticMarkup(
@@ -540,6 +547,191 @@ describe("App", () => {
     );
     expect(errorMarkup).toContain("Unable to generate this Optimized CV.");
     expect(errorMarkup).toContain("Try again");
+  });
+
+  it("reviews and edits selected Personal Projects without exposing Master CV identity as editable", () => {
+    const sampleOptimizedCv = {
+      fullName: "Taylor Smith",
+      email: "taylor@example.com",
+      phone: null,
+      location: "Berlin",
+      linkedin: null,
+      portfolio: null,
+      professionalSummary: "TypeScript engineer building APIs.",
+      experience: [
+        {
+          jobTitle: "Software Engineer",
+          company: "Example",
+          location: null,
+          startDate: "2022-01",
+          endDate: null,
+          current: true,
+          description: "Built REST APIs with TypeScript.",
+        },
+      ],
+      education: [],
+      skills: ["TypeScript"],
+      languages: [],
+      certifications: [],
+      personalProjects: [
+        {
+          name: "Career Copilot",
+          description: "AI career assistant built with TypeScript.",
+          technologies: "TypeScript, React",
+          url: "https://example.com/career-copilot",
+        },
+      ],
+    };
+
+    const reviewMarkup = renderToStaticMarkup(
+      <ApplicationOptimizedCv
+        errorMessage={null}
+        isLoading={false}
+        onChange={() => undefined}
+        onGenerate={() => undefined}
+        optimizedCv={sampleOptimizedCv}
+      />,
+    );
+    expect(reviewMarkup).toContain("Personal projects");
+    expect(reviewMarkup.indexOf("Personal projects")).toBeGreaterThan(
+      reviewMarkup.indexOf("</aside>"),
+    );
+    expect(reviewMarkup).toContain("Career Copilot");
+    expect(reviewMarkup).toContain(
+      "AI career assistant built with TypeScript.",
+    );
+    expect(reviewMarkup).toContain("TypeScript, React");
+    expect(reviewMarkup).toContain("https://example.com/career-copilot");
+    expect(reviewMarkup).not.toContain("Remove project");
+    expect(reviewMarkup).not.toContain(
+      'aria-label="Personal project description 1"',
+    );
+
+    const editMarkup = renderToStaticMarkup(
+      <ApplicationOptimizedCv
+        errorMessage={null}
+        initialIsEditing
+        isLoading={false}
+        onChange={() => undefined}
+        onGenerate={() => undefined}
+        optimizedCv={sampleOptimizedCv}
+      />,
+    );
+    expect(editMarkup).toContain("Personal projects");
+    expect(editMarkup.indexOf("Personal projects")).toBeGreaterThan(
+      editMarkup.indexOf("</aside>"),
+    );
+    expect(editMarkup).toContain("Editable");
+    expect(editMarkup).toContain('aria-label="Personal project description 1"');
+    expect(editMarkup).toContain("Career Copilot");
+    expect(editMarkup).toContain("TypeScript, React");
+    expect(editMarkup).toContain("https://example.com/career-copilot");
+    expect(editMarkup).toContain("Remove project");
+    expect(editMarkup).toContain(
+      "Personal Project names, technologies, and URLs remain read-only.",
+    );
+    expect(editMarkup).not.toContain("Add project");
+  });
+
+  it("lets users add a Master CV Personal Project that the AI omitted", () => {
+    const careerCopilot = {
+      name: "Career Copilot",
+      description: "AI career assistant built with TypeScript.",
+      technologies: "TypeScript, React",
+      url: "https://example.com/career-copilot",
+    };
+    const humidityProject = {
+      name: "Humidity Project",
+      description: "IoT humidity monitor.",
+      technologies: "Python",
+      url: null,
+    };
+    const sampleOptimizedCv = {
+      fullName: "Taylor Smith",
+      email: "taylor@example.com",
+      phone: null,
+      location: "Berlin",
+      linkedin: null,
+      portfolio: null,
+      professionalSummary: "TypeScript engineer building APIs.",
+      experience: [
+        {
+          jobTitle: "Software Engineer",
+          company: "Example",
+          location: null,
+          startDate: "2022-01",
+          endDate: null,
+          current: true,
+          description: "Built REST APIs with TypeScript.",
+        },
+      ],
+      education: [],
+      skills: ["TypeScript"],
+      languages: [],
+      certifications: [],
+      personalProjects: [careerCopilot],
+    };
+
+    expect(
+      availableMasterPersonalProjects(
+        [careerCopilot, humidityProject],
+        [careerCopilot],
+      ),
+    ).toEqual([humidityProject]);
+    expect(
+      availableMasterPersonalProjects(
+        [careerCopilot, humidityProject],
+        [careerCopilot, humidityProject],
+      ),
+    ).toEqual([]);
+    expect(personalProjectFromMasterCv(humidityProject)).toEqual(
+      humidityProject,
+    );
+
+    const reviewMarkup = renderToStaticMarkup(
+      <ApplicationOptimizedCv
+        errorMessage={null}
+        isLoading={false}
+        masterCvPersonalProjects={[careerCopilot, humidityProject]}
+        onChange={() => undefined}
+        onGenerate={() => undefined}
+        optimizedCv={sampleOptimizedCv}
+      />,
+    );
+    expect(reviewMarkup).not.toContain("Add project");
+    expect(reviewMarkup).not.toContain("Humidity Project");
+
+    const editMarkup = renderToStaticMarkup(
+      <ApplicationOptimizedCv
+        errorMessage={null}
+        initialIsEditing
+        isLoading={false}
+        masterCvPersonalProjects={[careerCopilot, humidityProject]}
+        onChange={() => undefined}
+        onGenerate={() => undefined}
+        optimizedCv={sampleOptimizedCv}
+      />,
+    );
+    expect(editMarkup).toContain("Add project");
+    expect(editMarkup).toContain('aria-label="Add a Personal Project"');
+    expect(editMarkup).toContain(">Humidity Project</option>");
+    expect(editMarkup).not.toContain(">Career Copilot</option>");
+    expect(editMarkup).toContain("Career Copilot");
+
+    const emptySelectionMarkup = renderToStaticMarkup(
+      <ApplicationOptimizedCv
+        errorMessage={null}
+        initialIsEditing
+        isLoading={false}
+        masterCvPersonalProjects={[humidityProject]}
+        onChange={() => undefined}
+        onGenerate={() => undefined}
+        optimizedCv={{ ...sampleOptimizedCv, personalProjects: [] }}
+      />,
+    );
+    expect(emptySelectionMarkup).toContain("Personal projects");
+    expect(emptySelectionMarkup).toContain("Add project");
+    expect(emptySelectionMarkup).toContain(">Humidity Project</option>");
   });
 
   it("supports Cover Letter generation after a saved Optimized CV", () => {
@@ -892,6 +1084,14 @@ describe("App", () => {
           credentialUrl: null,
         },
       ],
+      personalProjects: [
+        {
+          name: "Career Copilot",
+          description: "AI career assistant built with TypeScript.",
+          technologies: "TypeScript, React",
+          url: "https://example.com/career-copilot",
+        },
+      ],
     };
     const sampleCoverLetter = {
       candidateName: "Taylor Smith",
@@ -961,6 +1161,11 @@ describe("App", () => {
     expect(markup).toContain("text-justify");
     expect(markup).toContain("Built REST APIs with TypeScript.");
     expect(markup).toContain("TypeScript · Node.js");
+    expect(markup).toContain("Personal projects");
+    expect(markup.indexOf("Personal projects")).toBeGreaterThan(
+      markup.indexOf("</aside>"),
+    );
+    expect(markup).toContain("Career Copilot");
     expect(markup).not.toContain("Personal information");
     expect(markup).not.toContain('aria-label="Cover Letter"');
     expect(markup).not.toContain("Dear Hiring Manager,");
@@ -1074,6 +1279,7 @@ describe("App", () => {
     expect(markup).toContain("Professional summary");
     expect(markup).toContain("Experience");
     expect(markup).toContain("Education");
+    expect(markup).toContain("Personal projects");
     expect(markup).toContain("Skills");
     expect(markup).toContain("Languages");
     expect(markup).toContain("Certifications");
@@ -1107,6 +1313,7 @@ describe("App", () => {
       skills: ["TypeScript"],
       languages: [],
       certifications: [],
+      personalProjects: [],
     });
 
     expect(input.fullName).toBe("Taylor Smith");
@@ -1114,5 +1321,95 @@ describe("App", () => {
     expect(input.professionalSummary).toBe("");
     expect(input.location).toBe("Berlin");
     expect(input.skills).toEqual(["TypeScript"]);
+    expect(input.personalProjects).toEqual([]);
+  });
+
+  it("renders personal project fields and independent collection ordering", () => {
+    const markup = renderToStaticMarkup(
+      <MasterCvForm
+        initialValue={{
+          fullName: "Taylor Smith",
+          email: "taylor@example.com",
+          phone: null,
+          location: null,
+          linkedin: null,
+          portfolio: null,
+          professionalSummary: "Software engineer",
+          experience: [
+            {
+              jobTitle: "Editor",
+              company: "BigTrail Magazine",
+              location: null,
+              startDate: null,
+              endDate: null,
+              current: false,
+              description: null,
+            },
+            {
+              jobTitle: "Engineer",
+              company: "TechNova Solutions",
+              location: null,
+              startDate: null,
+              endDate: null,
+              current: true,
+              description: null,
+            },
+          ],
+          education: [
+            {
+              institution: "School",
+              degree: "DAW",
+              fieldOfStudy: null,
+              startDate: null,
+              endDate: null,
+              description: null,
+            },
+            {
+              institution: "Bootcamp",
+              degree: "Full-Stack AI",
+              fieldOfStudy: null,
+              startDate: null,
+              endDate: null,
+              description: null,
+            },
+          ],
+          skills: ["TypeScript"],
+          languages: [],
+          certifications: [],
+          personalProjects: [
+            {
+              name: "Career Copilot",
+              description: "AI career assistant",
+              technologies: "TypeScript",
+              url: null,
+            },
+            {
+              name: "AI Developer Copilot",
+              description: "Developer assistant",
+              technologies: null,
+              url: null,
+            },
+          ],
+        }}
+        submitLabel="Save changes"
+        isSaving={false}
+        errorMessage={null}
+        onSubmit={() => Promise.resolve()}
+      />,
+    );
+
+    expect(markup).toContain("Personal projects");
+    expect(markup).toContain("Project name");
+    expect(markup).toContain("Brief description");
+    expect(markup).toContain("Technologies");
+    expect(markup).toContain("Project URL");
+    expect(markup).toContain("Career Copilot");
+    expect(markup).toContain("Remove project");
+    expect(markup).toContain('aria-label="Move experience up"');
+    expect(markup).toContain('aria-label="Move experience down"');
+    expect(markup).toContain('aria-label="Move education up"');
+    expect(markup).toContain('aria-label="Move education down"');
+    expect(markup).toContain('aria-label="Move personal project up"');
+    expect(markup).toContain('aria-label="Move personal project down"');
   });
 });

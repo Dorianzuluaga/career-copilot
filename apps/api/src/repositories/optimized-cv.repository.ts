@@ -10,6 +10,8 @@ function toData(input: OptimizedCv) {
     skills: input.skills,
     languages: input.languages as unknown as Prisma.InputJsonValue,
     certifications: input.certifications as unknown as Prisma.InputJsonValue,
+    personalProjects: (input.personalProjects ??
+      []) as unknown as Prisma.InputJsonValue,
   };
 }
 

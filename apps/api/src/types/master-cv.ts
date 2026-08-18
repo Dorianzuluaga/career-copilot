@@ -29,6 +29,13 @@ export interface CertificationItem {
   credentialUrl: string | null;
 }
 
+export interface PersonalProjectItem {
+  name: string | null;
+  description: string | null;
+  technologies: string | null;
+  url: string | null;
+}
+
 export interface PersonalInformation {
   fullName: string | null;
   email: string | null;
@@ -46,6 +53,7 @@ export interface MasterCvExtraction {
   skills: string[];
   languages: LanguageItem[];
   certifications: CertificationItem[];
+  personalProjects: PersonalProjectItem[];
 }
 
 export interface MasterCvInput {
@@ -61,4 +69,5 @@ export interface MasterCvInput {
   skills: string[];
   languages: LanguageItem[];
   certifications: CertificationItem[];
+  personalProjects?: PersonalProjectItem[];
 }
