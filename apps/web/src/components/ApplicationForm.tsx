@@ -39,19 +39,12 @@ export function ApplicationForm({
     setValues((currentValues) => ({ ...currentValues, [field]: value }));
   }
 
-  const fieldClassName =
-    "mt-2 w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-slate-950 outline-none transition placeholder:text-slate-400 focus:border-blue-600 focus:ring-2 focus:ring-blue-100";
+  const fieldClassName = "cc-field mt-2 py-2.5";
 
   return (
-    <form
-      onSubmit={handleSubmit}
-      className="space-y-6 rounded-xl border border-slate-200 bg-white p-5 shadow-sm sm:p-8"
-    >
+    <form onSubmit={handleSubmit} className="cc-card space-y-6 p-5 sm:p-8">
       <div>
-        <label
-          htmlFor="companyName"
-          className="text-sm font-semibold text-slate-800"
-        >
+        <label htmlFor="companyName" className="text-sm font-semibold text-ink">
           Company name
         </label>
         <input
@@ -66,10 +59,7 @@ export function ApplicationForm({
       </div>
 
       <div>
-        <label
-          htmlFor="jobTitle"
-          className="text-sm font-semibold text-slate-800"
-        >
+        <label htmlFor="jobTitle" className="text-sm font-semibold text-ink">
           Job title
         </label>
         <input
@@ -84,12 +74,8 @@ export function ApplicationForm({
       </div>
 
       <div>
-        <label
-          htmlFor="location"
-          className="text-sm font-semibold text-slate-800"
-        >
-          Location{" "}
-          <span className="font-normal text-slate-500">(optional)</span>
+        <label htmlFor="location" className="text-sm font-semibold text-ink">
+          Location <span className="font-normal text-muted">(optional)</span>
         </label>
         <input
           id="location"
@@ -102,11 +88,8 @@ export function ApplicationForm({
       </div>
 
       <div>
-        <label
-          htmlFor="jobUrl"
-          className="text-sm font-semibold text-slate-800"
-        >
-          Job URL <span className="font-normal text-slate-500">(optional)</span>
+        <label htmlFor="jobUrl" className="text-sm font-semibold text-ink">
+          Job URL <span className="font-normal text-muted">(optional)</span>
         </label>
         <input
           id="jobUrl"
@@ -122,7 +105,7 @@ export function ApplicationForm({
       <div>
         <label
           htmlFor="jobDescription"
-          className="text-sm font-semibold text-slate-800"
+          className="text-sm font-semibold text-ink"
         >
           Job Description
         </label>
@@ -138,18 +121,11 @@ export function ApplicationForm({
         />
       </div>
 
-      <div className="flex flex-col-reverse gap-3 border-t border-slate-200 pt-6 sm:flex-row sm:justify-end">
-        <button
-          type="button"
-          onClick={onCancel}
-          className="rounded-lg border border-slate-300 px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
-        >
+      <div className="flex flex-col-reverse gap-3 border-t border-line pt-6 sm:flex-row sm:justify-end">
+        <button type="button" onClick={onCancel} className="cc-btn-secondary">
           Cancel
         </button>
-        <button
-          type="submit"
-          className="rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-blue-700"
-        >
+        <button type="submit" className="cc-btn-primary">
           {submitLabel}
         </button>
       </div>

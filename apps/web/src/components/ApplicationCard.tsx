@@ -23,30 +23,27 @@ export function ApplicationCard({
   const location = application.jobAnalysis?.location;
 
   return (
-    <article className="flex h-full flex-col rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+    <article className="cc-card flex h-full flex-col p-5">
       <div className="flex-1">
-        <p className="text-sm font-semibold text-blue-700">{company}</p>
-        <h2 className="mt-1 text-xl font-bold tracking-tight text-slate-950">
+        <p className="cc-kicker">{company}</p>
+        <h2 className="mt-1 text-xl font-bold tracking-tight text-ink">
           {title}
         </h2>
-        {location && <p className="mt-3 text-sm text-slate-600">{location}</p>}
-        <p className="mt-2 text-xs text-slate-500">
+        {location && <p className="mt-3 text-sm text-muted">{location}</p>}
+        <p className="mt-2 text-xs text-muted">
           Created {new Date(application.createdAt).toLocaleDateString()}
         </p>
       </div>
 
-      <div className="mt-6 flex flex-wrap gap-2 border-t border-slate-100 pt-4">
-        <Link
-          to={`/applications/${application.id}`}
-          className="rounded-lg bg-slate-950 px-3 py-2 text-sm font-semibold text-white transition hover:bg-slate-800"
-        >
+      <div className="mt-6 flex flex-wrap gap-2 border-t border-line pt-4">
+        <Link to={`/applications/${application.id}`} className="cc-btn-primary">
           Open
         </Link>
         <button
           type="button"
           onClick={() => void onDelete(application)}
           disabled={isDeleting}
-          className="rounded-lg px-3 py-2 text-sm font-semibold text-red-700 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-60"
+          className="cc-btn-ghost-danger"
         >
           {isDeleting ? "Deleting…" : "Delete"}
         </button>

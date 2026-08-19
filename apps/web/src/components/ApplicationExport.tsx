@@ -107,20 +107,12 @@ export function ApplicationExport({
 
   return (
     <div className="space-y-6">
-      <section
-        aria-labelledby="export-title"
-        className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8"
-      >
-        <p className="text-sm font-semibold text-blue-700">
-          Application documents
-        </p>
-        <h2
-          id="export-title"
-          className="mt-1 text-2xl font-bold text-slate-950"
-        >
+      <section aria-labelledby="export-title" className="cc-card p-6 sm:p-8">
+        <p className="cc-kicker">Application documents</p>
+        <h2 id="export-title" className="mt-1 text-2xl font-bold text-ink">
           Export
         </h2>
-        <p className="mt-4 text-sm leading-6 text-slate-600">
+        <p className="mt-4 text-sm leading-6 text-muted">
           Preview the latest saved application documents and choose which ones
           will be downloaded. Editing is available in the Optimized CV and Cover
           Letter sections.
@@ -129,11 +121,11 @@ export function ApplicationExport({
         {hasPreviewDocuments ? (
           <>
             <fieldset className="mt-6">
-              <legend className="text-sm font-semibold text-slate-950">
+              <legend className="text-sm font-semibold text-ink">
                 Documents to download
               </legend>
               <div className="mt-3 flex flex-wrap gap-4">
-                <label className="flex items-center gap-2 text-sm font-medium text-slate-700">
+                <label className="flex items-center gap-2 text-sm font-medium text-ink">
                   <input
                     type="checkbox"
                     checked={selectedDocuments.optimizedCv}
@@ -150,7 +142,7 @@ export function ApplicationExport({
                   />
                   Optimized CV
                 </label>
-                <label className="flex items-center gap-2 text-sm font-medium text-slate-700">
+                <label className="flex items-center gap-2 text-sm font-medium text-ink">
                   <input
                     type="checkbox"
                     checked={selectedDocuments.coverLetter}
@@ -175,12 +167,12 @@ export function ApplicationExport({
                 type="button"
                 onClick={() => void handleDownload()}
                 disabled={isDownloading}
-                className="rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
+                className="cc-btn-primary"
               >
                 {isDownloading ? "Downloading…" : "Download"}
               </button>
               {downloadError ? (
-                <p className="text-sm text-red-600" role="alert">
+                <p className="text-sm text-danger" role="alert">
                   {downloadError}
                 </p>
               ) : null}
@@ -201,11 +193,7 @@ export function ApplicationExport({
                     role="tab"
                     aria-selected={isActive}
                     onClick={() => setActivePreview(document.id)}
-                    className={
-                      isActive
-                        ? "rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white"
-                        : "rounded-lg border border-slate-300 px-4 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50"
-                    }
+                    className={isActive ? "cc-tab-active" : "cc-tab"}
                   >
                     {document.label}
                   </button>
@@ -230,8 +218,8 @@ export function ApplicationExport({
           ) : null}
         </div>
       ) : (
-        <section className="rounded-xl border border-slate-200 bg-white p-6 text-center shadow-sm sm:p-8">
-          <p className="text-sm leading-6 text-slate-600">
+        <section className="cc-card p-6 text-center sm:p-8">
+          <p className="text-sm leading-6 text-muted">
             Saved Optimized CV and Cover Letter are required before documents
             can be previewed.
           </p>

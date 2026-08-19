@@ -23,15 +23,12 @@ export function ApplicationFormPage() {
 
   if (isEditing && !application) {
     return (
-      <section className="rounded-xl border border-slate-200 bg-white p-8 text-center shadow-sm">
+      <section className="cc-card p-8 text-center">
         <h1 className="text-2xl font-bold">Application not found</h1>
-        <p className="mt-2 text-slate-600">
+        <p className="mt-2 text-muted">
           This application is not available in the current session.
         </p>
-        <Link
-          to="/"
-          className="mt-6 inline-flex rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-blue-700"
-        >
+        <Link to="/" className="cc-btn-primary mt-6">
           Return to dashboard
         </Link>
       </section>
@@ -40,11 +37,11 @@ export function ApplicationFormPage() {
 
   return (
     <section className="mx-auto max-w-2xl">
-      <p className="text-sm font-semibold text-blue-700">Application details</p>
+      <p className="cc-kicker">Application details</p>
       <h1 className="mt-1 text-3xl font-bold tracking-tight">
         {isEditing ? "Edit application" : "Create application"}
       </h1>
-      <p className="mt-2 text-slate-600">
+      <p className="mt-2 text-muted">
         {isEditing
           ? "Update the information for this application."
           : "Add the opportunity you want to track."}

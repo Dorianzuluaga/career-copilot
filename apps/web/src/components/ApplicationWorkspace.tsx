@@ -32,24 +32,22 @@ export function ApplicationWorkspace({
 }: ApplicationWorkspaceProps) {
   return (
     <div className="space-y-8">
-      <header className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
+      <header className="cc-card p-6 sm:p-8">
         <GuardedLink
           to="/dashboard"
-          className="text-sm font-semibold text-blue-700 hover:text-blue-800"
+          className="text-sm font-semibold text-brand hover:text-navy"
         >
           ← Dashboard
         </GuardedLink>
 
         <div className="mt-6 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
           <div>
-            <p className="text-sm font-semibold text-blue-700">{company}</p>
+            <p className="cc-kicker">{company}</p>
             <h1 className="mt-1 text-3xl font-bold tracking-tight sm:text-4xl">
               {title}
             </h1>
           </div>
-          <span className="w-fit rounded-full bg-slate-100 px-3 py-1.5 text-xs font-semibold uppercase tracking-wide text-slate-700">
-            {status}
-          </span>
+          <span className="cc-badge">{status}</span>
         </div>
       </header>
 

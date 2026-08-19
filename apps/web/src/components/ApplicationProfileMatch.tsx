@@ -11,18 +11,27 @@ interface ApplicationProfileMatchProps {
 function ComparisonList({
   title,
   values,
+  tone = "default",
 }: {
   title: string;
   values: string[];
+  tone?: "match" | "gap" | "default";
 }) {
+  const bulletClass =
+    tone === "match"
+      ? "text-accent"
+      : tone === "gap"
+        ? "text-warning"
+        : "text-brand";
+
   return (
-    <section className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
-      <h3 className="text-base font-bold text-slate-950">{title}</h3>
+    <section className="cc-card p-6">
+      <h3 className="text-base font-bold text-ink">{title}</h3>
       {values.length > 0 ? (
-        <ul className="mt-4 space-y-2 text-sm leading-6 text-slate-700">
+        <ul className="mt-4 space-y-2 text-sm leading-6 text-ink">
           {values.map((value) => (
             <li key={value} className="flex gap-2">
-              <span aria-hidden="true" className="text-blue-600">
+              <span aria-hidden="true" className={bulletClass}>
                 •
               </span>
               <span>{value}</span>
@@ -30,7 +39,7 @@ function ComparisonList({
           ))}
         </ul>
       ) : (
-        <p className="mt-3 text-sm text-slate-500">None identified</p>
+        <p className="mt-3 text-sm text-muted">None identified</p>
       )}
     </section>
   );
@@ -45,9 +54,9 @@ export function ApplicationProfileMatch({
 }: ApplicationProfileMatchProps) {
   if (isLoading) {
     return (
-      <section className="rounded-xl border border-slate-200 bg-white p-8 text-center shadow-sm">
-        <h2 className="text-lg font-bold text-slate-950">Profile Match</h2>
-        <p className="mt-2 text-sm text-slate-600">
+      <section className="cc-card p-8 text-center">
+        <h2 className="text-lg font-bold text-ink">Profile Match</h2>
+        <p className="mt-2 text-sm text-muted">
           Comparing your Master CV with this job analysis…
         </p>
       </section>
@@ -56,9 +65,9 @@ export function ApplicationProfileMatch({
 
   if (!comparison) {
     return (
-      <section className="rounded-xl border border-slate-200 bg-white p-8 text-center shadow-sm">
-        <h2 className="text-lg font-bold text-slate-950">Profile Match</h2>
-        <p className="mt-2 text-sm text-slate-600">
+      <section className="cc-card p-8 text-center">
+        <h2 className="text-lg font-bold text-ink">Profile Match</h2>
+        <p className="mt-2 text-sm text-muted">
           {errorMessage ??
             "Compare your Master CV with the completed job analysis."}
         </p>
@@ -66,15 +75,11 @@ export function ApplicationProfileMatch({
           <button
             type="button"
             onClick={onReturnToJobAnalysis}
-            className="rounded-lg border border-slate-300 px-4 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+            className="cc-btn-secondary"
           >
             Return to Job Analysis
           </button>
-          <button
-            type="button"
-            onClick={onCompare}
-            className="rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-blue-700"
-          >
+          <button type="button" onClick={onCompare} className="cc-btn-primary">
             {errorMessage ? "Try again" : "Compare profile"}
           </button>
         </div>
@@ -84,15 +89,13 @@ export function ApplicationProfileMatch({
 
   return (
     <div className="space-y-6">
-      <section className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
+      <section className="cc-card p-6 sm:p-8">
         <div className="flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <p className="text-sm font-semibold text-blue-700">Profile Match</p>
-            <h2 className="mt-1 text-2xl font-bold text-slate-950">
-              ATS Match
-            </h2>
+            <p className="cc-kicker">Profile Match</p>
+            <h2 className="mt-1 text-2xl font-bold text-ink">ATS Match</h2>
           </div>
-          <p className="text-5xl font-bold tracking-tight text-blue-700">
+          <p className="text-5xl font-bold tracking-tight text-accent">
             {comparison.alignmentScore}%
           </p>
         </div>
@@ -102,18 +105,28 @@ export function ApplicationProfileMatch({
         <ComparisonList
           title="Matching Skills"
           values={comparison.matchingSkills}
+          tone="match"
         />
         <ComparisonList
           title="Missing Skills"
           values={comparison.missingSkills}
+          tone="gap"
         />
-        <ComparisonList title="Strengths" values={comparison.strengths} />
-        <ComparisonList title="Weaknesses" values={comparison.weaknesses} />
+        <ComparisonList
+          title="Strengths"
+          values={comparison.strengths}
+          tone="match"
+        />
+        <ComparisonList
+          title="Weaknesses"
+          values={comparison.weaknesses}
+          tone="gap"
+        />
       </div>
 
-      <section className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
-        <h3 className="text-base font-bold text-slate-950">Recommendation</h3>
-        <p className="mt-3 text-sm leading-6 text-slate-700">
+      <section className="cc-card p-6">
+        <h3 className="text-base font-bold text-ink">Recommendation</h3>
+        <p className="mt-3 text-sm leading-6 text-ink">
           {comparison.recommendation}
         </p>
       </section>
@@ -121,7 +134,7 @@ export function ApplicationProfileMatch({
       <button
         type="button"
         onClick={onReturnToJobAnalysis}
-        className="rounded-lg border border-slate-300 px-4 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+        className="cc-btn-secondary"
       >
         Return to Job Analysis
       </button>

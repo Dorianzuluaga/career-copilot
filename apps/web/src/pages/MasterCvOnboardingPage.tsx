@@ -97,18 +97,18 @@ export function MasterCvOnboardingPage() {
   }
 
   if (isChecking) {
-    return <p className="text-sm text-slate-600">Loading your profile…</p>;
+    return <p className="text-sm text-muted">Loading your profile…</p>;
   }
   if (existingMasterCv) return <Navigate to="/master-cv" replace />;
 
   if (step === "choice") {
     return (
       <section className="mx-auto max-w-3xl">
-        <p className="text-sm font-semibold text-blue-700">Master CV</p>
+        <p className="cc-kicker">Master CV</p>
         <h1 className="mt-1 text-3xl font-bold tracking-tight sm:text-4xl">
           Do you already have a CV?
         </h1>
-        <p className="mt-3 text-slate-600">
+        <p className="mt-3 text-muted">
           Create the professional profile Career Copilot will use as your source
           of truth.
         </p>
@@ -116,20 +116,20 @@ export function MasterCvOnboardingPage() {
           <button
             type="button"
             onClick={() => setStep("upload")}
-            className="rounded-xl border border-slate-200 bg-white p-6 text-left shadow-sm transition hover:border-blue-300"
+            className="cc-card p-6 text-left transition hover:border-brand"
           >
             <span className="text-lg font-bold">Upload existing CV</span>
-            <span className="mt-2 block text-sm text-slate-600">
+            <span className="mt-2 block text-sm text-muted">
               Upload a PDF and review the extracted information.
             </span>
           </button>
           <button
             type="button"
             onClick={continueManually}
-            className="rounded-xl border border-slate-200 bg-white p-6 text-left shadow-sm transition hover:border-blue-300"
+            className="cc-card p-6 text-left transition hover:border-brand"
           >
             <span className="text-lg font-bold">Create manually</span>
-            <span className="mt-2 block text-sm text-slate-600">
+            <span className="mt-2 block text-sm text-muted">
               Start with an empty form and enter your information.
             </span>
           </button>
@@ -144,15 +144,15 @@ export function MasterCvOnboardingPage() {
         <button
           type="button"
           onClick={() => setStep("choice")}
-          className="text-sm font-semibold text-blue-700"
+          className="text-sm font-semibold text-brand"
         >
           Back
         </button>
         <h1 className="mt-4 text-3xl font-bold tracking-tight">
           Upload your CV
         </h1>
-        <p className="mt-2 text-slate-600">PDF only, up to 10 MB.</p>
-        <div className="mt-8 rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+        <p className="mt-2 text-muted">PDF only, up to 10 MB.</p>
+        <div className="cc-card mt-8 p-6">
           <input
             type="file"
             accept="application/pdf,.pdf"
@@ -160,20 +160,20 @@ export function MasterCvOnboardingPage() {
               setSelectedFile(event.target.files?.[0] ?? null);
               setUploadError(null);
             }}
-            className="block w-full text-sm text-slate-700"
+            className="block w-full text-sm text-ink"
           />
           <button
             type="button"
             disabled={!selectedFile || isUploading}
             onClick={() => void handleUpload()}
-            className="mt-5 rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
+            className="cc-btn-primary mt-5"
           >
             {isUploading ? "Extracting…" : "Upload and extract"}
           </button>
 
           {uploadError ? (
-            <div className="mt-5 rounded-lg border border-red-200 bg-red-50 p-4">
-              <p role="alert" className="text-sm font-medium text-red-800">
+            <div className="cc-alert-error mt-5">
+              <p role="alert" className="text-sm font-medium">
                 {uploadError}
               </p>
               <div className="mt-4 flex flex-wrap gap-3">
@@ -181,14 +181,14 @@ export function MasterCvOnboardingPage() {
                   type="button"
                   disabled={!selectedFile || isUploading}
                   onClick={() => void handleUpload()}
-                  className="rounded-lg border border-red-300 bg-white px-3 py-2 text-sm font-semibold text-red-800"
+                  className="cc-btn-danger px-3 py-2"
                 >
                   Retry
                 </button>
                 <button
                   type="button"
                   onClick={continueManually}
-                  className="rounded-lg bg-slate-900 px-3 py-2 text-sm font-semibold text-white"
+                  className="cc-btn-navy px-3 py-2"
                 >
                   Complete manually
                 </button>
@@ -202,13 +202,11 @@ export function MasterCvOnboardingPage() {
 
   return (
     <section className="mx-auto max-w-4xl">
-      <p className="text-sm font-semibold text-blue-700">
-        Master CV onboarding
-      </p>
+      <p className="cc-kicker">Master CV onboarding</p>
       <h1 className="mt-1 text-3xl font-bold tracking-tight">
         Review your information
       </h1>
-      <p className="mt-2 mb-8 text-slate-600">
+      <p className="mt-2 mb-8 text-muted">
         Complete all required fields before saving your Master CV.
       </p>
       <MasterCvForm

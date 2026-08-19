@@ -38,7 +38,7 @@ function RootRedirect() {
 
   if (isLoading || (user && !destination)) {
     return (
-      <main className="flex min-h-screen items-center justify-center bg-slate-50 text-sm text-slate-600">
+      <main className="flex min-h-screen items-center justify-center bg-canvas text-sm text-muted">
         Restoring your session…
       </main>
     );
@@ -51,7 +51,7 @@ function RequireAuthentication() {
   const { user, isLoading } = useAuth();
   if (isLoading) {
     return (
-      <main className="flex min-h-screen items-center justify-center bg-slate-50 text-sm text-slate-600">
+      <main className="flex min-h-screen items-center justify-center bg-canvas text-sm text-muted">
         Restoring your session…
       </main>
     );

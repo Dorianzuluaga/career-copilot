@@ -15,8 +15,7 @@ interface ApplicationCoverLetterProps {
   savedMessage?: string | null;
 }
 
-const editableFieldClassName =
-  "w-full resize-y rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm leading-7 text-slate-700 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100";
+const editableFieldClassName = "cc-field resize-y leading-7";
 
 function hasText(value: string | null | undefined): value is string {
   return typeof value === "string" && value.trim().length > 0;
@@ -24,7 +23,7 @@ function hasText(value: string | null | undefined): value is string {
 
 function ReadOnlyBlock({ children }: { children: ReactNode }) {
   return (
-    <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2">
+    <div className="rounded-lg border border-line bg-canvas px-3 py-2">
       {children}
     </div>
   );
@@ -76,23 +75,23 @@ export function CoverLetterDocument({
 
   const header = (
     <header>
-      <p className="text-2xl font-bold tracking-tight text-slate-950">
+      <p className="text-2xl font-bold tracking-tight text-ink">
         {coverLetter.candidateName}
       </p>
       {contactDetails.length > 0 ? (
-        <p className="mt-2 text-sm leading-6 text-slate-600">
+        <p className="mt-2 text-sm leading-6 text-muted">
           {contactDetails.join(" · ")}
         </p>
       ) : null}
-      <p className="mt-4 text-sm text-slate-600">{coverLetter.date}</p>
+      <p className="mt-4 text-sm text-muted">{coverLetter.date}</p>
       {hasText(coverLetter.companyName) ? (
-        <p className="mt-1 text-sm text-slate-600">{coverLetter.companyName}</p>
+        <p className="mt-1 text-sm text-muted">{coverLetter.companyName}</p>
       ) : null}
     </header>
   );
 
   const signature = (
-    <p className="whitespace-pre-wrap text-sm leading-7 text-slate-700">
+    <p className="whitespace-pre-wrap text-sm leading-7 text-ink">
       {coverLetter.signature}
     </p>
   );
@@ -100,11 +99,11 @@ export function CoverLetterDocument({
   return (
     <article
       aria-label="Cover Letter"
-      className="rounded-xl border border-slate-200 bg-white px-6 py-8 shadow-sm sm:px-10 sm:py-10"
+      className="cc-card px-6 py-8 sm:px-10 sm:py-10"
     >
       {canEdit ? <ReadOnlyBlock>{header}</ReadOnlyBlock> : header}
 
-      <div className="mt-8 space-y-5 text-sm leading-7 text-slate-700">
+      <div className="mt-8 space-y-5 text-sm leading-7 text-ink">
         <EditableParagraph
           ariaLabel="Greeting"
           isEditing={canEdit}
@@ -170,11 +169,9 @@ export function ApplicationCoverLetter({
 
   if (isLoading) {
     return (
-      <section className="rounded-xl border border-slate-200 bg-white p-8 text-center shadow-sm">
-        <h2 className="text-lg font-bold text-slate-950">Cover Letter</h2>
-        <p className="mt-2 text-sm text-slate-600">
-          Generating your Cover Letter…
-        </p>
+      <section className="cc-card p-8 text-center">
+        <h2 className="text-lg font-bold text-ink">Cover Letter</h2>
+        <p className="mt-2 text-sm text-muted">Generating your Cover Letter…</p>
       </section>
     );
   }
@@ -187,22 +184,20 @@ export function ApplicationCoverLetter({
           className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between"
         >
           <div>
-            <p className="text-sm font-semibold text-blue-700">
-              Application document
-            </p>
+            <p className="cc-kicker">Application document</p>
             <h2
               id="cover-letter-title"
-              className="mt-1 text-2xl font-bold text-slate-950"
+              className="mt-1 text-2xl font-bold text-ink"
             >
               Cover Letter
             </h2>
             {isEditing ? (
-              <p className="mt-2 max-w-xl text-sm leading-6 text-slate-600">
+              <p className="mt-2 max-w-xl text-sm leading-6 text-muted">
                 Edit the application-specific letter text. Header details and
                 signature remain read-only.
               </p>
             ) : (
-              <p className="mt-2 max-w-xl text-sm leading-6 text-slate-600">
+              <p className="mt-2 max-w-xl text-sm leading-6 text-muted">
                 Review the generated document. Enter Edit mode to update the
                 letter text.
               </p>
@@ -213,7 +208,7 @@ export function ApplicationCoverLetter({
               <button
                 type="button"
                 onClick={() => setIsEditing(false)}
-                className="rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-blue-700"
+                className="cc-btn-primary"
               >
                 Done editing
               </button>
@@ -221,7 +216,7 @@ export function ApplicationCoverLetter({
               <button
                 type="button"
                 onClick={() => setIsEditing(true)}
-                className="rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-blue-700"
+                className="cc-btn-primary"
               >
                 Edit
               </button>
@@ -231,7 +226,7 @@ export function ApplicationCoverLetter({
                 type="button"
                 onClick={onSave}
                 disabled={isSaving}
-                className="rounded-lg border border-slate-300 px-4 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+                className="cc-btn-secondary"
               >
                 {isSaving ? "Saving…" : "Save"}
               </button>
@@ -242,7 +237,7 @@ export function ApplicationCoverLetter({
                 setIsEditing(false);
                 onGenerate();
               }}
-              className="rounded-lg border border-slate-300 px-4 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+              className="cc-btn-secondary"
             >
               Generate again
             </button>
@@ -250,7 +245,7 @@ export function ApplicationCoverLetter({
               <button
                 type="button"
                 onClick={onContinueToExport}
-                className="rounded-lg border border-slate-300 px-4 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+                className="cc-btn-secondary"
               >
                 Continue to Export
               </button>
@@ -259,12 +254,12 @@ export function ApplicationCoverLetter({
         </section>
 
         {savedMessage ? (
-          <p role="status" className="text-sm font-medium text-green-700">
+          <p role="status" className="text-sm font-medium text-success">
             {savedMessage}
           </p>
         ) : null}
         {saveErrorMessage ? (
-          <p role="alert" className="text-sm font-medium text-red-700">
+          <p role="alert" className="text-sm font-medium text-danger">
             {saveErrorMessage}
           </p>
         ) : null}
@@ -281,25 +276,20 @@ export function ApplicationCoverLetter({
   return (
     <section
       aria-labelledby="cover-letter-title"
-      className="rounded-xl border border-slate-200 bg-white p-6 text-center shadow-sm sm:p-8"
+      className="cc-card p-6 text-center sm:p-8"
     >
-      <p className="text-sm font-semibold text-blue-700">
-        Application document
-      </p>
-      <h2
-        id="cover-letter-title"
-        className="mt-1 text-2xl font-bold text-slate-950"
-      >
+      <p className="cc-kicker">Application document</p>
+      <h2 id="cover-letter-title" className="mt-1 text-2xl font-bold text-ink">
         Cover Letter
       </h2>
-      <p className="mt-4 text-sm leading-6 text-slate-600">
+      <p className="mt-4 text-sm leading-6 text-muted">
         {errorMessage ??
           "Generate a Cover Letter tailored to this job opportunity from your Master CV, Job Analysis, Profile Match, and saved Optimized CV."}
       </p>
       <button
         type="button"
         onClick={onGenerate}
-        className="mt-6 rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-blue-700"
+        className="cc-btn-primary mt-6"
       >
         {errorMessage ? "Try again" : "Generate Cover Letter"}
       </button>

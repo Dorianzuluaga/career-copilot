@@ -55,12 +55,12 @@ export function MasterCvImport({
         type="button"
         disabled={isImporting}
         onClick={() => fileInputRef.current?.click()}
-        className="inline-flex w-fit items-center justify-center rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+        className="cc-btn-secondary w-fit"
       >
         {isImporting ? "Importing…" : "Import Existing CV"}
       </button>
       {errorMessage ? (
-        <p role="alert" className="max-w-sm text-sm font-medium text-red-700">
+        <p role="alert" className="max-w-sm text-sm font-medium text-danger">
           {errorMessage}
         </p>
       ) : null}

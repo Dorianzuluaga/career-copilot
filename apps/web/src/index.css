@@ -1,1 +1,85 @@
 @import "tailwindcss";
+
+@theme {
+  --color-navy: #0f172a;
+  --color-navy-hover: #1e293b;
+  --color-brand: #2563eb;
+  --color-brand-soft: #eff6ff;
+  --color-canvas: #f8fafc;
+  --color-surface: #ffffff;
+  --color-line: #e2e8f0;
+  --color-ink: #0f172a;
+  --color-muted: #64748b;
+  --color-success: #15803d;
+  --color-warning: #b45309;
+  --color-danger: #b91c1c;
+  --color-accent: #0f766e;
+
+  --shadow-card: 0 1px 2px rgb(15 23 42 / 0.05), 0 1px 1px rgb(15 23 42 / 0.04);
+}
+
+@layer base {
+  html {
+    color: var(--color-ink);
+    background-color: var(--color-canvas);
+    -webkit-font-smoothing: antialiased;
+  }
+
+  input[type="checkbox"] {
+    accent-color: var(--color-brand);
+  }
+}
+
+@layer components {
+  .cc-card {
+    @apply rounded-xl border border-line bg-surface shadow-card;
+  }
+
+  .cc-btn-primary {
+    @apply inline-flex items-center justify-center rounded-lg bg-brand px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-brand/90 disabled:cursor-not-allowed disabled:opacity-60;
+  }
+
+  .cc-btn-secondary {
+    @apply inline-flex items-center justify-center rounded-lg border border-line bg-surface px-4 py-2.5 text-sm font-semibold text-ink transition hover:bg-canvas disabled:cursor-not-allowed disabled:opacity-60;
+  }
+
+  .cc-btn-navy {
+    @apply inline-flex items-center justify-center rounded-lg bg-navy px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-navy-hover disabled:cursor-not-allowed disabled:opacity-60;
+  }
+
+  .cc-btn-danger {
+    @apply inline-flex items-center justify-center rounded-lg border border-danger/20 bg-surface px-4 py-2.5 text-sm font-semibold text-danger transition hover:bg-danger/5 disabled:cursor-not-allowed disabled:opacity-60;
+  }
+
+  .cc-btn-ghost-danger {
+    @apply rounded-lg px-3 py-2 text-sm font-semibold text-danger transition hover:bg-danger/5 disabled:cursor-not-allowed disabled:opacity-60;
+  }
+
+  .cc-field {
+    @apply w-full rounded-lg border border-line bg-surface px-3 py-2 text-sm text-ink outline-none transition placeholder:text-muted focus:border-brand focus:ring-2 focus:ring-brand-soft;
+  }
+
+  .cc-kicker {
+    @apply text-sm font-semibold text-brand;
+  }
+
+  .cc-badge {
+    @apply w-fit rounded-full bg-canvas px-3 py-1.5 text-xs font-semibold uppercase tracking-wide text-navy;
+  }
+
+  .cc-badge-brand {
+    @apply rounded-full bg-brand-soft px-2.5 py-1 text-xs font-semibold text-brand;
+  }
+
+  .cc-alert-error {
+    @apply rounded-lg border border-danger/20 bg-danger/5 p-4 text-danger;
+  }
+
+  .cc-tab {
+    @apply rounded-lg border border-line bg-surface px-4 py-2.5 text-sm font-semibold text-ink transition hover:bg-canvas;
+  }
+
+  .cc-tab-active {
+    @apply rounded-lg bg-brand px-4 py-2.5 text-sm font-semibold text-white;
+  }
+}

@@ -66,11 +66,11 @@ export function JobAnalysisPage() {
 
   return (
     <section className="mx-auto max-w-3xl">
-      <p className="text-sm font-semibold text-blue-700">New application</p>
+      <p className="cc-kicker">New application</p>
       <h1 className="mt-1 text-3xl font-bold tracking-tight sm:text-4xl">
         Analyze a job description
       </h1>
-      <p className="mt-2 max-w-2xl text-slate-600">
+      <p className="mt-2 max-w-2xl text-muted">
         Paste the complete offer. Career Copilot will extract only information
         present in the source and create your application workspace.
       </p>
