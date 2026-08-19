@@ -62,6 +62,22 @@ describe("App", () => {
     expect(markup).toContain("Loading applications");
   });
 
+  it("renders Dashboard and Master CV in the sidebar and keeps Profile in the header", () => {
+    const markup = renderApp("/dashboard");
+
+    expect(markup).toContain("MAIN");
+    expect(markup).toContain('href="/dashboard"');
+    expect(markup).toContain('href="/master-cv"');
+    expect(markup).toContain('href="/profile"');
+    expect(markup).toContain('aria-label="Main"');
+    expect(markup).toContain('aria-label="Account"');
+    expect(markup).toContain('aria-current="page"');
+    expect(markup).not.toContain("Export History");
+    expect(markup).not.toContain("Upgrade to Pro");
+    expect(markup).not.toContain("Help &amp; Support");
+    expect(markup).not.toContain(">Settings<");
+  });
+
   it("renders the read-only profile page for the authenticated user", () => {
     const markup = renderApp("/profile");
 
@@ -1144,7 +1160,7 @@ describe("App", () => {
     );
     expect(markup).toContain("Documents to download");
     expect(markup).toContain(
-      '<label class="flex items-center gap-2 text-sm font-medium text-slate-700"><input type="checkbox" checked=""',
+      '<label class="flex items-center gap-2 text-sm font-medium text-ink"><input type="checkbox" checked=""',
     );
     expect(markup).toContain(">Optimized CV</label>");
     expect(markup).toContain(">Cover Letter</label>");

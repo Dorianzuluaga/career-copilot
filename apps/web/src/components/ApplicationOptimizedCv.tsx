@@ -23,8 +23,7 @@ interface ApplicationOptimizedCvProps {
   savedMessage?: string | null;
 }
 
-const fieldClassName =
-  "mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-950 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100";
+const fieldClassName = "cc-field mt-1";
 
 function hasText(value: string | null | undefined): value is string {
   return typeof value === "string" && value.trim().length > 0;
@@ -90,13 +89,13 @@ function DocumentSection({
   first?: boolean;
 }) {
   return (
-    <section className={first ? "" : "border-t border-slate-200 pt-5"}>
+    <section className={first ? "" : "border-t border-line pt-5"}>
       <div className="flex items-center gap-2">
-        <h3 className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
+        <h3 className="text-xs font-semibold uppercase tracking-[0.14em] text-muted">
           {title}
         </h3>
         {editable ? (
-          <span className="rounded bg-blue-50 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-blue-700">
+          <span className="rounded bg-brand-soft px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-brand">
             Editable
           </span>
         ) : null}
@@ -108,7 +107,7 @@ function DocumentSection({
 
 function ReadOnlyValue({ children }: { children: ReactNode }) {
   return (
-    <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2">
+    <div className="rounded-lg border border-line bg-canvas px-3 py-2">
       {children}
     </div>
   );
@@ -131,11 +130,11 @@ function DocumentHeader({
 
   const content = (
     <>
-      <p className="text-2xl font-bold tracking-tight text-slate-950">
+      <p className="text-2xl font-bold tracking-tight text-ink">
         {cv.fullName}
       </p>
       {contactDetails.length > 0 ? (
-        <p className="mt-2 text-sm leading-6 text-slate-600">
+        <p className="mt-2 text-sm leading-6 text-muted">
           {contactDetails.join(" · ")}
         </p>
       ) : null}
@@ -170,7 +169,7 @@ function ExperienceEntries({
         const identity = (
           <>
             {titleParts.length > 0 ? (
-              <h4 className="text-base font-semibold text-slate-950">
+              <h4 className="text-base font-semibold text-ink">
                 {titleParts.join(" · ")}
               </h4>
             ) : null}
@@ -178,8 +177,8 @@ function ExperienceEntries({
               <p
                 className={
                   titleParts.length > 0
-                    ? "mt-1 text-sm text-slate-500"
-                    : "text-sm text-slate-500"
+                    ? "mt-1 text-sm text-muted"
+                    : "text-sm text-muted"
                 }
               >
                 {metaParts.join(" · ")}
@@ -200,7 +199,7 @@ function ExperienceEntries({
             ) : null}
 
             {isEditing && onDescriptionChange ? (
-              <label className="mt-3 block text-sm font-medium text-slate-700">
+              <label className="mt-3 block text-sm font-medium text-ink">
                 Description
                 <textarea
                   value={item.description ?? ""}
@@ -213,7 +212,7 @@ function ExperienceEntries({
                 />
               </label>
             ) : hasText(item.description) ? (
-              <p className="mt-2 whitespace-pre-wrap text-left text-sm leading-6 text-slate-700">
+              <p className="mt-2 whitespace-pre-wrap text-left text-sm leading-6 text-ink">
                 {item.description}
               </p>
             ) : null}
@@ -245,17 +244,13 @@ function EducationEntries({
         const content = (
           <>
             {title ? (
-              <h4 className="text-base font-semibold text-slate-950">
-                {title}
-              </h4>
+              <h4 className="text-base font-semibold text-ink">{title}</h4>
             ) : null}
             {metaParts.length > 0 ? (
-              <p className="mt-1 text-sm text-slate-500">
-                {metaParts.join(" · ")}
-              </p>
+              <p className="mt-1 text-sm text-muted">{metaParts.join(" · ")}</p>
             ) : null}
             {hasText(item.description) ? (
-              <p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-slate-700">
+              <p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-ink">
                 {item.description}
               </p>
             ) : null}
@@ -280,7 +275,7 @@ function LanguageEntries({
   isEditing: boolean;
 }) {
   const list = (
-    <div className="space-y-1 text-left text-sm leading-6 text-slate-700">
+    <div className="space-y-1 text-left text-sm leading-6 text-ink">
       {items.map((item, index) => {
         const label = [item.name, item.proficiency].filter(hasText).join(" · ");
         if (!label) {
@@ -315,19 +310,13 @@ function CertificationEntries({
         const content = (
           <>
             {title ? (
-              <h4 className="text-base font-semibold text-slate-950">
-                {title}
-              </h4>
+              <h4 className="text-base font-semibold text-ink">{title}</h4>
             ) : null}
             {metaParts.length > 0 ? (
-              <p className="mt-1 text-sm text-slate-500">
-                {metaParts.join(" · ")}
-              </p>
+              <p className="mt-1 text-sm text-muted">{metaParts.join(" · ")}</p>
             ) : null}
             {hasText(item.credentialUrl) ? (
-              <p className="mt-1 text-sm text-slate-600">
-                {item.credentialUrl}
-              </p>
+              <p className="mt-1 text-sm text-muted">{item.credentialUrl}</p>
             ) : null}
           </>
         );
@@ -357,7 +346,7 @@ function AddPersonalProjectControls({
 
   return (
     <div className="mt-4 flex flex-col gap-2 sm:flex-row">
-      <label className="block flex-1 text-sm font-medium text-slate-700">
+      <label className="block flex-1 text-sm font-medium text-ink">
         <span className="sr-only">Add a Personal Project</span>
         <select
           value={String(Math.min(selectedIndex, availableProjects.length - 1))}
@@ -378,7 +367,7 @@ function AddPersonalProjectControls({
       <button
         type="button"
         onClick={() => onAdd(personalProjectFromMasterCv(selectedProject))}
-        className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50 sm:self-end"
+        className="cc-btn-secondary px-4 py-2 sm:self-end"
       >
         Add project
       </button>
@@ -405,16 +394,12 @@ function PersonalProjectEntries({
         const identity = (
           <>
             {title ? (
-              <h4 className="text-base font-semibold text-slate-950">
-                {title}
-              </h4>
+              <h4 className="text-base font-semibold text-ink">{title}</h4>
             ) : null}
             {metaParts.length > 0 ? (
               <p
                 className={
-                  title
-                    ? "mt-1 text-sm text-slate-500"
-                    : "text-sm text-slate-500"
+                  title ? "mt-1 text-sm text-muted" : "text-sm text-muted"
                 }
               >
                 {metaParts.join(" · ")}
@@ -435,7 +420,7 @@ function PersonalProjectEntries({
             ) : null}
 
             {isEditing && onDescriptionChange ? (
-              <label className="mt-3 block text-sm font-medium text-slate-700">
+              <label className="mt-3 block text-sm font-medium text-ink">
                 Description
                 <textarea
                   value={item.description ?? ""}
@@ -448,7 +433,7 @@ function PersonalProjectEntries({
                 />
               </label>
             ) : hasText(item.description) ? (
-              <p className="mt-2 whitespace-pre-wrap text-left text-sm leading-6 text-slate-700">
+              <p className="mt-2 whitespace-pre-wrap text-left text-sm leading-6 text-ink">
                 {item.description}
               </p>
             ) : null}
@@ -457,7 +442,7 @@ function PersonalProjectEntries({
               <button
                 type="button"
                 onClick={() => onRemove(index)}
-                className="mt-3 text-sm font-semibold text-red-700 hover:text-red-800"
+                className="mt-3 text-sm font-semibold text-danger hover:text-danger"
               >
                 Remove project
               </button>
@@ -485,7 +470,7 @@ function SkillsSection({
 
   if (!isEditing) {
     return (
-      <p className="text-left text-sm leading-6 text-slate-700">
+      <p className="text-left text-sm leading-6 text-ink">
         {visibleSkills.join(" · ")}
       </p>
     );
@@ -506,13 +491,13 @@ function SkillsSection({
           {skills.map((skill, index) => (
             <li
               key={`${skill}-${index}`}
-              className="flex items-center gap-3 rounded-lg border border-slate-300 bg-white px-3 py-2"
+              className="flex items-center gap-3 rounded-lg border border-line bg-surface px-3 py-2"
             >
-              <span className="flex-1 text-sm text-slate-950">{skill}</span>
+              <span className="flex-1 text-sm text-ink">{skill}</span>
               <button
                 type="button"
                 onClick={() => onRemoveSkill?.(index)}
-                className="text-sm font-semibold text-red-700 hover:text-red-800"
+                className="text-sm font-semibold text-danger hover:text-danger"
               >
                 Remove
               </button>
@@ -520,11 +505,11 @@ function SkillsSection({
           ))}
         </ul>
       ) : (
-        <p className="text-sm text-slate-500">No skills yet.</p>
+        <p className="text-sm text-muted">No skills yet.</p>
       )}
 
       <div className="flex flex-col gap-2 sm:flex-row">
-        <label className="block flex-1 text-sm font-medium text-slate-700">
+        <label className="block flex-1 text-sm font-medium text-ink">
           <span className="sr-only">New skill</span>
           <input
             type="text"
@@ -544,7 +529,7 @@ function SkillsSection({
         <button
           type="button"
           onClick={handleAdd}
-          className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50 sm:self-end"
+          className="cc-btn-secondary px-4 py-2 sm:self-end"
         >
           Add skill
         </button>
@@ -602,7 +587,7 @@ export function OptimizedCvDocument({
   return (
     <article
       aria-label="Optimized CV"
-      className="rounded-xl border border-slate-200 bg-white px-6 py-8 shadow-sm sm:px-10 sm:py-10"
+      className="cc-card px-6 py-8 sm:px-10 sm:py-10"
     >
       <DocumentHeader cv={cv} isEditing={isEditing} />
 
@@ -617,7 +602,7 @@ export function OptimizedCvDocument({
                   first={leftFirst === "summary"}
                 >
                   {isEditing && onChange ? (
-                    <label className="block text-sm font-medium text-slate-700">
+                    <label className="block text-sm font-medium text-ink">
                       <span className="sr-only">Professional summary</span>
                       <textarea
                         value={cv.professionalSummary}
@@ -633,7 +618,7 @@ export function OptimizedCvDocument({
                       />
                     </label>
                   ) : (
-                    <p className="whitespace-pre-wrap text-justify text-sm leading-7 text-slate-700">
+                    <p className="whitespace-pre-wrap text-justify text-sm leading-7 text-ink">
                       {cv.professionalSummary}
                     </p>
                   )}
@@ -790,10 +775,8 @@ export function OptimizedCvDocument({
                 availableProjects={availableProjects}
                 onAdd={(project) => {
                   if (
-                    availableMasterPersonalProjects(
-                      [project],
-                      personalProjects,
-                    ).length === 0
+                    availableMasterPersonalProjects([project], personalProjects)
+                      .length === 0
                   ) {
                     return;
                   }
@@ -829,11 +812,9 @@ export function ApplicationOptimizedCv({
 
   if (isLoading) {
     return (
-      <section className="rounded-xl border border-slate-200 bg-white p-8 text-center shadow-sm">
-        <h2 className="text-lg font-bold text-slate-950">Optimized CV</h2>
-        <p className="mt-2 text-sm text-slate-600">
-          Generating your Optimized CV…
-        </p>
+      <section className="cc-card p-8 text-center">
+        <h2 className="text-lg font-bold text-ink">Optimized CV</h2>
+        <p className="mt-2 text-sm text-muted">Generating your Optimized CV…</p>
       </section>
     );
   }
@@ -846,24 +827,22 @@ export function ApplicationOptimizedCv({
           className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between"
         >
           <div>
-            <p className="text-sm font-semibold text-blue-700">
-              Application document
-            </p>
+            <p className="cc-kicker">Application document</p>
             <h2
               id="optimized-cv-title"
-              className="mt-1 text-2xl font-bold text-slate-950"
+              className="mt-1 text-2xl font-bold text-ink"
             >
               Optimized CV
             </h2>
             {isEditing ? (
-              <p className="mt-2 max-w-xl text-sm leading-6 text-slate-600">
+              <p className="mt-2 max-w-xl text-sm leading-6 text-muted">
                 Edit application-specific content only. Personal information,
                 employment dates, company names, job titles, education,
                 languages, certifications, and Personal Project names,
                 technologies, and URLs remain read-only.
               </p>
             ) : (
-              <p className="mt-2 max-w-xl text-sm leading-6 text-slate-600">
+              <p className="mt-2 max-w-xl text-sm leading-6 text-muted">
                 Review the generated document. Enter Edit mode to update
                 application-specific content.
               </p>
@@ -874,7 +853,7 @@ export function ApplicationOptimizedCv({
               <button
                 type="button"
                 onClick={() => setIsEditing(false)}
-                className="rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-blue-700"
+                className="cc-btn-primary"
               >
                 Done editing
               </button>
@@ -882,7 +861,7 @@ export function ApplicationOptimizedCv({
               <button
                 type="button"
                 onClick={() => setIsEditing(true)}
-                className="rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-blue-700"
+                className="cc-btn-primary"
               >
                 Edit
               </button>
@@ -892,7 +871,7 @@ export function ApplicationOptimizedCv({
                 type="button"
                 onClick={onSave}
                 disabled={isSaving}
-                className="rounded-lg border border-slate-300 px-4 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+                className="cc-btn-secondary"
               >
                 {isSaving ? "Saving…" : "Save"}
               </button>
@@ -903,7 +882,7 @@ export function ApplicationOptimizedCv({
                 setIsEditing(false);
                 onGenerate();
               }}
-              className="rounded-lg border border-slate-300 px-4 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+              className="cc-btn-secondary"
             >
               Generate again
             </button>
@@ -911,7 +890,7 @@ export function ApplicationOptimizedCv({
               <button
                 type="button"
                 onClick={onContinueToCoverLetter}
-                className="rounded-lg border border-slate-300 px-4 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+                className="cc-btn-secondary"
               >
                 Continue to Cover Letter
               </button>
@@ -920,12 +899,12 @@ export function ApplicationOptimizedCv({
         </section>
 
         {savedMessage ? (
-          <p role="status" className="text-sm font-medium text-green-700">
+          <p role="status" className="text-sm font-medium text-success">
             {savedMessage}
           </p>
         ) : null}
         {saveErrorMessage ? (
-          <p role="alert" className="text-sm font-medium text-red-700">
+          <p role="alert" className="text-sm font-medium text-danger">
             {saveErrorMessage}
           </p>
         ) : null}
@@ -943,25 +922,20 @@ export function ApplicationOptimizedCv({
   return (
     <section
       aria-labelledby="optimized-cv-title"
-      className="rounded-xl border border-slate-200 bg-white p-6 text-center shadow-sm sm:p-8"
+      className="cc-card p-6 text-center sm:p-8"
     >
-      <p className="text-sm font-semibold text-blue-700">
-        Application document
-      </p>
-      <h2
-        id="optimized-cv-title"
-        className="mt-1 text-2xl font-bold text-slate-950"
-      >
+      <p className="cc-kicker">Application document</p>
+      <h2 id="optimized-cv-title" className="mt-1 text-2xl font-bold text-ink">
         Optimized CV
       </h2>
-      <p className="mt-4 text-sm leading-6 text-slate-600">
+      <p className="mt-4 text-sm leading-6 text-muted">
         {errorMessage ??
           "Generate an Optimized CV tailored to this job opportunity from your Master CV, Job Analysis, and Profile Match."}
       </p>
       <button
         type="button"
         onClick={onGenerate}
-        className="mt-6 rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-blue-700"
+        className="cc-btn-primary mt-6"
       >
         {errorMessage ? "Try again" : "Generate Optimized CV"}
       </button>

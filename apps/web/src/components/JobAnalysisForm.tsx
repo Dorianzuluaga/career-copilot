@@ -54,23 +54,20 @@ export function JobAnalysisForm({
   }
 
   return (
-    <form
-      onSubmit={handleSubmit}
-      className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm sm:p-8"
-    >
+    <form onSubmit={handleSubmit} className="cc-card p-5 sm:p-8">
       <div>
         <div className="flex items-end justify-between gap-4">
           <label
             htmlFor="jobDescription"
-            className="text-sm font-semibold text-slate-800"
+            className="text-sm font-semibold text-ink"
           >
             Job description
           </label>
           <span
             className={`text-xs ${
               description.length > MAX_DESCRIPTION_LENGTH
-                ? "font-semibold text-red-700"
-                : "text-slate-500"
+                ? "font-semibold text-danger"
+                : "text-muted"
             }`}
           >
             {description.length.toLocaleString()} /{" "}
@@ -83,19 +80,19 @@ export function JobAnalysisForm({
           value={description}
           onChange={(event) => onDescriptionChange(event.target.value)}
           disabled={isAnalyzing}
-          className="mt-2 min-h-80 w-full resize-y rounded-lg border border-slate-300 bg-white px-3 py-3 text-slate-950 outline-none transition placeholder:text-slate-400 focus:border-blue-600 focus:ring-2 focus:ring-blue-100 disabled:cursor-wait disabled:bg-slate-50"
+          className="cc-field mt-2 min-h-80 resize-y px-3 py-3 disabled:cursor-wait disabled:bg-canvas"
           placeholder="Paste the complete job description here…"
           aria-describedby="job-description-help job-description-error"
           aria-invalid={Boolean(validationError)}
           required
         />
-        <p id="job-description-help" className="mt-2 text-xs text-slate-500">
+        <p id="job-description-help" className="mt-2 text-xs text-muted">
           Plain text only. Enter between 300 and 25,000 characters.
         </p>
         {validationError && (
           <p
             id="job-description-error"
-            className="mt-2 text-sm font-medium text-red-700"
+            className="mt-2 text-sm font-medium text-danger"
           >
             {validationError}
           </p>
@@ -103,13 +100,10 @@ export function JobAnalysisForm({
       </div>
 
       {extractionError && (
-        <div
-          role="alert"
-          className="mt-6 rounded-lg border border-red-200 bg-red-50 p-4"
-        >
-          <p className="font-semibold text-red-900">Analysis failed</p>
-          <p className="mt-1 text-sm text-red-800">{extractionError}</p>
-          <p className="mt-2 text-xs text-red-700">
+        <div role="alert" className="cc-alert-error mt-6">
+          <p className="font-semibold">Analysis failed</p>
+          <p className="mt-1 text-sm">{extractionError}</p>
+          <p className="mt-2 text-xs">
             {retryingStoredOffer
               ? "Retry to analyze the stored original. Editing the text will start a new application."
               : "Review the description and try again."}
@@ -117,19 +111,19 @@ export function JobAnalysisForm({
         </div>
       )}
 
-      <div className="mt-6 flex flex-col-reverse gap-3 border-t border-slate-200 pt-6 sm:flex-row sm:justify-end">
+      <div className="mt-6 flex flex-col-reverse gap-3 border-t border-line pt-6 sm:flex-row sm:justify-end">
         <button
           type="button"
           onClick={onCancel}
           disabled={isAnalyzing}
-          className="rounded-lg border border-slate-300 px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+          className="cc-btn-secondary"
         >
           Cancel
         </button>
         <button
           type="submit"
           disabled={Boolean(validationError) || isAnalyzing}
-          className="rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-slate-300"
+          className="cc-btn-primary disabled:bg-line disabled:text-muted disabled:opacity-100"
         >
           {isAnalyzing
             ? "Analyzing job description…"

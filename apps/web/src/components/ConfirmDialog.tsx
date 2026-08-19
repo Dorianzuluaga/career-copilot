@@ -19,13 +19,9 @@ interface ConfirmDialogProps {
 function actionClassName(
   variant: ConfirmDialogAction["variant"] = "secondary",
 ): string {
-  if (variant === "primary") {
-    return "rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60";
-  }
-  if (variant === "danger") {
-    return "rounded-lg border border-red-200 bg-white px-4 py-2.5 text-sm font-semibold text-red-700 hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-60";
-  }
-  return "rounded-lg border border-slate-300 px-4 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60";
+  if (variant === "primary") return "cc-btn-primary";
+  if (variant === "danger") return "cc-btn-danger";
+  return "cc-btn-secondary";
 }
 
 export function ConfirmDialog({
@@ -40,24 +36,19 @@ export function ConfirmDialog({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/40 p-4"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-navy/40 p-4"
       role="presentation"
     >
       <div
         role="dialog"
         aria-modal="true"
         aria-labelledby="confirm-dialog-title"
-        className="w-full max-w-md rounded-xl border border-slate-200 bg-white p-6 shadow-lg"
+        className="cc-card w-full max-w-md p-6 shadow-lg"
       >
-        <h2
-          id="confirm-dialog-title"
-          className="text-lg font-bold text-slate-950"
-        >
+        <h2 id="confirm-dialog-title" className="text-lg font-bold text-ink">
           {title}
         </h2>
-        <div className="mt-3 text-sm leading-6 text-slate-600">
-          {description}
-        </div>
+        <div className="mt-3 text-sm leading-6 text-muted">{description}</div>
         <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:justify-end">
           <button
             type="button"

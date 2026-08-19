@@ -71,21 +71,15 @@ export function DashboardPage() {
           <h1 className="mt-1 text-3xl font-bold tracking-tight sm:text-4xl">
             Application dashboard
           </h1>
-          <p className="mt-2 max-w-2xl text-slate-600">
+          <p className="mt-2 max-w-2xl text-muted">
             Create and organize your job applications in one place.
           </p>
         </div>
         <div className="flex flex-wrap gap-3">
-          <Link
-            to="/master-cv"
-            className="inline-flex w-fit items-center justify-center rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
-          >
+          <Link to="/master-cv" className="cc-btn-secondary w-fit">
             Edit Master CV
           </Link>
-          <Link
-            to="/applications/new"
-            className="inline-flex w-fit items-center justify-center rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-blue-700"
-          >
+          <Link to="/applications/new" className="cc-btn-primary w-fit">
             New Application
           </Link>
         </div>
@@ -94,13 +88,13 @@ export function DashboardPage() {
       {errorMessage && (
         <div
           role="alert"
-          className="mt-8 flex flex-col gap-3 rounded-xl border border-red-200 bg-red-50 p-5 text-red-900 sm:flex-row sm:items-center sm:justify-between"
+          className="cc-alert-error mt-8 flex flex-col gap-3 p-5 sm:flex-row sm:items-center sm:justify-between"
         >
           <p>{errorMessage}</p>
           <button
             type="button"
             onClick={() => void loadApplications()}
-            className="w-fit rounded-lg border border-red-300 px-3 py-2 text-sm font-semibold hover:bg-red-100"
+            className="cc-btn-danger w-fit px-3 py-2"
           >
             Try again
           </button>
@@ -108,15 +102,13 @@ export function DashboardPage() {
       )}
 
       {isLoading ? (
-        <div className="mt-10 rounded-xl border border-slate-200 bg-white px-6 py-14 text-center">
-          <p className="text-sm text-slate-600">Loading applications…</p>
+        <div className="cc-card mt-10 px-6 py-14 text-center">
+          <p className="text-sm text-muted">Loading applications…</p>
         </div>
       ) : applications.length === 0 && !errorMessage ? (
-        <div className="mt-10 rounded-xl border border-dashed border-slate-300 bg-white px-6 py-14 text-center">
-          <h2 className="text-lg font-bold text-slate-950">
-            No applications yet
-          </h2>
-          <p className="mx-auto mt-2 max-w-md text-sm text-slate-600">
+        <div className="mt-10 rounded-xl border border-dashed border-line bg-surface px-6 py-14 text-center">
+          <h2 className="text-lg font-bold text-ink">No applications yet</h2>
+          <p className="mx-auto mt-2 max-w-md text-sm text-muted">
             Create your first application to start organizing your job search.
           </p>
         </div>

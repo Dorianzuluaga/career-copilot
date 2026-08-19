@@ -7,10 +7,10 @@ interface ApplicationJobAnalysisProps {
 function Detail({ label, value }: { label: string; value: string | null }) {
   return (
     <div>
-      <dt className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+      <dt className="text-xs font-semibold uppercase tracking-wide text-muted">
         {label}
       </dt>
-      <dd className="mt-1 text-sm font-medium text-slate-900">
+      <dd className="mt-1 text-sm font-medium text-ink">
         {value || "Not provided"}
       </dd>
     </div>
@@ -20,12 +20,12 @@ function Detail({ label, value }: { label: string; value: string | null }) {
 function AnalysisList({ title, values }: { title: string; values: string[] }) {
   return (
     <section>
-      <h3 className="text-sm font-bold text-slate-950">{title}</h3>
+      <h3 className="text-sm font-bold text-ink">{title}</h3>
       {values.length > 0 ? (
-        <ul className="mt-3 space-y-2 text-sm leading-6 text-slate-700">
+        <ul className="mt-3 space-y-2 text-sm leading-6 text-ink">
           {values.map((value) => (
             <li key={value} className="flex gap-2">
-              <span aria-hidden="true" className="text-blue-600">
+              <span aria-hidden="true" className="text-brand">
                 •
               </span>
               <span>{value}</span>
@@ -33,7 +33,7 @@ function AnalysisList({ title, values }: { title: string; values: string[] }) {
           ))}
         </ul>
       ) : (
-        <p className="mt-2 text-sm text-slate-500">Not identified</p>
+        <p className="mt-2 text-sm text-muted">Not identified</p>
       )}
     </section>
   );
@@ -41,10 +41,10 @@ function AnalysisList({ title, values }: { title: string; values: string[] }) {
 
 function StructuredAnalysis({ analysis }: { analysis: JobAnalysis }) {
   return (
-    <section className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+    <section className="cc-card p-6">
       <div className="flex items-center justify-between gap-4">
-        <h2 className="text-lg font-bold text-slate-950">Job analysis</h2>
-        <span className="rounded-full bg-blue-50 px-2.5 py-1 text-xs font-semibold text-blue-700">
+        <h2 className="text-lg font-bold text-ink">Job analysis</h2>
+        <span className="cc-badge-brand">
           Version {analysis.analysisVersion}
         </span>
       </div>
@@ -62,14 +62,14 @@ function StructuredAnalysis({ analysis }: { analysis: JobAnalysis }) {
         />
       </dl>
 
-      <div className="mt-6 border-t border-slate-100 pt-6">
-        <h3 className="text-sm font-bold text-slate-950">Summary</h3>
-        <p className="mt-2 text-sm leading-6 text-slate-700">
+      <div className="mt-6 border-t border-line pt-6">
+        <h3 className="text-sm font-bold text-ink">Summary</h3>
+        <p className="mt-2 text-sm leading-6 text-ink">
           {analysis.summary || "Not identified"}
         </p>
       </div>
 
-      <div className="mt-6 grid gap-8 border-t border-slate-100 pt-6 md:grid-cols-3">
+      <div className="mt-6 grid gap-8 border-t border-line pt-6 md:grid-cols-3">
         <AnalysisList
           title="Required skills"
           values={analysis.requiredSkills}
@@ -89,11 +89,9 @@ export function ApplicationJobAnalysis({
 }: ApplicationJobAnalysisProps) {
   return (
     <div className="space-y-6">
-      <section className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
-        <h2 className="text-lg font-bold text-slate-950">
-          Original job description
-        </h2>
-        <p className="mt-3 whitespace-pre-wrap text-sm leading-6 text-slate-900">
+      <section className="cc-card p-6">
+        <h2 className="text-lg font-bold text-ink">Original job description</h2>
+        <p className="mt-3 whitespace-pre-wrap text-sm leading-6 text-ink">
           {application.jobOffer?.originalDescription ?? "Not available"}
         </p>
       </section>

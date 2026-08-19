@@ -66,13 +66,13 @@ export function MasterCvEditorPage() {
   }
 
   if (isLoading) {
-    return <p className="text-sm text-slate-600">Loading your Master CV…</p>;
+    return <p className="text-sm text-muted">Loading your Master CV…</p>;
   }
   if (isMissing) return <Navigate to="/onboarding/master-cv" replace />;
 
   if (!formValue) {
     return (
-      <p role="alert" className="text-sm font-medium text-red-700">
+      <p role="alert" className="text-sm font-medium text-danger">
         {errorMessage}
       </p>
     );
@@ -82,20 +82,18 @@ export function MasterCvEditorPage() {
     <section className="mx-auto max-w-4xl">
       <div className="flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between">
         <div>
-          <p className="text-sm font-semibold text-blue-700">
-            Professional profile
-          </p>
+          <p className="cc-kicker">Professional profile</p>
           <h1 className="mt-1 text-3xl font-bold tracking-tight">
             Edit your Master CV
           </h1>
-          <p className="mt-2 text-slate-600">
+          <p className="mt-2 text-muted">
             Keep your source profile accurate for future applications.
           </p>
         </div>
         <MasterCvImport onImport={handleImport} />
       </div>
       {savedMessage ? (
-        <p role="status" className="mt-5 text-sm font-medium text-green-700">
+        <p role="status" className="mt-5 text-sm font-medium text-success">
           {savedMessage}
         </p>
       ) : null}

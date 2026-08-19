@@ -26,7 +26,7 @@ export function LoginPage() {
 
   if (isLoading) {
     return (
-      <main className="flex min-h-screen items-center justify-center bg-slate-50 text-sm text-slate-600">
+      <main className="flex min-h-screen items-center justify-center bg-canvas text-sm text-muted">
         Restoring your session…
       </main>
     );
@@ -37,16 +37,16 @@ export function LoginPage() {
   }
 
   return (
-    <main className="flex min-h-screen items-center justify-center bg-slate-50 px-4 py-12">
-      <section className="w-full max-w-md rounded-2xl border border-slate-200 bg-white p-8 shadow-sm sm:p-10">
-        <p className="text-center text-xl font-bold tracking-tight text-slate-950">
+    <main className="flex min-h-screen items-center justify-center bg-canvas px-4 py-12">
+      <section className="cc-card w-full max-w-md p-8 sm:p-10">
+        <p className="text-center text-xl font-bold tracking-tight text-ink">
           Career Copilot
         </p>
         <div className="mt-10 text-center">
-          <h1 className="text-3xl font-bold tracking-tight text-slate-950">
+          <h1 className="text-3xl font-bold tracking-tight text-ink">
             Welcome
           </h1>
-          <p className="mt-3 text-sm leading-6 text-slate-600">
+          <p className="mt-3 text-sm leading-6 text-muted">
             Sign in to organize and improve your job applications.
           </p>
         </div>
@@ -55,7 +55,7 @@ export function LoginPage() {
           type="button"
           onClick={() => void handleSignIn()}
           disabled={isSigningIn}
-          className="mt-8 inline-flex w-full items-center justify-center gap-3 rounded-lg border border-slate-300 bg-white px-4 py-3 text-sm font-semibold text-slate-800 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+          className="cc-btn-secondary mt-8 w-full gap-3 py-3"
         >
           <svg aria-hidden="true" viewBox="0 0 24 24" className="h-5 w-5">
             <path
@@ -79,7 +79,7 @@ export function LoginPage() {
         </button>
 
         {errorMessage ? (
-          <p role="alert" className="mt-4 text-center text-sm text-red-700">
+          <p role="alert" className="mt-4 text-center text-sm text-danger">
             {errorMessage}
           </p>
         ) : null}

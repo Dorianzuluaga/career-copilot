@@ -382,23 +382,20 @@ export function ApplicationWorkspacePage() {
 
   if (isLoading) {
     return (
-      <section className="rounded-xl border border-slate-200 bg-white p-8 text-center shadow-sm">
-        <p className="text-sm text-slate-600">Loading application workspace…</p>
+      <section className="cc-card p-8 text-center">
+        <p className="text-sm text-muted">Loading application workspace…</p>
       </section>
     );
   }
 
   if (!application || errorMessage) {
     return (
-      <section className="rounded-xl border border-slate-200 bg-white p-8 text-center shadow-sm">
+      <section className="cc-card p-8 text-center">
         <h1 className="text-2xl font-bold">Application not found</h1>
-        <p className="mt-2 text-slate-600">
+        <p className="mt-2 text-muted">
           {errorMessage ?? "This application is not available."}
         </p>
-        <Link
-          to="/dashboard"
-          className="mt-6 inline-flex rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-blue-700"
-        >
+        <Link to="/dashboard" className="cc-btn-primary mt-6">
           Return to dashboard
         </Link>
       </section>

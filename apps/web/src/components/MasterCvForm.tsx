@@ -8,8 +8,7 @@ import type {
   PersonalProjectItem,
 } from "../types/master-cv";
 
-const fieldClassName =
-  "mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-950 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100";
+const fieldClassName = "cc-field mt-1";
 
 const emptyExperience = (): ExperienceItem => ({
   jobTitle: null,
@@ -64,9 +63,9 @@ function TextField({
   type?: string;
 }) {
   return (
-    <label className="block text-sm font-medium text-slate-700">
+    <label className="block text-sm font-medium text-ink">
       {label}
-      {required ? <span className="text-red-700"> *</span> : null}
+      {required ? <span className="text-danger"> *</span> : null}
       <input
         type={type}
         value={value ?? ""}
@@ -87,12 +86,12 @@ function SectionHeader({
 }) {
   return (
     <div className="flex items-center justify-between">
-      <h2 className="text-xl font-bold text-slate-950">{title}</h2>
+      <h2 className="text-xl font-bold text-ink">{title}</h2>
       {onAdd ? (
         <button
           type="button"
           onClick={onAdd}
-          className="rounded-lg border border-slate-300 px-3 py-1.5 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+          className="cc-btn-secondary px-3 py-1.5"
         >
           Add
         </button>
@@ -127,7 +126,7 @@ function CollectionActions({
             disabled={index === 0}
             onClick={() => onMove(-1)}
             aria-label={`Move ${label} up`}
-            className="rounded-lg border border-slate-300 px-3 py-1.5 text-sm font-semibold text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+            className="cc-btn-secondary px-3 py-1.5"
           >
             Move up
           </button>
@@ -136,7 +135,7 @@ function CollectionActions({
             disabled={index === total - 1}
             onClick={() => onMove(1)}
             aria-label={`Move ${label} down`}
-            className="rounded-lg border border-slate-300 px-3 py-1.5 text-sm font-semibold text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+            className="cc-btn-secondary px-3 py-1.5"
           >
             Move down
           </button>
@@ -146,7 +145,7 @@ function CollectionActions({
         <button
           type="button"
           onClick={onRemove}
-          className="text-sm font-semibold text-red-700"
+          className="text-sm font-semibold text-danger"
         >
           {removeLabel}
         </button>
@@ -263,7 +262,7 @@ export function MasterCvForm({
 
   return (
     <form onSubmit={(event) => void handleSubmit(event)} className="space-y-8">
-      <section className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+      <section className="cc-card p-6">
         <SectionHeader title="Personal information" />
         <div className="mt-5 grid gap-4 sm:grid-cols-2">
           <TextField
@@ -321,7 +320,7 @@ export function MasterCvForm({
         </div>
       </section>
 
-      <section className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+      <section className="cc-card p-6">
         <SectionHeader title="Professional summary" />
         <textarea
           value={professionalSummary}
@@ -332,7 +331,7 @@ export function MasterCvForm({
         />
       </section>
 
-      <section className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+      <section className="cc-card p-6">
         <SectionHeader
           title="Experience"
           onAdd={() => setExperience((items) => [...items, emptyExperience()])}
@@ -341,7 +340,7 @@ export function MasterCvForm({
           {experience.map((item, index) => (
             <div
               key={index}
-              className="rounded-lg border border-slate-200 bg-slate-50 p-4"
+              className="rounded-lg border border-line bg-canvas p-4"
             >
               <div className="grid gap-4 sm:grid-cols-2">
                 <TextField
@@ -379,7 +378,7 @@ export function MasterCvForm({
                     updateExperience(index, { endDate: nullable(value) })
                   }
                 />
-                <label className="flex items-center gap-2 self-end py-2 text-sm font-medium text-slate-700">
+                <label className="flex items-center gap-2 self-end py-2 text-sm font-medium text-ink">
                   <input
                     type="checkbox"
                     checked={item.current ?? false}
@@ -392,7 +391,7 @@ export function MasterCvForm({
                   Current role
                 </label>
               </div>
-              <label className="mt-4 block text-sm font-medium text-slate-700">
+              <label className="mt-4 block text-sm font-medium text-ink">
                 Description
                 <textarea
                   value={item.description ?? ""}
@@ -427,7 +426,7 @@ export function MasterCvForm({
         </div>
       </section>
 
-      <section className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+      <section className="cc-card p-6">
         <SectionHeader
           title="Education"
           onAdd={() => setEducation((items) => [...items, emptyEducation()])}
@@ -436,7 +435,7 @@ export function MasterCvForm({
           {education.map((item, index) => (
             <div
               key={index}
-              className="rounded-lg border border-slate-200 bg-slate-50 p-4"
+              className="rounded-lg border border-line bg-canvas p-4"
             >
               <div className="grid gap-4 sm:grid-cols-2">
                 <TextField
@@ -475,7 +474,7 @@ export function MasterCvForm({
                   }
                 />
               </div>
-              <label className="mt-4 block text-sm font-medium text-slate-700">
+              <label className="mt-4 block text-sm font-medium text-ink">
                 Description
                 <textarea
                   value={item.description ?? ""}
@@ -507,7 +506,7 @@ export function MasterCvForm({
         </div>
       </section>
 
-      <section className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+      <section className="cc-card p-6">
         <SectionHeader
           title="Personal projects"
           onAdd={() =>
@@ -518,7 +517,7 @@ export function MasterCvForm({
           {personalProjects.map((item, index) => (
             <div
               key={index}
-              className="rounded-lg border border-slate-200 bg-slate-50 p-4"
+              className="rounded-lg border border-line bg-canvas p-4"
             >
               <div className="grid gap-4 sm:grid-cols-2">
                 <TextField
@@ -536,7 +535,7 @@ export function MasterCvForm({
                   }
                 />
               </div>
-              <label className="mt-4 block text-sm font-medium text-slate-700">
+              <label className="mt-4 block text-sm font-medium text-ink">
                 Brief description
                 <textarea
                   value={item.description ?? ""}
@@ -579,10 +578,10 @@ export function MasterCvForm({
         </div>
       </section>
 
-      <section className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+      <section className="cc-card p-6">
         <SectionHeader title="Skills" />
-        <label className="mt-5 block text-sm font-medium text-slate-700">
-          Skills, separated by commas <span className="text-red-700">*</span>
+        <label className="mt-5 block text-sm font-medium text-ink">
+          Skills, separated by commas <span className="text-danger">*</span>
           <input
             value={skills}
             onChange={(event) => setSkills(event.target.value)}
@@ -592,7 +591,7 @@ export function MasterCvForm({
         </label>
       </section>
 
-      <section className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+      <section className="cc-card p-6">
         <SectionHeader
           title="Languages"
           onAdd={() =>
@@ -606,7 +605,7 @@ export function MasterCvForm({
           {languages.map((item, index) => (
             <div
               key={index}
-              className="grid gap-3 rounded-lg border border-slate-200 bg-slate-50 p-4 sm:grid-cols-[1fr_1fr_auto]"
+              className="grid gap-3 rounded-lg border border-line bg-canvas p-4 sm:grid-cols-[1fr_1fr_auto]"
             >
               <TextField
                 label="Language"
@@ -629,7 +628,7 @@ export function MasterCvForm({
                     items.filter((_, itemIndex) => itemIndex !== index),
                   )
                 }
-                className="self-end py-2 text-sm font-semibold text-red-700"
+                className="self-end py-2 text-sm font-semibold text-danger"
               >
                 Remove
               </button>
@@ -638,7 +637,7 @@ export function MasterCvForm({
         </div>
       </section>
 
-      <section className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+      <section className="cc-card p-6">
         <SectionHeader
           title="Certifications"
           onAdd={() =>
@@ -657,7 +656,7 @@ export function MasterCvForm({
           {certifications.map((item, index) => (
             <div
               key={index}
-              className="rounded-lg border border-slate-200 bg-slate-50 p-4"
+              className="rounded-lg border border-line bg-canvas p-4"
             >
               <div className="grid gap-4 sm:grid-cols-2">
                 <TextField
@@ -698,7 +697,7 @@ export function MasterCvForm({
                     items.filter((_, itemIndex) => itemIndex !== index),
                   )
                 }
-                className="mt-3 text-sm font-semibold text-red-700"
+                className="mt-3 text-sm font-semibold text-danger"
               >
                 Remove certification
               </button>
@@ -708,14 +707,14 @@ export function MasterCvForm({
       </section>
 
       {errorMessage ? (
-        <p role="alert" className="text-sm font-medium text-red-700">
+        <p role="alert" className="text-sm font-medium text-danger">
           {errorMessage}
         </p>
       ) : null}
       <button
         type="submit"
         disabled={isSaving}
-        className="inline-flex items-center justify-center rounded-lg bg-blue-600 px-5 py-3 text-sm font-semibold text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
+        className="cc-btn-primary px-5 py-3"
       >
         {isSaving ? "Saving…" : submitLabel}
       </button>
