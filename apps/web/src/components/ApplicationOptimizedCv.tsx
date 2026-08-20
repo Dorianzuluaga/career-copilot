@@ -1,4 +1,10 @@
 import { useState, type ReactNode } from "react";
+import { ValidationToast } from "./ValidationToast";
+import { useSaveValidationFeedback } from "../hooks/useSaveValidationFeedback";
+import {
+  getMasterCvFieldErrors,
+  type FieldErrors,
+} from "../lib/field-validation";
 import type {
   CertificationItem,
   EducationItem,
@@ -120,22 +126,33 @@ function DocumentHeader({
   cv: OptimizedCv;
   isEditing: boolean;
 }) {
-  const contactDetails = [
-    cv.email,
-    cv.phone,
-    cv.location,
-    cv.linkedin,
-    cv.portfolio,
-  ].filter(hasText);
+  const contactItems = [
+    { key: "email", value: cv.email },
+    { key: "phone", value: cv.phone },
+    { key: "location", value: cv.location },
+    { key: "linkedin", value: cv.linkedin },
+    { key: "portfolio", value: cv.portfolio },
+  ].filter((item) => hasText(item.value));
 
   const content = (
     <>
-      <p className="text-2xl font-bold tracking-tight text-ink">
+      <p
+        className="text-2xl font-bold tracking-tight text-ink"
+        data-field="fullName"
+        tabIndex={-1}
+      >
         {cv.fullName}
       </p>
-      {contactDetails.length > 0 ? (
+      {contactItems.length > 0 ? (
         <p className="mt-2 text-sm leading-6 text-muted">
-          {contactDetails.join(" · ")}
+          {contactItems.map((item, index) => (
+            <span key={item.key}>
+              {index > 0 ? " · " : null}
+              <span data-field={item.key} tabIndex={-1}>
+                {item.value}
+              </span>
+            </span>
+          ))}
         </p>
       ) : null}
     </>
@@ -189,7 +206,11 @@ function ExperienceEntries({
         const hasIdentity = titleParts.length > 0 || metaParts.length > 0;
 
         return (
-          <article key={index}>
+          <article
+            key={index}
+            data-field-group={`experience.${index}`}
+            tabIndex={-1}
+          >
             {hasIdentity ? (
               isEditing ? (
                 <ReadOnlyValue>{identity}</ReadOnlyValue>
@@ -258,7 +279,11 @@ function EducationEntries({
         );
 
         return (
-          <article key={index}>
+          <article
+            key={index}
+            data-field-group={`education.${index}`}
+            tabIndex={-1}
+          >
             {isEditing ? <ReadOnlyValue>{content}</ReadOnlyValue> : content}
           </article>
         );
@@ -322,7 +347,11 @@ function CertificationEntries({
         );
 
         return (
-          <article key={index}>
+          <article
+            key={index}
+            data-field-group={`certifications.${index}`}
+            tabIndex={-1}
+          >
             {isEditing ? <ReadOnlyValue>{content}</ReadOnlyValue> : content}
           </article>
         );
@@ -410,7 +439,11 @@ function PersonalProjectEntries({
         const hasIdentity = Boolean(title) || metaParts.length > 0;
 
         return (
-          <article key={index}>
+          <article
+            key={index}
+            data-field-group={`personalProjects.${index}`}
+            tabIndex={-1}
+          >
             {hasIdentity ? (
               isEditing ? (
                 <ReadOnlyValue>{identity}</ReadOnlyValue>
@@ -457,15 +490,18 @@ function PersonalProjectEntries({
 function SkillsSection({
   skills,
   isEditing,
+  error,
   onAddSkill,
   onRemoveSkill,
 }: {
   skills: string[];
   isEditing: boolean;
+  error?: string;
   onAddSkill?: (skill: string) => void;
   onRemoveSkill?: (index: number) => void;
 }) {
   const [newSkill, setNewSkill] = useState("");
+  const [addError, setAddError] = useState<string | null>(null);
   const visibleSkills = skills.filter(hasText);
 
   if (!isEditing) {
@@ -479,7 +515,11 @@ function SkillsSection({
   function handleAdd() {
     if (!onAddSkill) return;
     const trimmed = newSkill.trim();
-    if (!trimmed) return;
+    if (!trimmed) {
+      setAddError("Enter a skill.");
+      return;
+    }
+    setAddError(null);
     onAddSkill(trimmed);
     setNewSkill("");
   }
@@ -513,8 +553,12 @@ function SkillsSection({
           <span className="sr-only">New skill</span>
           <input
             type="text"
+            data-field="skills"
             value={newSkill}
-            onChange={(event) => setNewSkill(event.target.value)}
+            onChange={(event) => {
+              setAddError(null);
+              setNewSkill(event.target.value);
+            }}
             onKeyDown={(event) => {
               if (event.key === "Enter") {
                 event.preventDefault();
@@ -523,6 +567,8 @@ function SkillsSection({
             }}
             placeholder="Add a skill"
             aria-label="New skill"
+            aria-invalid={Boolean(addError)}
+            aria-describedby={addError ? "new-skill-error" : undefined}
             className={fieldClassName}
           />
         </label>
@@ -534,6 +580,15 @@ function SkillsSection({
           Add skill
         </button>
       </div>
+      {addError ? (
+        <p id="new-skill-error" className="text-sm font-medium text-danger">
+          {addError}
+        </p>
+      ) : error ? (
+        <p id="skills-error" className="text-sm font-medium text-danger">
+          {error}
+        </p>
+      ) : null}
     </div>
   );
 }
@@ -542,11 +597,13 @@ export function OptimizedCvDocument({
   cv,
   isEditing = false,
   masterCvPersonalProjects = [],
+  fieldErrors = {},
   onChange,
 }: {
   cv: OptimizedCv;
   isEditing?: boolean;
   masterCvPersonalProjects?: PersonalProjectItem[];
+  fieldErrors?: FieldErrors;
   onChange?: (optimizedCv: OptimizedCv) => void;
 }) {
   const showProfessionalSummary = isEditing || hasText(cv.professionalSummary);
@@ -605,6 +662,8 @@ export function OptimizedCvDocument({
                     <label className="block text-sm font-medium text-ink">
                       <span className="sr-only">Professional summary</span>
                       <textarea
+                        id="professional-summary"
+                        data-field="professionalSummary"
                         value={cv.professionalSummary}
                         onChange={(event) =>
                           onChange({
@@ -614,8 +673,22 @@ export function OptimizedCvDocument({
                         }
                         rows={6}
                         aria-label="Professional summary"
+                        aria-invalid={Boolean(fieldErrors.professionalSummary)}
+                        aria-describedby={
+                          fieldErrors.professionalSummary
+                            ? "professional-summary-error"
+                            : undefined
+                        }
                         className={`${fieldClassName} min-h-36 resize-y`}
                       />
+                      {fieldErrors.professionalSummary ? (
+                        <p
+                          id="professional-summary-error"
+                          className="mt-1 text-sm font-medium text-danger"
+                        >
+                          {fieldErrors.professionalSummary}
+                        </p>
+                      ) : null}
                     </label>
                   ) : (
                     <p className="whitespace-pre-wrap text-justify text-sm leading-7 text-ink">
@@ -682,6 +755,7 @@ export function OptimizedCvDocument({
                   <SkillsSection
                     skills={cv.skills}
                     isEditing={isEditing}
+                    error={fieldErrors.skills}
                     onAddSkill={
                       isEditing && onChange
                         ? (skill) =>
@@ -809,6 +883,23 @@ export function ApplicationOptimizedCv({
   savedMessage = null,
 }: ApplicationOptimizedCvProps) {
   const [isEditing, setIsEditing] = useState(initialIsEditing);
+  const { fieldErrors, toastMessage, reportFieldErrors, clearAllFieldErrors } =
+    useSaveValidationFeedback();
+
+  function handleChange(next: OptimizedCv) {
+    clearAllFieldErrors();
+    onChange(next);
+  }
+
+  function handleSave() {
+    if (!optimizedCv || !onSave) return;
+    if (reportFieldErrors(getMasterCvFieldErrors(optimizedCv))) return;
+    onSave();
+  }
+
+  const readOnlyFieldErrors = Object.entries(fieldErrors).filter(
+    ([key]) => key !== "professionalSummary" && key !== "skills",
+  );
 
   if (isLoading) {
     return (
@@ -869,7 +960,7 @@ export function ApplicationOptimizedCv({
             {onSave ? (
               <button
                 type="button"
-                onClick={onSave}
+                onClick={handleSave}
                 disabled={isSaving}
                 className="cc-btn-secondary"
               >
@@ -903,17 +994,28 @@ export function ApplicationOptimizedCv({
             {savedMessage}
           </p>
         ) : null}
+        <ValidationToast message={toastMessage} />
         {saveErrorMessage ? (
           <p role="alert" className="text-sm font-medium text-danger">
             {saveErrorMessage}
           </p>
+        ) : null}
+        {readOnlyFieldErrors.length > 0 ? (
+          <div role="alert" className="space-y-1">
+            {readOnlyFieldErrors.map(([key, message]) => (
+              <p key={key} className="text-sm font-medium text-danger">
+                {message}
+              </p>
+            ))}
+          </div>
         ) : null}
 
         <OptimizedCvDocument
           cv={optimizedCv}
           isEditing={isEditing}
           masterCvPersonalProjects={masterCvPersonalProjects}
-          onChange={onChange}
+          fieldErrors={fieldErrors}
+          onChange={handleChange}
         />
       </div>
     );

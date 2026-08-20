@@ -1,4 +1,7 @@
 import { useState, type FormEvent } from "react";
+import { ValidationToast } from "./ValidationToast";
+import { useSaveValidationFeedback } from "../hooks/useSaveValidationFeedback";
+import { getApplicationFieldErrors } from "../lib/field-validation";
 import type { ApplicationInput } from "../types/application";
 
 interface ApplicationFormProps {
@@ -16,33 +19,52 @@ const emptyApplication: ApplicationInput = {
   jobDescription: "",
 };
 
+function FieldError({ id, message }: { id: string; message?: string }) {
+  if (!message) return null;
+  return (
+    <p id={id} className="mt-1 text-sm font-medium text-danger">
+      {message}
+    </p>
+  );
+}
+
 export function ApplicationForm({
   initialValues = emptyApplication,
   submitLabel,
   onSubmit,
   onCancel,
 }: ApplicationFormProps) {
-  const [values, setValues] = useState<ApplicationInput>(initialValues);
+  const [values, setValues] = useState(initialValues);
+  const { fieldErrors, toastMessage, reportFieldErrors, clearFieldError } =
+    useSaveValidationFeedback();
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    onSubmit({
+    const input: ApplicationInput = {
       companyName: values.companyName.trim(),
       jobTitle: values.jobTitle.trim(),
       location: values.location.trim(),
       jobUrl: values.jobUrl.trim(),
       jobDescription: values.jobDescription.trim(),
-    });
+    };
+    if (reportFieldErrors(getApplicationFieldErrors(input))) return;
+    onSubmit(input);
   }
 
   function updateField(field: keyof ApplicationInput, value: string) {
     setValues((currentValues) => ({ ...currentValues, [field]: value }));
+    clearFieldError(field);
   }
 
   const fieldClassName = "cc-field mt-2 py-2.5";
 
   return (
-    <form onSubmit={handleSubmit} className="cc-card space-y-6 p-5 sm:p-8">
+    <form
+      noValidate
+      onSubmit={handleSubmit}
+      className="cc-card space-y-6 p-5 sm:p-8"
+    >
+      <ValidationToast message={toastMessage} />
       <div>
         <label htmlFor="companyName" className="text-sm font-semibold text-ink">
           Company name
@@ -50,12 +72,18 @@ export function ApplicationForm({
         <input
           id="companyName"
           name="companyName"
+          data-field="companyName"
           value={values.companyName}
           onChange={(event) => updateField("companyName", event.target.value)}
           className={fieldClassName}
           autoComplete="organization"
           required
+          aria-invalid={Boolean(fieldErrors.companyName)}
+          aria-describedby={
+            fieldErrors.companyName ? "companyName-error" : undefined
+          }
         />
+        <FieldError id="companyName-error" message={fieldErrors.companyName} />
       </div>
 
       <div>
@@ -65,12 +93,16 @@ export function ApplicationForm({
         <input
           id="jobTitle"
           name="jobTitle"
+          data-field="jobTitle"
           value={values.jobTitle}
           onChange={(event) => updateField("jobTitle", event.target.value)}
           className={fieldClassName}
           autoComplete="organization-title"
           required
+          aria-invalid={Boolean(fieldErrors.jobTitle)}
+          aria-describedby={fieldErrors.jobTitle ? "jobTitle-error" : undefined}
         />
+        <FieldError id="jobTitle-error" message={fieldErrors.jobTitle} />
       </div>
 
       <div>
@@ -94,12 +126,16 @@ export function ApplicationForm({
         <input
           id="jobUrl"
           name="jobUrl"
+          data-field="jobUrl"
           type="url"
           value={values.jobUrl}
           onChange={(event) => updateField("jobUrl", event.target.value)}
           className={fieldClassName}
           placeholder="https://example.com/job"
+          aria-invalid={Boolean(fieldErrors.jobUrl)}
+          aria-describedby={fieldErrors.jobUrl ? "jobUrl-error" : undefined}
         />
+        <FieldError id="jobUrl-error" message={fieldErrors.jobUrl} />
       </div>
 
       <div>
@@ -112,12 +148,21 @@ export function ApplicationForm({
         <textarea
           id="jobDescription"
           name="jobDescription"
+          data-field="jobDescription"
           value={values.jobDescription}
           onChange={(event) =>
             updateField("jobDescription", event.target.value)
           }
           className={`${fieldClassName} min-h-48 resize-y`}
           required
+          aria-invalid={Boolean(fieldErrors.jobDescription)}
+          aria-describedby={
+            fieldErrors.jobDescription ? "jobDescription-error" : undefined
+          }
+        />
+        <FieldError
+          id="jobDescription-error"
+          message={fieldErrors.jobDescription}
         />
       </div>
 

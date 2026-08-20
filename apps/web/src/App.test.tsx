@@ -8,6 +8,7 @@ import {
   ApplicationExport,
   updateDocumentSelection,
 } from "./components/ApplicationExport";
+import { ApplicationForm } from "./components/ApplicationForm";
 import { ApplicationJobAnalysis } from "./components/ApplicationJobAnalysis";
 import {
   ApplicationOptimizedCv,
@@ -19,8 +20,13 @@ import { ApplicationProfileMatch } from "./components/ApplicationProfileMatch";
 import { ApplicationWorkspace } from "./components/ApplicationWorkspace";
 import { ConfirmDialog } from "./components/ConfirmDialog";
 import { jobDescriptionError } from "./components/JobAnalysisForm";
-import { MasterCvForm } from "./components/MasterCvForm";
+import {
+  MasterCvForm,
+  nullable,
+  optionalFieldValue,
+} from "./components/MasterCvForm";
 import { MasterCvImport } from "./components/MasterCvImport";
+import { ValidationToast } from "./components/ValidationToast";
 import { AuthContext } from "./context/auth-context";
 import { masterCvInputFromExtraction } from "./services/master-cv";
 import type { AuthenticatedUser } from "./types/auth";
@@ -416,6 +422,9 @@ describe("App", () => {
     expect(reviewMarkup).toContain("Taylor Smith");
     expect(reviewMarkup).toContain("taylor@example.com");
     expect(reviewMarkup).toContain("Berlin");
+    expect(reviewMarkup).toContain('data-field="fullName"');
+    expect(reviewMarkup).toContain('data-field="email"');
+    expect(reviewMarkup).toContain('data-field-group="experience.0"');
     expect(reviewMarkup).toContain("Professional summary");
     expect(reviewMarkup).toContain("text-justify");
     expect(reviewMarkup).toContain("TypeScript engineer building APIs.");
@@ -842,6 +851,9 @@ describe("App", () => {
     expect(reviewMarkup).toContain("taylor@example.com");
     expect(reviewMarkup).toContain("+1 555 0100");
     expect(reviewMarkup).toContain("August 7, 2026");
+    expect(reviewMarkup).toContain('data-field="phone"');
+    expect(reviewMarkup).toContain('data-field="email"');
+    expect(reviewMarkup).toContain('data-field="date"');
     expect(reviewMarkup).toContain("Acme");
     expect(reviewMarkup).toContain("Dear Hiring Manager,");
     expect(reviewMarkup).toContain(
@@ -1265,6 +1277,38 @@ describe("App", () => {
     expect(jobDescriptionError("a".repeat(25_001))).toBe(
       "The job description exceeds the maximum allowed length.",
     );
+    expect(jobDescriptionError("Role details ".repeat(30))).toBeNull();
+  });
+
+  it("renders application form fields without relying only on native validation", () => {
+    const markup = renderToStaticMarkup(
+      <ApplicationForm
+        submitLabel="Save"
+        onSubmit={() => undefined}
+        onCancel={() => undefined}
+      />,
+    );
+
+    expect(markup).toContain("noValidate");
+    expect(markup).toContain("Company name");
+    expect(markup).toContain("Job title");
+    expect(markup).toContain("Job URL");
+    expect(markup).toContain("Job Description");
+    expect(markup).toContain('id="jobUrl"');
+    expect(markup).toContain('data-field="jobUrl"');
+    expect(markup).toContain('data-field="companyName"');
+  });
+
+  it("renders a validation toast that identifies unsaved invalid fields", () => {
+    const markup = renderToStaticMarkup(
+      <ValidationToast message="Changes could not be saved. Phone has a validation error." />,
+    );
+
+    expect(markup).toContain('role="alert"');
+    expect(markup).toContain("cc-toast");
+    expect(markup).toContain(
+      "Changes could not be saved. Phone has a validation error.",
+    );
   });
 
   it("renders every Master CV section", () => {
@@ -1300,6 +1344,9 @@ describe("App", () => {
     expect(markup).toContain("Languages");
     expect(markup).toContain("Certifications");
     expect(markup).toContain("Save Master CV");
+    expect(markup).toContain("noValidate");
+    expect(markup).toContain('data-field="phone"');
+    expect(markup).toContain('data-field="fullName"');
   });
 
   it("renders the existing CV import action", () => {
@@ -1420,6 +1467,9 @@ describe("App", () => {
     expect(markup).toContain("Technologies");
     expect(markup).toContain("Project URL");
     expect(markup).toContain("Career Copilot");
+    expect(markup).toContain("BigTrail Magazine");
+    expect(markup).toContain("AI Developer Copilot");
+    expect(markup).toContain("AI career assistant");
     expect(markup).toContain("Remove project");
     expect(markup).toContain('aria-label="Move experience up"');
     expect(markup).toContain('aria-label="Move experience down"');
@@ -1427,5 +1477,20 @@ describe("App", () => {
     expect(markup).toContain('aria-label="Move education down"');
     expect(markup).toContain('aria-label="Move personal project up"');
     expect(markup).toContain('aria-label="Move personal project down"');
+  });
+
+  it("keeps spaces and punctuation in Master CV fields while editing", () => {
+    expect(optionalFieldValue("Product Manager ")).toBe("Product Manager ");
+    expect(optionalFieldValue("New York")).toBe("New York");
+    expect(optionalFieldValue("C++ / TypeScript")).toBe("C++ / TypeScript");
+    expect(optionalFieldValue("Hello, world!")).toBe("Hello, world!");
+    expect(optionalFieldValue("123 456")).toBe("123 456");
+    expect(optionalFieldValue("")).toBe(null);
+  });
+
+  it("trims Master CV optional fields only when submitting", () => {
+    expect(nullable("Product Manager ")).toBe("Product Manager");
+    expect(nullable("  New York  ")).toBe("New York");
+    expect(nullable("   ")).toBe(null);
   });
 });

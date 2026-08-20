@@ -1,4 +1,7 @@
 import { useState, type FormEvent } from "react";
+import { ValidationToast } from "./ValidationToast";
+import { useSaveValidationFeedback } from "../hooks/useSaveValidationFeedback";
+import { getMasterCvFieldErrors } from "../lib/field-validation";
 import type {
   CertificationItem,
   EducationItem,
@@ -45,8 +48,73 @@ function moveItem<T>(items: T[], index: number, offset: number): T[] {
   return next;
 }
 
-function nullable(value: string): string | null {
+/** Trim optional text when submitting. Whitespace-only values become null. */
+export function nullable(value: string): string | null {
   return value.trim() || null;
+}
+
+/** Keep typed characters, including spaces. Only empty input becomes null. */
+export function optionalFieldValue(value: string): string | null {
+  return value === "" ? null : value;
+}
+
+function normalizeExperience(item: ExperienceItem): ExperienceItem {
+  return {
+    jobTitle: nullable(item.jobTitle ?? ""),
+    company: nullable(item.company ?? ""),
+    location: nullable(item.location ?? ""),
+    startDate: nullable(item.startDate ?? ""),
+    endDate: nullable(item.endDate ?? ""),
+    current: item.current,
+    description: nullable(item.description ?? ""),
+  };
+}
+
+function normalizeEducation(item: EducationItem): EducationItem {
+  return {
+    institution: nullable(item.institution ?? ""),
+    degree: nullable(item.degree ?? ""),
+    fieldOfStudy: nullable(item.fieldOfStudy ?? ""),
+    startDate: nullable(item.startDate ?? ""),
+    endDate: nullable(item.endDate ?? ""),
+    description: nullable(item.description ?? ""),
+  };
+}
+
+function normalizePersonalProject(
+  item: PersonalProjectItem,
+): PersonalProjectItem {
+  return {
+    name: nullable(item.name ?? ""),
+    description: nullable(item.description ?? ""),
+    technologies: nullable(item.technologies ?? ""),
+    url: nullable(item.url ?? ""),
+  };
+}
+
+function normalizeLanguage(item: LanguageItem): LanguageItem {
+  return {
+    name: nullable(item.name ?? ""),
+    proficiency: nullable(item.proficiency ?? ""),
+  };
+}
+
+function normalizeCertification(item: CertificationItem): CertificationItem {
+  return {
+    name: nullable(item.name ?? ""),
+    issuer: nullable(item.issuer ?? ""),
+    issueDate: nullable(item.issueDate ?? ""),
+    credentialUrl: nullable(item.credentialUrl ?? ""),
+  };
+}
+
+function FieldError({ id, message }: { id?: string; message?: string }) {
+  if (!message) return null;
+  return (
+    <p id={id} className="mt-1 text-sm font-medium text-danger">
+      {message}
+    </p>
+  );
 }
 
 function TextField({
@@ -55,24 +123,37 @@ function TextField({
   onChange,
   required,
   type = "text",
+  error,
+  id,
+  fieldKey,
 }: {
   label: string;
   value: string | null;
   onChange: (value: string) => void;
   required?: boolean;
   type?: string;
+  error?: string;
+  id?: string;
+  fieldKey?: string;
 }) {
+  const fieldId = id;
+  const errorId = fieldId ? `${fieldId}-error` : undefined;
   return (
     <label className="block text-sm font-medium text-ink">
       {label}
       {required ? <span className="text-danger"> *</span> : null}
       <input
+        id={fieldId}
+        data-field={fieldKey}
         type={type}
         value={value ?? ""}
         onChange={(event) => onChange(event.target.value)}
         required={required}
+        aria-invalid={Boolean(error)}
+        aria-describedby={error ? errorId : undefined}
         className={fieldClassName}
       />
+      <FieldError id={errorId} message={error} />
     </label>
   );
 }
@@ -192,6 +273,28 @@ export function MasterCvForm({
   const [certifications, setCertifications] = useState(
     initialValue.certifications,
   );
+  const { fieldErrors, toastMessage, reportFieldErrors, clearFieldError } =
+    useSaveValidationFeedback();
+
+  function buildInput(): MasterCvInput {
+    return {
+      ...personal,
+      phone: nullable(personal.phone ?? ""),
+      location: nullable(personal.location ?? ""),
+      linkedin: nullable(personal.linkedin ?? ""),
+      portfolio: nullable(personal.portfolio ?? ""),
+      professionalSummary: professionalSummary.trim(),
+      experience: experience.map(normalizeExperience),
+      education: education.map(normalizeEducation),
+      personalProjects: personalProjects.map(normalizePersonalProject),
+      skills: skills
+        .split(",")
+        .map((skill) => skill.trim())
+        .filter(Boolean),
+      languages: languages.map(normalizeLanguage),
+      certifications: certifications.map(normalizeCertification),
+    };
+  }
 
   function updateExperience(index: number, patch: Partial<ExperienceItem>) {
     setExperience((items) =>
@@ -241,51 +344,60 @@ export function MasterCvForm({
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    await onSubmit({
-      ...personal,
-      phone: nullable(personal.phone ?? ""),
-      location: nullable(personal.location ?? ""),
-      linkedin: nullable(personal.linkedin ?? ""),
-      portfolio: nullable(personal.portfolio ?? ""),
-      professionalSummary: professionalSummary.trim(),
-      experience,
-      education,
-      personalProjects,
-      skills: skills
-        .split(",")
-        .map((skill) => skill.trim())
-        .filter(Boolean),
-      languages,
-      certifications,
-    });
+    const input = buildInput();
+    const nextErrors = getMasterCvFieldErrors(input);
+    if (reportFieldErrors(nextErrors)) return;
+    await onSubmit(input);
   }
 
   return (
-    <form onSubmit={(event) => void handleSubmit(event)} className="space-y-8">
+    <form
+      noValidate
+      onSubmit={(event) => void handleSubmit(event)}
+      className="space-y-8"
+    >
+      <ValidationToast message={toastMessage} />
       <section className="cc-card p-6">
         <SectionHeader title="Personal information" />
         <div className="mt-5 grid gap-4 sm:grid-cols-2">
           <TextField
+            id="full-name"
+            fieldKey="fullName"
             label="Full name"
             value={personal.fullName}
             required
-            onChange={(fullName) =>
-              setPersonal((value) => ({ ...value, fullName }))
-            }
+            error={fieldErrors.fullName}
+            onChange={(fullName) => {
+              clearFieldError("fullName");
+              setPersonal((value) => ({ ...value, fullName }));
+            }}
           />
           <TextField
+            id="email"
+            fieldKey="email"
             label="Email"
             type="email"
             value={personal.email}
             required
-            onChange={(email) => setPersonal((value) => ({ ...value, email }))}
+            error={fieldErrors.email}
+            onChange={(email) => {
+              clearFieldError("email");
+              setPersonal((value) => ({ ...value, email }));
+            }}
           />
           <TextField
+            id="phone"
+            fieldKey="phone"
             label="Phone"
             value={personal.phone}
-            onChange={(phone) =>
-              setPersonal((value) => ({ ...value, phone: nullable(phone) }))
-            }
+            error={fieldErrors.phone}
+            onChange={(phone) => {
+              clearFieldError("phone");
+              setPersonal((value) => ({
+                ...value,
+                phone: optionalFieldValue(phone),
+              }));
+            }}
           />
           <TextField
             label="Location"
@@ -293,29 +405,37 @@ export function MasterCvForm({
             onChange={(location) =>
               setPersonal((value) => ({
                 ...value,
-                location: nullable(location),
+                location: optionalFieldValue(location),
               }))
             }
           />
           <TextField
+            id="linkedin"
+            fieldKey="linkedin"
             label="LinkedIn"
             value={personal.linkedin}
-            onChange={(linkedin) =>
+            error={fieldErrors.linkedin}
+            onChange={(linkedin) => {
+              clearFieldError("linkedin");
               setPersonal((value) => ({
                 ...value,
-                linkedin: nullable(linkedin),
-              }))
-            }
+                linkedin: optionalFieldValue(linkedin),
+              }));
+            }}
           />
           <TextField
+            id="portfolio"
+            fieldKey="portfolio"
             label="Portfolio"
             value={personal.portfolio}
-            onChange={(portfolio) =>
+            error={fieldErrors.portfolio}
+            onChange={(portfolio) => {
+              clearFieldError("portfolio");
               setPersonal((value) => ({
                 ...value,
-                portfolio: nullable(portfolio),
-              }))
-            }
+                portfolio: optionalFieldValue(portfolio),
+              }));
+            }}
           />
         </div>
       </section>
@@ -323,11 +443,26 @@ export function MasterCvForm({
       <section className="cc-card p-6">
         <SectionHeader title="Professional summary" />
         <textarea
+          id="professional-summary"
+          data-field="professionalSummary"
           value={professionalSummary}
-          onChange={(event) => setProfessionalSummary(event.target.value)}
+          onChange={(event) => {
+            clearFieldError("professionalSummary");
+            setProfessionalSummary(event.target.value);
+          }}
           required
+          aria-invalid={Boolean(fieldErrors.professionalSummary)}
+          aria-describedby={
+            fieldErrors.professionalSummary
+              ? "professional-summary-error"
+              : undefined
+          }
           rows={6}
           className={fieldClassName}
+        />
+        <FieldError
+          id="professional-summary-error"
+          message={fieldErrors.professionalSummary}
         />
       </section>
 
@@ -347,36 +482,54 @@ export function MasterCvForm({
                   label="Job title"
                   value={item.jobTitle}
                   onChange={(value) =>
-                    updateExperience(index, { jobTitle: nullable(value) })
+                    updateExperience(index, {
+                      jobTitle: optionalFieldValue(value),
+                    })
                   }
                 />
                 <TextField
                   label="Company"
                   value={item.company}
                   onChange={(value) =>
-                    updateExperience(index, { company: nullable(value) })
+                    updateExperience(index, {
+                      company: optionalFieldValue(value),
+                    })
                   }
                 />
                 <TextField
                   label="Location"
                   value={item.location}
                   onChange={(value) =>
-                    updateExperience(index, { location: nullable(value) })
+                    updateExperience(index, {
+                      location: optionalFieldValue(value),
+                    })
                   }
                 />
                 <TextField
                   label="Start date"
+                  id={`experience-${index}-startDate`}
+                  fieldKey={`experience.${index}.startDate`}
                   value={item.startDate}
-                  onChange={(value) =>
-                    updateExperience(index, { startDate: nullable(value) })
-                  }
+                  error={fieldErrors[`experience.${index}.startDate`]}
+                  onChange={(value) => {
+                    clearFieldError(`experience.${index}.startDate`);
+                    updateExperience(index, {
+                      startDate: optionalFieldValue(value),
+                    });
+                  }}
                 />
                 <TextField
                   label="End date"
+                  id={`experience-${index}-endDate`}
+                  fieldKey={`experience.${index}.endDate`}
                   value={item.endDate}
-                  onChange={(value) =>
-                    updateExperience(index, { endDate: nullable(value) })
-                  }
+                  error={fieldErrors[`experience.${index}.endDate`]}
+                  onChange={(value) => {
+                    clearFieldError(`experience.${index}.endDate`);
+                    updateExperience(index, {
+                      endDate: optionalFieldValue(value),
+                    });
+                  }}
                 />
                 <label className="flex items-center gap-2 self-end py-2 text-sm font-medium text-ink">
                   <input
@@ -397,7 +550,7 @@ export function MasterCvForm({
                   value={item.description ?? ""}
                   onChange={(event) =>
                     updateExperience(index, {
-                      description: nullable(event.target.value),
+                      description: optionalFieldValue(event.target.value),
                     })
                   }
                   rows={4}
@@ -442,36 +595,54 @@ export function MasterCvForm({
                   label="Institution"
                   value={item.institution}
                   onChange={(value) =>
-                    updateEducation(index, { institution: nullable(value) })
+                    updateEducation(index, {
+                      institution: optionalFieldValue(value),
+                    })
                   }
                 />
                 <TextField
                   label="Degree"
                   value={item.degree}
                   onChange={(value) =>
-                    updateEducation(index, { degree: nullable(value) })
+                    updateEducation(index, {
+                      degree: optionalFieldValue(value),
+                    })
                   }
                 />
                 <TextField
                   label="Field of study"
                   value={item.fieldOfStudy}
                   onChange={(value) =>
-                    updateEducation(index, { fieldOfStudy: nullable(value) })
+                    updateEducation(index, {
+                      fieldOfStudy: optionalFieldValue(value),
+                    })
                   }
                 />
                 <TextField
                   label="Start date"
+                  id={`education-${index}-startDate`}
+                  fieldKey={`education.${index}.startDate`}
                   value={item.startDate}
-                  onChange={(value) =>
-                    updateEducation(index, { startDate: nullable(value) })
-                  }
+                  error={fieldErrors[`education.${index}.startDate`]}
+                  onChange={(value) => {
+                    clearFieldError(`education.${index}.startDate`);
+                    updateEducation(index, {
+                      startDate: optionalFieldValue(value),
+                    });
+                  }}
                 />
                 <TextField
                   label="End date"
+                  id={`education-${index}-endDate`}
+                  fieldKey={`education.${index}.endDate`}
                   value={item.endDate}
-                  onChange={(value) =>
-                    updateEducation(index, { endDate: nullable(value) })
-                  }
+                  error={fieldErrors[`education.${index}.endDate`]}
+                  onChange={(value) => {
+                    clearFieldError(`education.${index}.endDate`);
+                    updateEducation(index, {
+                      endDate: optionalFieldValue(value),
+                    });
+                  }}
                 />
               </div>
               <label className="mt-4 block text-sm font-medium text-ink">
@@ -480,7 +651,7 @@ export function MasterCvForm({
                   value={item.description ?? ""}
                   onChange={(event) =>
                     updateEducation(index, {
-                      description: nullable(event.target.value),
+                      description: optionalFieldValue(event.target.value),
                     })
                   }
                   rows={3}
@@ -524,15 +695,23 @@ export function MasterCvForm({
                   label="Project name"
                   value={item.name}
                   onChange={(value) =>
-                    updatePersonalProject(index, { name: nullable(value) })
+                    updatePersonalProject(index, {
+                      name: optionalFieldValue(value),
+                    })
                   }
                 />
                 <TextField
                   label="Project URL"
+                  id={`personal-project-${index}-url`}
+                  fieldKey={`personalProjects.${index}.url`}
                   value={item.url}
-                  onChange={(value) =>
-                    updatePersonalProject(index, { url: nullable(value) })
-                  }
+                  error={fieldErrors[`personalProjects.${index}.url`]}
+                  onChange={(value) => {
+                    clearFieldError(`personalProjects.${index}.url`);
+                    updatePersonalProject(index, {
+                      url: optionalFieldValue(value),
+                    });
+                  }}
                 />
               </div>
               <label className="mt-4 block text-sm font-medium text-ink">
@@ -541,7 +720,7 @@ export function MasterCvForm({
                   value={item.description ?? ""}
                   onChange={(event) =>
                     updatePersonalProject(index, {
-                      description: nullable(event.target.value),
+                      description: optionalFieldValue(event.target.value),
                     })
                   }
                   rows={3}
@@ -554,7 +733,7 @@ export function MasterCvForm({
                   value={item.technologies}
                   onChange={(value) =>
                     updatePersonalProject(index, {
-                      technologies: nullable(value),
+                      technologies: optionalFieldValue(value),
                     })
                   }
                 />
@@ -581,13 +760,21 @@ export function MasterCvForm({
       <section className="cc-card p-6">
         <SectionHeader title="Skills" />
         <label className="mt-5 block text-sm font-medium text-ink">
-          Skills, separated by commas <span className="text-danger">*</span>
+          Skills, separated by commas <span className="text-danger"> *</span>
           <input
+            id="skills"
+            data-field="skills"
             value={skills}
-            onChange={(event) => setSkills(event.target.value)}
+            onChange={(event) => {
+              clearFieldError("skills");
+              setSkills(event.target.value);
+            }}
             required
+            aria-invalid={Boolean(fieldErrors.skills)}
+            aria-describedby={fieldErrors.skills ? "skills-error" : undefined}
             className={fieldClassName}
           />
+          <FieldError id="skills-error" message={fieldErrors.skills} />
         </label>
       </section>
 
@@ -611,14 +798,18 @@ export function MasterCvForm({
                 label="Language"
                 value={item.name}
                 onChange={(value) =>
-                  updateLanguage(index, { name: nullable(value) })
+                  updateLanguage(index, {
+                    name: optionalFieldValue(value),
+                  })
                 }
               />
               <TextField
                 label="Proficiency"
                 value={item.proficiency}
                 onChange={(value) =>
-                  updateLanguage(index, { proficiency: nullable(value) })
+                  updateLanguage(index, {
+                    proficiency: optionalFieldValue(value),
+                  })
                 }
               />
               <button
@@ -663,31 +854,45 @@ export function MasterCvForm({
                   label="Certification"
                   value={item.name}
                   onChange={(value) =>
-                    updateCertification(index, { name: nullable(value) })
+                    updateCertification(index, {
+                      name: optionalFieldValue(value),
+                    })
                   }
                 />
                 <TextField
                   label="Issuer"
                   value={item.issuer}
                   onChange={(value) =>
-                    updateCertification(index, { issuer: nullable(value) })
+                    updateCertification(index, {
+                      issuer: optionalFieldValue(value),
+                    })
                   }
                 />
                 <TextField
                   label="Issue date"
+                  id={`certification-${index}-issueDate`}
+                  fieldKey={`certifications.${index}.issueDate`}
                   value={item.issueDate}
-                  onChange={(value) =>
-                    updateCertification(index, { issueDate: nullable(value) })
-                  }
+                  error={fieldErrors[`certifications.${index}.issueDate`]}
+                  onChange={(value) => {
+                    clearFieldError(`certifications.${index}.issueDate`);
+                    updateCertification(index, {
+                      issueDate: optionalFieldValue(value),
+                    });
+                  }}
                 />
                 <TextField
                   label="Credential URL"
+                  id={`certification-${index}-credentialUrl`}
+                  fieldKey={`certifications.${index}.credentialUrl`}
                   value={item.credentialUrl}
-                  onChange={(value) =>
+                  error={fieldErrors[`certifications.${index}.credentialUrl`]}
+                  onChange={(value) => {
+                    clearFieldError(`certifications.${index}.credentialUrl`);
                     updateCertification(index, {
-                      credentialUrl: nullable(value),
-                    })
-                  }
+                      credentialUrl: optionalFieldValue(value),
+                    });
+                  }}
                 />
               </div>
               <button

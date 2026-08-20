@@ -120,4 +120,58 @@ describe("validateMasterCvInput", () => {
       }),
     ).toThrow(MasterCvError);
   });
+
+  it("rejects invalid email, phone, URL, and date values", () => {
+    expect(() =>
+      validateMasterCvInput({ ...validInput, email: "not-an-email" }),
+    ).toThrow("email must be a valid email address.");
+    expect(() =>
+      validateMasterCvInput({ ...validInput, phone: "hello" }),
+    ).toThrow("phone must be a valid phone number.");
+    expect(() =>
+      validateMasterCvInput({
+        ...validInput,
+        linkedin: "javascript:alert(1)",
+      }),
+    ).toThrow("linkedin must be a valid URL.");
+    expect(() =>
+      validateMasterCvInput({
+        ...validInput,
+        experience: [
+          {
+            ...validInput.experience[0],
+            startDate: "not-a-date",
+          },
+        ],
+      }),
+    ).toThrow("experience[0].startDate must be a valid date.");
+  });
+
+  it("accepts optional typed fields and existing date formats", () => {
+    const result = validateMasterCvInput({
+      ...validInput,
+      phone: "+1 555 0100",
+      linkedin: "linkedin.com/in/taylor",
+      portfolio: "https://example.com",
+      experience: [
+        {
+          ...validInput.experience[0],
+          startDate: "2020-01",
+          endDate: "Present",
+        },
+      ],
+      education: [
+        {
+          ...validInput.education[0],
+          startDate: "2016",
+          endDate: "2020",
+        },
+      ],
+    });
+
+    expect(result.phone).toBe("+1 555 0100");
+    expect(result.linkedin).toBe("linkedin.com/in/taylor");
+    expect(result.experience[0].startDate).toBe("2020-01");
+    expect(result.education[0].startDate).toBe("2016");
+  });
 });
