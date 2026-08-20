@@ -1,3 +1,4 @@
+import { useLocale } from "../hooks/useLocale";
 import type { PersistedApplication } from "../types/job-analysis";
 
 interface ApplicationOverviewProps {
@@ -22,34 +23,36 @@ export function ApplicationOverview({
   company,
   title,
 }: ApplicationOverviewProps) {
+  const { t } = useLocale();
+
   return (
     <section
       aria-labelledby="workspace-overview-title"
       className="cc-card p-6 sm:p-8"
     >
       <div>
-        <p className="cc-kicker">Application workspace</p>
+        <p className="cc-kicker">{t("workspace.kicker")}</p>
         <h2
           id="workspace-overview-title"
           className="mt-1 text-2xl font-bold text-ink"
         >
-          Overview
+          {t("workspace.sections.overview")}
         </h2>
         <p className="mt-2 text-sm leading-6 text-muted">
-          Review the current application details before continuing your work.
+          {t("workspace.overviewDescription")}
         </p>
       </div>
 
       <dl className="mt-8 grid gap-6 border-t border-line pt-6 sm:grid-cols-2">
-        <Detail label="Company" value={company} />
-        <Detail label="Job title" value={title} />
-        <Detail label="Status" value={application.status} />
+        <Detail label={t("workspace.company")} value={company} />
+        <Detail label={t("workspace.jobTitle")} value={title} />
+        <Detail label={t("workspace.status")} value={application.status} />
         <Detail
-          label="Created"
+          label={t("workspace.created")}
           value={new Date(application.createdAt).toLocaleDateString()}
         />
         <Detail
-          label="Last updated"
+          label={t("workspace.lastUpdated")}
           value={new Date(application.updatedAt).toLocaleDateString()}
         />
       </dl>

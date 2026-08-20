@@ -1,4 +1,6 @@
 import type { FormEvent } from "react";
+import { useLocale } from "../hooks/useLocale";
+import type { TranslationKey } from "../i18n/messages";
 
 interface JobAnalysisFormProps {
   description: string;
@@ -22,16 +24,18 @@ function hasUnsupportedControlCharacters(value: string): boolean {
   });
 }
 
-export function jobDescriptionError(description: string): string | null {
-  if (description.trim() === "") return "Job description is required.";
+export function jobDescriptionError(
+  description: string,
+): TranslationKey | null {
+  if (description.trim() === "") return "jobAnalysis.validation.required";
   if (description.length < MIN_DESCRIPTION_LENGTH) {
-    return "The job description is too short.";
+    return "jobAnalysis.validation.tooShort";
   }
   if (description.length > MAX_DESCRIPTION_LENGTH) {
-    return "The job description exceeds the maximum allowed length.";
+    return "jobAnalysis.validation.tooLong";
   }
   if (hasUnsupportedControlCharacters(description)) {
-    return "Job description must be plain text.";
+    return "jobAnalysis.validation.plainText";
   }
   return null;
 }
@@ -45,7 +49,9 @@ export function JobAnalysisForm({
   onAnalyze,
   onCancel,
 }: JobAnalysisFormProps) {
-  const validationError = jobDescriptionError(description);
+  const { locale, t } = useLocale();
+  const validationErrorKey = jobDescriptionError(description);
+  const validationError = validationErrorKey ? t(validationErrorKey) : null;
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -61,7 +67,7 @@ export function JobAnalysisForm({
             htmlFor="jobDescription"
             className="text-sm font-semibold text-ink"
           >
-            Job description
+            {t("jobAnalysis.form.label")}
           </label>
           <span
             className={`text-xs ${
@@ -70,8 +76,8 @@ export function JobAnalysisForm({
                 : "text-muted"
             }`}
           >
-            {description.length.toLocaleString()} /{" "}
-            {MAX_DESCRIPTION_LENGTH.toLocaleString()}
+            {description.length.toLocaleString(locale)} /{" "}
+            {MAX_DESCRIPTION_LENGTH.toLocaleString(locale)}
           </span>
         </div>
         <textarea
@@ -81,13 +87,13 @@ export function JobAnalysisForm({
           onChange={(event) => onDescriptionChange(event.target.value)}
           disabled={isAnalyzing}
           className="cc-field mt-2 min-h-80 resize-y px-3 py-3 disabled:cursor-wait disabled:bg-canvas"
-          placeholder="Paste the complete job description here…"
+          placeholder={t("jobAnalysis.form.placeholder")}
           aria-describedby="job-description-help job-description-error"
           aria-invalid={Boolean(validationError)}
           required
         />
         <p id="job-description-help" className="mt-2 text-xs text-muted">
-          Plain text only. Enter between 300 and 25,000 characters.
+          {t("jobAnalysis.form.help")}
         </p>
         {validationError && (
           <p
@@ -101,12 +107,14 @@ export function JobAnalysisForm({
 
       {extractionError && (
         <div role="alert" className="cc-alert-error mt-6">
-          <p className="font-semibold">Analysis failed</p>
+          <p className="font-semibold">
+            {t("jobAnalysis.form.analysisFailed")}
+          </p>
           <p className="mt-1 text-sm">{extractionError}</p>
           <p className="mt-2 text-xs">
             {retryingStoredOffer
-              ? "Retry to analyze the stored original. Editing the text will start a new application."
-              : "Review the description and try again."}
+              ? t("jobAnalysis.form.retryStoredHint")
+              : t("jobAnalysis.form.reviewHint")}
           </p>
         </div>
       )}
@@ -118,7 +126,7 @@ export function JobAnalysisForm({
           disabled={isAnalyzing}
           className="cc-btn-secondary"
         >
-          Cancel
+          {t("jobAnalysis.form.cancel")}
         </button>
         <button
           type="submit"
@@ -126,10 +134,10 @@ export function JobAnalysisForm({
           className="cc-btn-primary disabled:bg-line disabled:text-muted disabled:opacity-100"
         >
           {isAnalyzing
-            ? "Analyzing job description…"
+            ? t("jobAnalysis.form.analyzing")
             : retryingStoredOffer
-              ? "Retry analysis"
-              : "Analyze job"}
+              ? t("jobAnalysis.form.retry")
+              : t("jobAnalysis.form.analyze")}
         </button>
       </div>
     </form>

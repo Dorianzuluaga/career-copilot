@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Navigate, useNavigate } from "react-router";
 import { MasterCvForm } from "../components/MasterCvForm";
+import { useLocale } from "../hooks/useLocale";
 import {
   ApiError,
   createMasterCv,
@@ -29,6 +30,7 @@ const emptyMasterCv = (): MasterCvInput => ({
 type Step = "choice" | "upload" | "form";
 
 export function MasterCvOnboardingPage() {
+  const { t } = useLocale();
   const navigate = useNavigate();
   const [step, setStep] = useState<Step>("choice");
   const [isChecking, setIsChecking] = useState(true);
@@ -66,7 +68,7 @@ export function MasterCvOnboardingPage() {
       setUploadError(
         error instanceof ApiError
           ? error.message
-          : "We couldn't extract your CV automatically.",
+          : t("masterCv.onboarding.extractFailed"),
       );
     } finally {
       setIsUploading(false);
@@ -83,7 +85,7 @@ export function MasterCvOnboardingPage() {
       setSaveError(
         error instanceof ApiError
           ? error.message
-          : "Unable to save your Master CV.",
+          : t("masterCv.onboarding.saveFailed"),
       );
     } finally {
       setIsSaving(false);
@@ -97,20 +99,21 @@ export function MasterCvOnboardingPage() {
   }
 
   if (isChecking) {
-    return <p className="text-sm text-muted">Loading your profile…</p>;
+    return (
+      <p className="text-sm text-muted">{t("masterCv.onboarding.loading")}</p>
+    );
   }
   if (existingMasterCv) return <Navigate to="/master-cv" replace />;
 
   if (step === "choice") {
     return (
       <section className="mx-auto max-w-3xl">
-        <p className="cc-kicker">Master CV</p>
+        <p className="cc-kicker">{t("masterCv.kicker")}</p>
         <h1 className="mt-1 text-3xl font-bold tracking-tight sm:text-4xl">
-          Do you already have a CV?
+          {t("masterCv.onboarding.title")}
         </h1>
         <p className="mt-3 text-muted">
-          Create the professional profile Career Copilot will use as your source
-          of truth.
+          {t("masterCv.onboarding.description")}
         </p>
         <div className="mt-8 grid gap-5 sm:grid-cols-2">
           <button
@@ -118,9 +121,11 @@ export function MasterCvOnboardingPage() {
             onClick={() => setStep("upload")}
             className="cc-card p-6 text-left transition hover:border-brand"
           >
-            <span className="text-lg font-bold">Upload existing CV</span>
+            <span className="text-lg font-bold">
+              {t("masterCv.onboarding.uploadTitle")}
+            </span>
             <span className="mt-2 block text-sm text-muted">
-              Upload a PDF and review the extracted information.
+              {t("masterCv.onboarding.uploadDescription")}
             </span>
           </button>
           <button
@@ -128,9 +133,11 @@ export function MasterCvOnboardingPage() {
             onClick={continueManually}
             className="cc-card p-6 text-left transition hover:border-brand"
           >
-            <span className="text-lg font-bold">Create manually</span>
+            <span className="text-lg font-bold">
+              {t("masterCv.onboarding.manualTitle")}
+            </span>
             <span className="mt-2 block text-sm text-muted">
-              Start with an empty form and enter your information.
+              {t("masterCv.onboarding.manualDescription")}
             </span>
           </button>
         </div>
@@ -146,16 +153,17 @@ export function MasterCvOnboardingPage() {
           onClick={() => setStep("choice")}
           className="text-sm font-semibold text-brand"
         >
-          Back
+          {t("masterCv.onboarding.back")}
         </button>
         <h1 className="mt-4 text-3xl font-bold tracking-tight">
-          Upload your CV
+          {t("masterCv.onboarding.uploadHeading")}
         </h1>
-        <p className="mt-2 text-muted">PDF only, up to 10 MB.</p>
+        <p className="mt-2 text-muted">{t("masterCv.onboarding.uploadHint")}</p>
         <div className="cc-card mt-8 p-6">
           <input
             type="file"
             accept="application/pdf,.pdf"
+            aria-label={t("masterCv.onboarding.fileLabel")}
             onChange={(event) => {
               setSelectedFile(event.target.files?.[0] ?? null);
               setUploadError(null);
@@ -168,7 +176,9 @@ export function MasterCvOnboardingPage() {
             onClick={() => void handleUpload()}
             className="cc-btn-primary mt-5"
           >
-            {isUploading ? "Extracting…" : "Upload and extract"}
+            {isUploading
+              ? t("masterCv.onboarding.extracting")
+              : t("masterCv.onboarding.uploadAndExtract")}
           </button>
 
           {uploadError ? (
@@ -183,14 +193,14 @@ export function MasterCvOnboardingPage() {
                   onClick={() => void handleUpload()}
                   className="cc-btn-danger px-3 py-2"
                 >
-                  Retry
+                  {t("masterCv.onboarding.retry")}
                 </button>
                 <button
                   type="button"
                   onClick={continueManually}
                   className="cc-btn-navy px-3 py-2"
                 >
-                  Complete manually
+                  {t("masterCv.onboarding.completeManually")}
                 </button>
               </div>
             </div>
@@ -202,16 +212,16 @@ export function MasterCvOnboardingPage() {
 
   return (
     <section className="mx-auto max-w-4xl">
-      <p className="cc-kicker">Master CV onboarding</p>
+      <p className="cc-kicker">{t("masterCv.onboarding.reviewKicker")}</p>
       <h1 className="mt-1 text-3xl font-bold tracking-tight">
-        Review your information
+        {t("masterCv.onboarding.reviewTitle")}
       </h1>
       <p className="mt-2 mb-8 text-muted">
-        Complete all required fields before saving your Master CV.
+        {t("masterCv.onboarding.reviewDescription")}
       </p>
       <MasterCvForm
         initialValue={initialValue}
-        submitLabel="Save Master CV"
+        submitLabel={t("masterCv.onboarding.save")}
         isSaving={isSaving}
         errorMessage={saveError}
         onSubmit={handleSave}

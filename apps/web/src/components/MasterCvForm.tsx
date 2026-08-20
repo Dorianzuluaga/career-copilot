@@ -1,7 +1,13 @@
 import { useState, type FormEvent } from "react";
 import { ValidationToast } from "./ValidationToast";
+import type { LocaleContextValue } from "../context/locale-context";
+import { useLocale } from "../hooks/useLocale";
 import { useSaveValidationFeedback } from "../hooks/useSaveValidationFeedback";
-import { getMasterCvFieldErrors } from "../lib/field-validation";
+import type { TranslationKey } from "../i18n/messages";
+import {
+  getMasterCvFieldErrors,
+  type FieldErrors,
+} from "../lib/field-validation";
 import type {
   CertificationItem,
   EducationItem,
@@ -10,6 +16,119 @@ import type {
   MasterCvInput,
   PersonalProjectItem,
 } from "../types/master-cv";
+
+type Translate = LocaleContextValue["t"];
+
+const MASTER_CV_VALIDATION_KEYS: Record<string, TranslationKey> = {
+  "Full name is required.": "masterCv.validation.fullNameRequired",
+  "Email is required.": "masterCv.validation.emailRequired",
+  "Enter a valid email address.": "masterCv.validation.emailInvalid",
+  "Enter a valid phone number.": "masterCv.validation.phoneInvalid",
+  "Enter a valid URL.": "masterCv.validation.urlInvalid",
+  "Professional summary is required.":
+    "masterCv.validation.professionalSummaryRequired",
+  "Enter at least one skill.": "masterCv.validation.skillsRequired",
+  "Enter a valid date.": "masterCv.validation.dateInvalid",
+};
+
+function translateMasterCvFieldErrors(
+  errors: FieldErrors,
+  t: Translate,
+): FieldErrors {
+  return Object.fromEntries(
+    Object.entries(errors).map(([key, message]) => {
+      const translationKey = MASTER_CV_VALIDATION_KEYS[message];
+      return [key, translationKey ? t(translationKey) : message];
+    }),
+  );
+}
+
+function getMasterCvToastFieldLabel(key: string, t: Translate): string {
+  const simpleLabels: Record<string, TranslationKey> = {
+    fullName: "masterCv.form.fullName",
+    email: "masterCv.form.email",
+    phone: "masterCv.form.phone",
+    linkedin: "masterCv.form.linkedin",
+    portfolio: "masterCv.form.portfolio",
+    professionalSummary: "masterCv.form.professionalSummary",
+    skills: "masterCv.form.skills",
+  };
+  const simpleLabel = simpleLabels[key];
+  if (simpleLabel) return t(simpleLabel);
+
+  const indexed = key.match(
+    /^(experience|education|personalProjects|certifications)\.(\d+)\.(.+)$/,
+  );
+  if (!indexed) return key;
+
+  const collection = indexed[1];
+  const position = Number(indexed[2]) + 1;
+  const field = indexed[3];
+
+  if (collection === "experience") {
+    if (field === "startDate") {
+      return t("masterCv.toast.experienceStartDate", { position });
+    }
+    if (field === "endDate") {
+      return t("masterCv.toast.experienceEndDate", { position });
+    }
+  }
+  if (collection === "education") {
+    if (field === "startDate") {
+      return t("masterCv.toast.educationStartDate", { position });
+    }
+    if (field === "endDate") {
+      return t("masterCv.toast.educationEndDate", { position });
+    }
+  }
+  if (collection === "personalProjects" && field === "url") {
+    return t("masterCv.toast.projectUrl", { position });
+  }
+  if (collection === "certifications") {
+    if (field === "issueDate") {
+      return t("masterCv.toast.certificationIssueDate", { position });
+    }
+    if (field === "credentialUrl") {
+      return t("masterCv.toast.certificationCredentialUrl", { position });
+    }
+  }
+
+  return key;
+}
+
+function listMasterCvFieldNames(names: string[], t: Translate): string {
+  if (names.length === 1) return names[0];
+  if (names.length === 2) {
+    return t("masterCv.toast.pair", { first: names[0], second: names[1] });
+  }
+  if (names.length <= 4) {
+    return t("masterCv.toast.list", {
+      items: names.slice(0, -1).join(", "),
+      last: names[names.length - 1],
+    });
+  }
+  return t("masterCv.toast.more", {
+    items: names.slice(0, 3).join(", "),
+    count: names.length - 3,
+  });
+}
+
+function getMasterCvToastMessage(
+  errors: FieldErrors,
+  t: Translate,
+): string | null {
+  const keys = Object.keys(errors);
+  if (keys.length === 0) return null;
+
+  const fields = listMasterCvFieldNames(
+    keys.map((key) => getMasterCvToastFieldLabel(key, t)),
+    t,
+  );
+  return t(
+    keys.length === 1 ? "masterCv.toast.single" : "masterCv.toast.multiple",
+    { fields },
+  );
+}
 
 const fieldClassName = "cc-field mt-1";
 
@@ -165,6 +284,7 @@ function SectionHeader({
   title: string;
   onAdd?: () => void;
 }) {
+  const { t } = useLocale();
   return (
     <div className="flex items-center justify-between">
       <h2 className="text-xl font-bold text-ink">{title}</h2>
@@ -174,7 +294,7 @@ function SectionHeader({
           onClick={onAdd}
           className="cc-btn-secondary px-3 py-1.5"
         >
-          Add
+          {t("masterCv.form.add")}
         </button>
       ) : null}
     </div>
@@ -196,6 +316,7 @@ function CollectionActions({
   onRemove?: () => void;
   removeLabel?: string;
 }) {
+  const { t } = useLocale();
   if (total <= 1 && !onRemove) return null;
 
   return (
@@ -206,19 +327,19 @@ function CollectionActions({
             type="button"
             disabled={index === 0}
             onClick={() => onMove(-1)}
-            aria-label={`Move ${label} up`}
+            aria-label={t("masterCv.form.moveUpAria", { label })}
             className="cc-btn-secondary px-3 py-1.5"
           >
-            Move up
+            {t("masterCv.form.moveUp")}
           </button>
           <button
             type="button"
             disabled={index === total - 1}
             onClick={() => onMove(1)}
-            aria-label={`Move ${label} down`}
+            aria-label={t("masterCv.form.moveDownAria", { label })}
             className="cc-btn-secondary px-3 py-1.5"
           >
-            Move down
+            {t("masterCv.form.moveDown")}
           </button>
         </>
       ) : null}
@@ -248,6 +369,7 @@ export function MasterCvForm({
   errorMessage: string | null;
   onSubmit: (input: MasterCvInput) => Promise<void>;
 }) {
+  const { t } = useLocale();
   const [personal, setPersonal] = useState({
     fullName: initialValue.fullName,
     email: initialValue.email,
@@ -273,7 +395,7 @@ export function MasterCvForm({
   const [certifications, setCertifications] = useState(
     initialValue.certifications,
   );
-  const { fieldErrors, toastMessage, reportFieldErrors, clearFieldError } =
+  const { fieldErrors, reportFieldErrors, clearFieldError } =
     useSaveValidationFeedback();
 
   function buildInput(): MasterCvInput {
@@ -345,7 +467,10 @@ export function MasterCvForm({
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const input = buildInput();
-    const nextErrors = getMasterCvFieldErrors(input);
+    const nextErrors = translateMasterCvFieldErrors(
+      getMasterCvFieldErrors(input),
+      t,
+    );
     if (reportFieldErrors(nextErrors)) return;
     await onSubmit(input);
   }
@@ -356,14 +481,14 @@ export function MasterCvForm({
       onSubmit={(event) => void handleSubmit(event)}
       className="space-y-8"
     >
-      <ValidationToast message={toastMessage} />
+      <ValidationToast message={getMasterCvToastMessage(fieldErrors, t)} />
       <section className="cc-card p-6">
-        <SectionHeader title="Personal information" />
+        <SectionHeader title={t("masterCv.form.personalInformation")} />
         <div className="mt-5 grid gap-4 sm:grid-cols-2">
           <TextField
             id="full-name"
             fieldKey="fullName"
-            label="Full name"
+            label={t("masterCv.form.fullName")}
             value={personal.fullName}
             required
             error={fieldErrors.fullName}
@@ -375,7 +500,7 @@ export function MasterCvForm({
           <TextField
             id="email"
             fieldKey="email"
-            label="Email"
+            label={t("masterCv.form.email")}
             type="email"
             value={personal.email}
             required
@@ -388,7 +513,7 @@ export function MasterCvForm({
           <TextField
             id="phone"
             fieldKey="phone"
-            label="Phone"
+            label={t("masterCv.form.phone")}
             value={personal.phone}
             error={fieldErrors.phone}
             onChange={(phone) => {
@@ -400,7 +525,7 @@ export function MasterCvForm({
             }}
           />
           <TextField
-            label="Location"
+            label={t("masterCv.form.location")}
             value={personal.location}
             onChange={(location) =>
               setPersonal((value) => ({
@@ -412,7 +537,7 @@ export function MasterCvForm({
           <TextField
             id="linkedin"
             fieldKey="linkedin"
-            label="LinkedIn"
+            label={t("masterCv.form.linkedin")}
             value={personal.linkedin}
             error={fieldErrors.linkedin}
             onChange={(linkedin) => {
@@ -426,7 +551,7 @@ export function MasterCvForm({
           <TextField
             id="portfolio"
             fieldKey="portfolio"
-            label="Portfolio"
+            label={t("masterCv.form.portfolio")}
             value={personal.portfolio}
             error={fieldErrors.portfolio}
             onChange={(portfolio) => {
@@ -441,7 +566,7 @@ export function MasterCvForm({
       </section>
 
       <section className="cc-card p-6">
-        <SectionHeader title="Professional summary" />
+        <SectionHeader title={t("masterCv.form.professionalSummary")} />
         <textarea
           id="professional-summary"
           data-field="professionalSummary"
@@ -468,7 +593,7 @@ export function MasterCvForm({
 
       <section className="cc-card p-6">
         <SectionHeader
-          title="Experience"
+          title={t("masterCv.form.experience")}
           onAdd={() => setExperience((items) => [...items, emptyExperience()])}
         />
         <div className="mt-5 space-y-5">
@@ -479,7 +604,7 @@ export function MasterCvForm({
             >
               <div className="grid gap-4 sm:grid-cols-2">
                 <TextField
-                  label="Job title"
+                  label={t("masterCv.form.jobTitle")}
                   value={item.jobTitle}
                   onChange={(value) =>
                     updateExperience(index, {
@@ -488,7 +613,7 @@ export function MasterCvForm({
                   }
                 />
                 <TextField
-                  label="Company"
+                  label={t("masterCv.form.company")}
                   value={item.company}
                   onChange={(value) =>
                     updateExperience(index, {
@@ -497,7 +622,7 @@ export function MasterCvForm({
                   }
                 />
                 <TextField
-                  label="Location"
+                  label={t("masterCv.form.location")}
                   value={item.location}
                   onChange={(value) =>
                     updateExperience(index, {
@@ -506,7 +631,7 @@ export function MasterCvForm({
                   }
                 />
                 <TextField
-                  label="Start date"
+                  label={t("masterCv.form.startDate")}
                   id={`experience-${index}-startDate`}
                   fieldKey={`experience.${index}.startDate`}
                   value={item.startDate}
@@ -519,7 +644,7 @@ export function MasterCvForm({
                   }}
                 />
                 <TextField
-                  label="End date"
+                  label={t("masterCv.form.endDate")}
                   id={`experience-${index}-endDate`}
                   fieldKey={`experience.${index}.endDate`}
                   value={item.endDate}
@@ -541,11 +666,11 @@ export function MasterCvForm({
                       })
                     }
                   />
-                  Current role
+                  {t("masterCv.form.currentRole")}
                 </label>
               </div>
               <label className="mt-4 block text-sm font-medium text-ink">
-                Description
+                {t("masterCv.form.description")}
                 <textarea
                   value={item.description ?? ""}
                   onChange={(event) =>
@@ -560,7 +685,7 @@ export function MasterCvForm({
               <CollectionActions
                 index={index}
                 total={experience.length}
-                label="experience"
+                label={t("masterCv.form.experienceItem")}
                 onMove={(offset) =>
                   setExperience((items) => moveItem(items, index, offset))
                 }
@@ -572,7 +697,7 @@ export function MasterCvForm({
                         )
                     : undefined
                 }
-                removeLabel="Remove experience"
+                removeLabel={t("masterCv.form.removeExperience")}
               />
             </div>
           ))}
@@ -581,7 +706,7 @@ export function MasterCvForm({
 
       <section className="cc-card p-6">
         <SectionHeader
-          title="Education"
+          title={t("masterCv.form.education")}
           onAdd={() => setEducation((items) => [...items, emptyEducation()])}
         />
         <div className="mt-5 space-y-5">
@@ -592,7 +717,7 @@ export function MasterCvForm({
             >
               <div className="grid gap-4 sm:grid-cols-2">
                 <TextField
-                  label="Institution"
+                  label={t("masterCv.form.institution")}
                   value={item.institution}
                   onChange={(value) =>
                     updateEducation(index, {
@@ -601,7 +726,7 @@ export function MasterCvForm({
                   }
                 />
                 <TextField
-                  label="Degree"
+                  label={t("masterCv.form.degree")}
                   value={item.degree}
                   onChange={(value) =>
                     updateEducation(index, {
@@ -610,7 +735,7 @@ export function MasterCvForm({
                   }
                 />
                 <TextField
-                  label="Field of study"
+                  label={t("masterCv.form.fieldOfStudy")}
                   value={item.fieldOfStudy}
                   onChange={(value) =>
                     updateEducation(index, {
@@ -619,7 +744,7 @@ export function MasterCvForm({
                   }
                 />
                 <TextField
-                  label="Start date"
+                  label={t("masterCv.form.startDate")}
                   id={`education-${index}-startDate`}
                   fieldKey={`education.${index}.startDate`}
                   value={item.startDate}
@@ -632,7 +757,7 @@ export function MasterCvForm({
                   }}
                 />
                 <TextField
-                  label="End date"
+                  label={t("masterCv.form.endDate")}
                   id={`education-${index}-endDate`}
                   fieldKey={`education.${index}.endDate`}
                   value={item.endDate}
@@ -646,7 +771,7 @@ export function MasterCvForm({
                 />
               </div>
               <label className="mt-4 block text-sm font-medium text-ink">
-                Description
+                {t("masterCv.form.description")}
                 <textarea
                   value={item.description ?? ""}
                   onChange={(event) =>
@@ -661,7 +786,7 @@ export function MasterCvForm({
               <CollectionActions
                 index={index}
                 total={education.length}
-                label="education"
+                label={t("masterCv.form.educationItem")}
                 onMove={(offset) =>
                   setEducation((items) => moveItem(items, index, offset))
                 }
@@ -670,7 +795,7 @@ export function MasterCvForm({
                     items.filter((_, itemIndex) => itemIndex !== index),
                   )
                 }
-                removeLabel="Remove education"
+                removeLabel={t("masterCv.form.removeEducation")}
               />
             </div>
           ))}
@@ -679,7 +804,7 @@ export function MasterCvForm({
 
       <section className="cc-card p-6">
         <SectionHeader
-          title="Personal projects"
+          title={t("masterCv.form.personalProjects")}
           onAdd={() =>
             setPersonalProjects((items) => [...items, emptyPersonalProject()])
           }
@@ -692,7 +817,7 @@ export function MasterCvForm({
             >
               <div className="grid gap-4 sm:grid-cols-2">
                 <TextField
-                  label="Project name"
+                  label={t("masterCv.form.projectName")}
                   value={item.name}
                   onChange={(value) =>
                     updatePersonalProject(index, {
@@ -701,7 +826,7 @@ export function MasterCvForm({
                   }
                 />
                 <TextField
-                  label="Project URL"
+                  label={t("masterCv.form.projectUrl")}
                   id={`personal-project-${index}-url`}
                   fieldKey={`personalProjects.${index}.url`}
                   value={item.url}
@@ -715,7 +840,7 @@ export function MasterCvForm({
                 />
               </div>
               <label className="mt-4 block text-sm font-medium text-ink">
-                Brief description
+                {t("masterCv.form.briefDescription")}
                 <textarea
                   value={item.description ?? ""}
                   onChange={(event) =>
@@ -729,7 +854,7 @@ export function MasterCvForm({
               </label>
               <div className="mt-4">
                 <TextField
-                  label="Technologies"
+                  label={t("masterCv.form.technologies")}
                   value={item.technologies}
                   onChange={(value) =>
                     updatePersonalProject(index, {
@@ -741,7 +866,7 @@ export function MasterCvForm({
               <CollectionActions
                 index={index}
                 total={personalProjects.length}
-                label="personal project"
+                label={t("masterCv.form.personalProjectItem")}
                 onMove={(offset) =>
                   setPersonalProjects((items) => moveItem(items, index, offset))
                 }
@@ -750,7 +875,7 @@ export function MasterCvForm({
                     items.filter((_, itemIndex) => itemIndex !== index),
                   )
                 }
-                removeLabel="Remove project"
+                removeLabel={t("masterCv.form.removeProject")}
               />
             </div>
           ))}
@@ -758,9 +883,10 @@ export function MasterCvForm({
       </section>
 
       <section className="cc-card p-6">
-        <SectionHeader title="Skills" />
+        <SectionHeader title={t("masterCv.form.skills")} />
         <label className="mt-5 block text-sm font-medium text-ink">
-          Skills, separated by commas <span className="text-danger"> *</span>
+          {t("masterCv.form.skillsLabel")}{" "}
+          <span className="text-danger"> *</span>
           <input
             id="skills"
             data-field="skills"
@@ -780,7 +906,7 @@ export function MasterCvForm({
 
       <section className="cc-card p-6">
         <SectionHeader
-          title="Languages"
+          title={t("masterCv.form.languages")}
           onAdd={() =>
             setLanguages((items) => [
               ...items,
@@ -795,7 +921,7 @@ export function MasterCvForm({
               className="grid gap-3 rounded-lg border border-line bg-canvas p-4 sm:grid-cols-[1fr_1fr_auto]"
             >
               <TextField
-                label="Language"
+                label={t("masterCv.form.language")}
                 value={item.name}
                 onChange={(value) =>
                   updateLanguage(index, {
@@ -804,7 +930,7 @@ export function MasterCvForm({
                 }
               />
               <TextField
-                label="Proficiency"
+                label={t("masterCv.form.proficiency")}
                 value={item.proficiency}
                 onChange={(value) =>
                   updateLanguage(index, {
@@ -821,7 +947,7 @@ export function MasterCvForm({
                 }
                 className="self-end py-2 text-sm font-semibold text-danger"
               >
-                Remove
+                {t("masterCv.form.remove")}
               </button>
             </div>
           ))}
@@ -830,7 +956,7 @@ export function MasterCvForm({
 
       <section className="cc-card p-6">
         <SectionHeader
-          title="Certifications"
+          title={t("masterCv.form.certifications")}
           onAdd={() =>
             setCertifications((items) => [
               ...items,
@@ -851,7 +977,7 @@ export function MasterCvForm({
             >
               <div className="grid gap-4 sm:grid-cols-2">
                 <TextField
-                  label="Certification"
+                  label={t("masterCv.form.certification")}
                   value={item.name}
                   onChange={(value) =>
                     updateCertification(index, {
@@ -860,7 +986,7 @@ export function MasterCvForm({
                   }
                 />
                 <TextField
-                  label="Issuer"
+                  label={t("masterCv.form.issuer")}
                   value={item.issuer}
                   onChange={(value) =>
                     updateCertification(index, {
@@ -869,7 +995,7 @@ export function MasterCvForm({
                   }
                 />
                 <TextField
-                  label="Issue date"
+                  label={t("masterCv.form.issueDate")}
                   id={`certification-${index}-issueDate`}
                   fieldKey={`certifications.${index}.issueDate`}
                   value={item.issueDate}
@@ -882,7 +1008,7 @@ export function MasterCvForm({
                   }}
                 />
                 <TextField
-                  label="Credential URL"
+                  label={t("masterCv.form.credentialUrl")}
                   id={`certification-${index}-credentialUrl`}
                   fieldKey={`certifications.${index}.credentialUrl`}
                   value={item.credentialUrl}
@@ -904,7 +1030,7 @@ export function MasterCvForm({
                 }
                 className="mt-3 text-sm font-semibold text-danger"
               >
-                Remove certification
+                {t("masterCv.form.removeCertification")}
               </button>
             </div>
           ))}
@@ -921,7 +1047,7 @@ export function MasterCvForm({
         disabled={isSaving}
         className="cc-btn-primary px-5 py-3"
       >
-        {isSaving ? "Saving…" : submitLabel}
+        {isSaving ? t("masterCv.form.saving") : submitLabel}
       </button>
     </form>
   );

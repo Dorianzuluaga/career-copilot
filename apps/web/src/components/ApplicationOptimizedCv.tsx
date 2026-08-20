@@ -1,6 +1,9 @@
 import { useState, type ReactNode } from "react";
 import { ValidationToast } from "./ValidationToast";
+import type { LocaleContextValue } from "../context/locale-context";
+import { useLocale } from "../hooks/useLocale";
 import { useSaveValidationFeedback } from "../hooks/useSaveValidationFeedback";
+import type { TranslationKey } from "../i18n/messages";
 import {
   getMasterCvFieldErrors,
   type FieldErrors,
@@ -13,6 +16,8 @@ import type {
   PersonalProjectItem,
 } from "../types/master-cv";
 import type { OptimizedCv } from "../types/optimized-cv";
+
+type Translate = LocaleContextValue["t"];
 
 interface ApplicationOptimizedCvProps {
   errorMessage: string | null;
@@ -30,6 +35,117 @@ interface ApplicationOptimizedCvProps {
 }
 
 const fieldClassName = "cc-field mt-1";
+
+const MASTER_CV_VALIDATION_KEYS: Record<string, TranslationKey> = {
+  "Full name is required.": "masterCv.validation.fullNameRequired",
+  "Email is required.": "masterCv.validation.emailRequired",
+  "Enter a valid email address.": "masterCv.validation.emailInvalid",
+  "Enter a valid phone number.": "masterCv.validation.phoneInvalid",
+  "Enter a valid URL.": "masterCv.validation.urlInvalid",
+  "Professional summary is required.":
+    "masterCv.validation.professionalSummaryRequired",
+  "Enter at least one skill.": "masterCv.validation.skillsRequired",
+  "Enter a valid date.": "masterCv.validation.dateInvalid",
+};
+
+function translateMasterCvFieldErrors(
+  errors: FieldErrors,
+  t: Translate,
+): FieldErrors {
+  return Object.fromEntries(
+    Object.entries(errors).map(([key, message]) => {
+      const translationKey = MASTER_CV_VALIDATION_KEYS[message];
+      return [key, translationKey ? t(translationKey) : message];
+    }),
+  );
+}
+
+function getMasterCvToastFieldLabel(key: string, t: Translate): string {
+  const simpleLabels: Record<string, TranslationKey> = {
+    fullName: "masterCv.form.fullName",
+    email: "masterCv.form.email",
+    phone: "masterCv.form.phone",
+    linkedin: "masterCv.form.linkedin",
+    portfolio: "masterCv.form.portfolio",
+    professionalSummary: "masterCv.form.professionalSummary",
+    skills: "masterCv.form.skills",
+  };
+  const simpleLabel = simpleLabels[key];
+  if (simpleLabel) return t(simpleLabel);
+
+  const indexed = key.match(
+    /^(experience|education|personalProjects|certifications)\.(\d+)\.(.+)$/,
+  );
+  if (!indexed) return key;
+
+  const collection = indexed[1];
+  const position = Number(indexed[2]) + 1;
+  const field = indexed[3];
+
+  if (collection === "experience") {
+    if (field === "startDate") {
+      return t("masterCv.toast.experienceStartDate", { position });
+    }
+    if (field === "endDate") {
+      return t("masterCv.toast.experienceEndDate", { position });
+    }
+  }
+  if (collection === "education") {
+    if (field === "startDate") {
+      return t("masterCv.toast.educationStartDate", { position });
+    }
+    if (field === "endDate") {
+      return t("masterCv.toast.educationEndDate", { position });
+    }
+  }
+  if (collection === "personalProjects" && field === "url") {
+    return t("masterCv.toast.projectUrl", { position });
+  }
+  if (collection === "certifications") {
+    if (field === "issueDate") {
+      return t("masterCv.toast.certificationIssueDate", { position });
+    }
+    if (field === "credentialUrl") {
+      return t("masterCv.toast.certificationCredentialUrl", { position });
+    }
+  }
+
+  return key;
+}
+
+function listMasterCvFieldNames(names: string[], t: Translate): string {
+  if (names.length === 1) return names[0];
+  if (names.length === 2) {
+    return t("masterCv.toast.pair", { first: names[0], second: names[1] });
+  }
+  if (names.length <= 4) {
+    return t("masterCv.toast.list", {
+      items: names.slice(0, -1).join(", "),
+      last: names[names.length - 1],
+    });
+  }
+  return t("masterCv.toast.more", {
+    items: names.slice(0, 3).join(", "),
+    count: names.length - 3,
+  });
+}
+
+function getMasterCvToastMessage(
+  errors: FieldErrors,
+  t: Translate,
+): string | null {
+  const keys = Object.keys(errors);
+  if (keys.length === 0) return null;
+
+  const fields = listMasterCvFieldNames(
+    keys.map((key) => getMasterCvToastFieldLabel(key, t)),
+    t,
+  );
+  return t(
+    keys.length === 1 ? "masterCv.toast.single" : "masterCv.toast.multiple",
+    { fields },
+  );
+}
 
 function hasText(value: string | null | undefined): value is string {
   return typeof value === "string" && value.trim().length > 0;
@@ -72,9 +188,10 @@ function formatDateRange(
   startDate: string | null,
   endDate: string | null,
   current: boolean | null,
+  presentLabel: string,
 ): string | null {
   const start = hasText(startDate) ? startDate.trim() : null;
-  const end = current ? "Present" : hasText(endDate) ? endDate.trim() : null;
+  const end = current ? presentLabel : hasText(endDate) ? endDate.trim() : null;
 
   if (start && end) {
     return `${start} – ${end}`;
@@ -94,6 +211,7 @@ function DocumentSection({
   editable?: boolean;
   first?: boolean;
 }) {
+  const { t } = useLocale();
   return (
     <section className={first ? "" : "border-t border-line pt-5"}>
       <div className="flex items-center gap-2">
@@ -102,7 +220,7 @@ function DocumentSection({
         </h3>
         {editable ? (
           <span className="rounded bg-brand-soft px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-brand">
-            Editable
+            {t("optimizedCv.editable")}
           </span>
         ) : null}
       </div>
@@ -174,12 +292,20 @@ function ExperienceEntries({
   isEditing: boolean;
   onDescriptionChange?: (index: number, description: string) => void;
 }) {
+  const { t } = useLocale();
+  const presentLabel = t("optimizedCv.present");
+
   return (
     <div className="space-y-5">
       {items.map((item, index) => {
         const titleParts = [item.jobTitle, item.company].filter(hasText);
         const metaParts = [
-          formatDateRange(item.startDate, item.endDate, item.current),
+          formatDateRange(
+            item.startDate,
+            item.endDate,
+            item.current,
+            presentLabel,
+          ),
           item.location,
         ].filter(hasText);
 
@@ -221,14 +347,16 @@ function ExperienceEntries({
 
             {isEditing && onDescriptionChange ? (
               <label className="mt-3 block text-sm font-medium text-ink">
-                Description
+                {t("optimizedCv.description")}
                 <textarea
                   value={item.description ?? ""}
                   onChange={(event) =>
                     onDescriptionChange(index, event.target.value)
                   }
                   rows={5}
-                  aria-label={`Experience description ${index + 1}`}
+                  aria-label={t("optimizedCv.experienceDescriptionAria", {
+                    position: index + 1,
+                  })}
                   className={`${fieldClassName} min-h-28 resize-y`}
                 />
               </label>
@@ -251,6 +379,9 @@ function EducationEntries({
   items: EducationItem[];
   isEditing: boolean;
 }) {
+  const { t } = useLocale();
+  const presentLabel = t("optimizedCv.present");
+
   return (
     <div className="space-y-3">
       {items.map((item, index) => {
@@ -259,7 +390,7 @@ function EducationEntries({
           (hasText(item.institution) ? item.institution : null);
         const metaParts = [
           title !== item.institution ? item.institution : null,
-          formatDateRange(item.startDate, item.endDate, null),
+          formatDateRange(item.startDate, item.endDate, null, presentLabel),
         ].filter(hasText);
 
         const content = (
@@ -367,6 +498,7 @@ function AddPersonalProjectControls({
   availableProjects: PersonalProjectItem[];
   onAdd: (project: PersonalProjectItem) => void;
 }) {
+  const { t } = useLocale();
   const [selectedIndex, setSelectedIndex] = useState(0);
   if (availableProjects.length === 0) return null;
 
@@ -376,11 +508,11 @@ function AddPersonalProjectControls({
   return (
     <div className="mt-4 flex flex-col gap-2 sm:flex-row">
       <label className="block flex-1 text-sm font-medium text-ink">
-        <span className="sr-only">Add a Personal Project</span>
+        <span className="sr-only">{t("optimizedCv.addPersonalProject")}</span>
         <select
           value={String(Math.min(selectedIndex, availableProjects.length - 1))}
           onChange={(event) => setSelectedIndex(Number(event.target.value))}
-          aria-label="Add a Personal Project"
+          aria-label={t("optimizedCv.addPersonalProject")}
           className={fieldClassName}
         >
           {availableProjects.map((project, index) => (
@@ -398,7 +530,7 @@ function AddPersonalProjectControls({
         onClick={() => onAdd(personalProjectFromMasterCv(selectedProject))}
         className="cc-btn-secondary px-4 py-2 sm:self-end"
       >
-        Add project
+        {t("optimizedCv.addProject")}
       </button>
     </div>
   );
@@ -415,6 +547,8 @@ function PersonalProjectEntries({
   onDescriptionChange?: (index: number, description: string) => void;
   onRemove?: (index: number) => void;
 }) {
+  const { t } = useLocale();
+
   return (
     <div className="space-y-5">
       {items.map((item, index) => {
@@ -454,14 +588,16 @@ function PersonalProjectEntries({
 
             {isEditing && onDescriptionChange ? (
               <label className="mt-3 block text-sm font-medium text-ink">
-                Description
+                {t("optimizedCv.description")}
                 <textarea
                   value={item.description ?? ""}
                   onChange={(event) =>
                     onDescriptionChange(index, event.target.value)
                   }
                   rows={4}
-                  aria-label={`Personal project description ${index + 1}`}
+                  aria-label={t("optimizedCv.personalProjectDescriptionAria", {
+                    position: index + 1,
+                  })}
                   className={`${fieldClassName} min-h-24 resize-y`}
                 />
               </label>
@@ -477,7 +613,7 @@ function PersonalProjectEntries({
                 onClick={() => onRemove(index)}
                 className="mt-3 text-sm font-semibold text-danger hover:text-danger"
               >
-                Remove project
+                {t("optimizedCv.removeProject")}
               </button>
             ) : null}
           </article>
@@ -500,6 +636,7 @@ function SkillsSection({
   onAddSkill?: (skill: string) => void;
   onRemoveSkill?: (index: number) => void;
 }) {
+  const { t } = useLocale();
   const [newSkill, setNewSkill] = useState("");
   const [addError, setAddError] = useState<string | null>(null);
   const visibleSkills = skills.filter(hasText);
@@ -516,7 +653,7 @@ function SkillsSection({
     if (!onAddSkill) return;
     const trimmed = newSkill.trim();
     if (!trimmed) {
-      setAddError("Enter a skill.");
+      setAddError(t("optimizedCv.enterSkill"));
       return;
     }
     setAddError(null);
@@ -539,18 +676,18 @@ function SkillsSection({
                 onClick={() => onRemoveSkill?.(index)}
                 className="text-sm font-semibold text-danger hover:text-danger"
               >
-                Remove
+                {t("optimizedCv.removeSkill")}
               </button>
             </li>
           ))}
         </ul>
       ) : (
-        <p className="text-sm text-muted">No skills yet.</p>
+        <p className="text-sm text-muted">{t("optimizedCv.noSkills")}</p>
       )}
 
       <div className="flex flex-col gap-2 sm:flex-row">
         <label className="block flex-1 text-sm font-medium text-ink">
-          <span className="sr-only">New skill</span>
+          <span className="sr-only">{t("optimizedCv.newSkill")}</span>
           <input
             type="text"
             data-field="skills"
@@ -565,8 +702,8 @@ function SkillsSection({
                 handleAdd();
               }
             }}
-            placeholder="Add a skill"
-            aria-label="New skill"
+            placeholder={t("optimizedCv.addSkillPlaceholder")}
+            aria-label={t("optimizedCv.newSkill")}
             aria-invalid={Boolean(addError)}
             aria-describedby={addError ? "new-skill-error" : undefined}
             className={fieldClassName}
@@ -577,7 +714,7 @@ function SkillsSection({
           onClick={handleAdd}
           className="cc-btn-secondary px-4 py-2 sm:self-end"
         >
-          Add skill
+          {t("optimizedCv.addSkill")}
         </button>
       </div>
       {addError ? (
@@ -606,6 +743,7 @@ export function OptimizedCvDocument({
   fieldErrors?: FieldErrors;
   onChange?: (optimizedCv: OptimizedCv) => void;
 }) {
+  const { t } = useLocale();
   const showProfessionalSummary = isEditing || hasText(cv.professionalSummary);
   const showExperience = cv.experience.length > 0;
   const showEducation = cv.education.length > 0;
@@ -643,7 +781,7 @@ export function OptimizedCvDocument({
 
   return (
     <article
-      aria-label="Optimized CV"
+      aria-label={t("optimizedCv.title")}
       className="cc-card px-6 py-8 sm:px-10 sm:py-10"
     >
       <DocumentHeader cv={cv} isEditing={isEditing} />
@@ -654,13 +792,15 @@ export function OptimizedCvDocument({
             <div className="space-y-5">
               {showProfessionalSummary ? (
                 <DocumentSection
-                  title="Professional summary"
+                  title={t("optimizedCv.professionalSummary")}
                   editable={isEditing}
                   first={leftFirst === "summary"}
                 >
                   {isEditing && onChange ? (
                     <label className="block text-sm font-medium text-ink">
-                      <span className="sr-only">Professional summary</span>
+                      <span className="sr-only">
+                        {t("optimizedCv.professionalSummary")}
+                      </span>
                       <textarea
                         id="professional-summary"
                         data-field="professionalSummary"
@@ -672,7 +812,7 @@ export function OptimizedCvDocument({
                           })
                         }
                         rows={6}
-                        aria-label="Professional summary"
+                        aria-label={t("optimizedCv.professionalSummary")}
                         aria-invalid={Boolean(fieldErrors.professionalSummary)}
                         aria-describedby={
                           fieldErrors.professionalSummary
@@ -700,7 +840,7 @@ export function OptimizedCvDocument({
 
               {showExperience ? (
                 <DocumentSection
-                  title="Experience"
+                  title={t("optimizedCv.experience")}
                   editable={isEditing}
                   first={leftFirst === "experience"}
                 >
@@ -736,7 +876,7 @@ export function OptimizedCvDocument({
             <aside className="space-y-5">
               {showEducation ? (
                 <DocumentSection
-                  title="Education"
+                  title={t("optimizedCv.education")}
                   first={rightFirst === "education"}
                 >
                   <EducationEntries
@@ -748,7 +888,7 @@ export function OptimizedCvDocument({
 
               {showSkills ? (
                 <DocumentSection
-                  title="Skills"
+                  title={t("optimizedCv.skills")}
                   editable={isEditing}
                   first={rightFirst === "skills"}
                 >
@@ -782,7 +922,7 @@ export function OptimizedCvDocument({
 
               {showLanguages ? (
                 <DocumentSection
-                  title="Languages"
+                  title={t("optimizedCv.languages")}
                   first={rightFirst === "languages"}
                 >
                   <LanguageEntries items={cv.languages} isEditing={isEditing} />
@@ -791,7 +931,7 @@ export function OptimizedCvDocument({
 
               {showCertifications ? (
                 <DocumentSection
-                  title="Certifications"
+                  title={t("optimizedCv.certifications")}
                   first={rightFirst === "certifications"}
                 >
                   <CertificationEntries
@@ -808,7 +948,7 @@ export function OptimizedCvDocument({
       {showPersonalProjects ? (
         <div className={showLeft || showRight ? undefined : "mt-6"}>
           <DocumentSection
-            title="Personal projects"
+            title={t("optimizedCv.personalProjects")}
             editable={isEditing}
             first={!showLeft && !showRight}
           >
@@ -882,8 +1022,9 @@ export function ApplicationOptimizedCv({
   saveErrorMessage = null,
   savedMessage = null,
 }: ApplicationOptimizedCvProps) {
+  const { t } = useLocale();
   const [isEditing, setIsEditing] = useState(initialIsEditing);
-  const { fieldErrors, toastMessage, reportFieldErrors, clearAllFieldErrors } =
+  const { fieldErrors, reportFieldErrors, clearAllFieldErrors } =
     useSaveValidationFeedback();
 
   function handleChange(next: OptimizedCv) {
@@ -893,7 +1034,13 @@ export function ApplicationOptimizedCv({
 
   function handleSave() {
     if (!optimizedCv || !onSave) return;
-    if (reportFieldErrors(getMasterCvFieldErrors(optimizedCv))) return;
+    if (
+      reportFieldErrors(
+        translateMasterCvFieldErrors(getMasterCvFieldErrors(optimizedCv), t),
+      )
+    ) {
+      return;
+    }
     onSave();
   }
 
@@ -904,8 +1051,8 @@ export function ApplicationOptimizedCv({
   if (isLoading) {
     return (
       <section className="cc-card p-8 text-center">
-        <h2 className="text-lg font-bold text-ink">Optimized CV</h2>
-        <p className="mt-2 text-sm text-muted">Generating your Optimized CV…</p>
+        <h2 className="text-lg font-bold text-ink">{t("optimizedCv.title")}</h2>
+        <p className="mt-2 text-sm text-muted">{t("optimizedCv.loading")}</p>
       </section>
     );
   }
@@ -918,24 +1065,20 @@ export function ApplicationOptimizedCv({
           className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between"
         >
           <div>
-            <p className="cc-kicker">Application document</p>
+            <p className="cc-kicker">{t("optimizedCv.kicker")}</p>
             <h2
               id="optimized-cv-title"
               className="mt-1 text-2xl font-bold text-ink"
             >
-              Optimized CV
+              {t("optimizedCv.title")}
             </h2>
             {isEditing ? (
               <p className="mt-2 max-w-xl text-sm leading-6 text-muted">
-                Edit application-specific content only. Personal information,
-                employment dates, company names, job titles, education,
-                languages, certifications, and Personal Project names,
-                technologies, and URLs remain read-only.
+                {t("optimizedCv.editDescription")}
               </p>
             ) : (
               <p className="mt-2 max-w-xl text-sm leading-6 text-muted">
-                Review the generated document. Enter Edit mode to update
-                application-specific content.
+                {t("optimizedCv.reviewDescription")}
               </p>
             )}
           </div>
@@ -946,7 +1089,7 @@ export function ApplicationOptimizedCv({
                 onClick={() => setIsEditing(false)}
                 className="cc-btn-primary"
               >
-                Done editing
+                {t("optimizedCv.doneEditing")}
               </button>
             ) : (
               <button
@@ -954,7 +1097,7 @@ export function ApplicationOptimizedCv({
                 onClick={() => setIsEditing(true)}
                 className="cc-btn-primary"
               >
-                Edit
+                {t("optimizedCv.edit")}
               </button>
             )}
             {onSave ? (
@@ -964,7 +1107,7 @@ export function ApplicationOptimizedCv({
                 disabled={isSaving}
                 className="cc-btn-secondary"
               >
-                {isSaving ? "Saving…" : "Save"}
+                {isSaving ? t("optimizedCv.saving") : t("optimizedCv.save")}
               </button>
             ) : null}
             <button
@@ -975,7 +1118,7 @@ export function ApplicationOptimizedCv({
               }}
               className="cc-btn-secondary"
             >
-              Generate again
+              {t("optimizedCv.generateAgain")}
             </button>
             {onContinueToCoverLetter ? (
               <button
@@ -983,7 +1126,7 @@ export function ApplicationOptimizedCv({
                 onClick={onContinueToCoverLetter}
                 className="cc-btn-secondary"
               >
-                Continue to Cover Letter
+                {t("optimizedCv.continueToCoverLetter")}
               </button>
             ) : null}
           </div>
@@ -994,7 +1137,7 @@ export function ApplicationOptimizedCv({
             {savedMessage}
           </p>
         ) : null}
-        <ValidationToast message={toastMessage} />
+        <ValidationToast message={getMasterCvToastMessage(fieldErrors, t)} />
         {saveErrorMessage ? (
           <p role="alert" className="text-sm font-medium text-danger">
             {saveErrorMessage}
@@ -1026,20 +1169,19 @@ export function ApplicationOptimizedCv({
       aria-labelledby="optimized-cv-title"
       className="cc-card p-6 text-center sm:p-8"
     >
-      <p className="cc-kicker">Application document</p>
+      <p className="cc-kicker">{t("optimizedCv.kicker")}</p>
       <h2 id="optimized-cv-title" className="mt-1 text-2xl font-bold text-ink">
-        Optimized CV
+        {t("optimizedCv.title")}
       </h2>
       <p className="mt-4 text-sm leading-6 text-muted">
-        {errorMessage ??
-          "Generate an Optimized CV tailored to this job opportunity from your Master CV, Job Analysis, and Profile Match."}
+        {errorMessage ?? t("optimizedCv.generateDescription")}
       </p>
       <button
         type="button"
         onClick={onGenerate}
         className="cc-btn-primary mt-6"
       >
-        {errorMessage ? "Try again" : "Generate Optimized CV"}
+        {errorMessage ? t("optimizedCv.tryAgain") : t("optimizedCv.generate")}
       </button>
     </section>
   );

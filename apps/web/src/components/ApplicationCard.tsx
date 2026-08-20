@@ -1,4 +1,5 @@
 import { Link } from "react-router";
+import { useLocale } from "../hooks/useLocale";
 import type { PersistedApplication } from "../types/job-analysis";
 
 interface ApplicationCardProps {
@@ -12,14 +13,15 @@ export function ApplicationCard({
   isDeleting,
   onDelete,
 }: ApplicationCardProps) {
+  const { locale, t } = useLocale();
   const company =
     application.jobAnalysis?.company ??
     application.jobOffer?.company ??
-    "Company not identified";
+    t("dashboard.companyUnknown");
   const title =
     application.jobAnalysis?.title ??
     application.jobOffer?.title ??
-    "Untitled opportunity";
+    t("dashboard.untitledOpportunity");
   const location = application.jobAnalysis?.location;
 
   return (
@@ -31,13 +33,15 @@ export function ApplicationCard({
         </h2>
         {location && <p className="mt-3 text-sm text-muted">{location}</p>}
         <p className="mt-2 text-xs text-muted">
-          Created {new Date(application.createdAt).toLocaleDateString()}
+          {t("dashboard.created", {
+            date: new Date(application.createdAt).toLocaleDateString(locale),
+          })}
         </p>
       </div>
 
       <div className="mt-6 flex flex-wrap gap-2 border-t border-line pt-4">
         <Link to={`/applications/${application.id}`} className="cc-btn-primary">
-          Open
+          {t("dashboard.open")}
         </Link>
         <button
           type="button"
@@ -45,7 +49,7 @@ export function ApplicationCard({
           disabled={isDeleting}
           className="cc-btn-ghost-danger"
         >
-          {isDeleting ? "Deleting…" : "Delete"}
+          {isDeleting ? t("dashboard.deleting") : t("dashboard.delete")}
         </button>
       </div>
     </article>

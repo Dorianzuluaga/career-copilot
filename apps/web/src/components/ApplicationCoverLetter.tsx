@@ -1,11 +1,17 @@
 import { useState, type ReactNode } from "react";
 import { ValidationToast } from "./ValidationToast";
+import type { LocaleContextValue } from "../context/locale-context";
+import { useLocale } from "../hooks/useLocale";
 import { useSaveValidationFeedback } from "../hooks/useSaveValidationFeedback";
+import type { TranslationKey } from "../i18n/messages";
 import {
   getCoverLetterFieldErrors,
   hasFieldErrors,
+  type FieldErrors,
 } from "../lib/field-validation";
 import type { CoverLetter } from "../types/cover-letter";
+
+type Translate = LocaleContextValue["t"];
 
 interface ApplicationCoverLetterProps {
   coverLetter: CoverLetter | null;
@@ -22,6 +28,74 @@ interface ApplicationCoverLetterProps {
 }
 
 const editableFieldClassName = "cc-field resize-y leading-7";
+
+const COVER_LETTER_VALIDATION_KEYS: Record<string, TranslationKey> = {
+  "Candidate name is required.": "coverLetter.validation.candidateNameRequired",
+  "Email is required.": "masterCv.validation.emailRequired",
+  "Enter a valid email address.": "masterCv.validation.emailInvalid",
+  "Enter a valid phone number.": "masterCv.validation.phoneInvalid",
+  "Date is required.": "coverLetter.validation.dateRequired",
+  "Enter a valid date.": "masterCv.validation.dateInvalid",
+  "Signature is required.": "coverLetter.validation.signatureRequired",
+};
+
+function translateCoverLetterFieldErrors(
+  errors: FieldErrors,
+  t: Translate,
+): FieldErrors {
+  return Object.fromEntries(
+    Object.entries(errors).map(([key, message]) => {
+      const translationKey = COVER_LETTER_VALIDATION_KEYS[message];
+      return [key, translationKey ? t(translationKey) : message];
+    }),
+  );
+}
+
+function getCoverLetterToastFieldLabel(key: string, t: Translate): string {
+  const labels: Record<string, TranslationKey> = {
+    candidateName: "coverLetter.fields.candidateName",
+    email: "masterCv.form.email",
+    phone: "masterCv.form.phone",
+    date: "coverLetter.fields.date",
+    signature: "coverLetter.fields.signature",
+  };
+  const label = labels[key];
+  return label ? t(label) : key;
+}
+
+function listCoverLetterFieldNames(names: string[], t: Translate): string {
+  if (names.length === 1) return names[0];
+  if (names.length === 2) {
+    return t("masterCv.toast.pair", { first: names[0], second: names[1] });
+  }
+  if (names.length <= 4) {
+    return t("masterCv.toast.list", {
+      items: names.slice(0, -1).join(", "),
+      last: names[names.length - 1],
+    });
+  }
+  return t("masterCv.toast.more", {
+    items: names.slice(0, 3).join(", "),
+    count: names.length - 3,
+  });
+}
+
+function getCoverLetterToastMessage(
+  errors: FieldErrors,
+  t: Translate,
+): string | null {
+  const keys = Object.keys(errors);
+  if (keys.length === 0) return null;
+
+  const fields = listCoverLetterFieldNames(
+    keys.map((key) => getCoverLetterToastFieldLabel(key, t)),
+    t,
+  );
+  return t(
+    keys.length === 1 ? "masterCv.toast.single" : "masterCv.toast.multiple",
+    { fields },
+  );
+}
 
 function hasText(value: string | null | undefined): value is string {
   return typeof value === "string" && value.trim().length > 0;
@@ -76,6 +150,7 @@ export function CoverLetterDocument({
   isEditing?: boolean;
   onChange?: (coverLetter: CoverLetter) => void;
 }) {
+  const { t } = useLocale();
   const canEdit = isEditing && onChange !== undefined;
 
   const header = (
@@ -125,21 +200,21 @@ export function CoverLetterDocument({
 
   return (
     <article
-      aria-label="Cover Letter"
+      aria-label={t("coverLetter.title")}
       className="cc-card px-6 py-8 sm:px-10 sm:py-10"
     >
       {canEdit ? <ReadOnlyBlock>{header}</ReadOnlyBlock> : header}
 
       <div className="mt-8 space-y-5 text-sm leading-7 text-ink">
         <EditableParagraph
-          ariaLabel="Greeting"
+          ariaLabel={t("coverLetter.greetingAria")}
           isEditing={canEdit}
           value={coverLetter.greeting}
           rows={2}
           onChange={(greeting) => onChange?.({ ...coverLetter, greeting })}
         />
         <EditableParagraph
-          ariaLabel="Introduction"
+          ariaLabel={t("coverLetter.introductionAria")}
           isEditing={canEdit}
           value={coverLetter.introduction}
           rows={4}
@@ -148,7 +223,7 @@ export function CoverLetterDocument({
           }
         />
         <EditableParagraph
-          ariaLabel="Professional value"
+          ariaLabel={t("coverLetter.professionalValueAria")}
           isEditing={canEdit}
           value={coverLetter.professionalValue}
           rows={5}
@@ -157,14 +232,14 @@ export function CoverLetterDocument({
           }
         />
         <EditableParagraph
-          ariaLabel="Motivation"
+          ariaLabel={t("coverLetter.motivationAria")}
           isEditing={canEdit}
           value={coverLetter.motivation}
           rows={4}
           onChange={(motivation) => onChange?.({ ...coverLetter, motivation })}
         />
         <EditableParagraph
-          ariaLabel="Closing"
+          ariaLabel={t("coverLetter.closingAria")}
           isEditing={canEdit}
           value={coverLetter.closing}
           rows={3}
@@ -192,8 +267,9 @@ export function ApplicationCoverLetter({
   saveErrorMessage = null,
   savedMessage = null,
 }: ApplicationCoverLetterProps) {
+  const { t } = useLocale();
   const [isEditing, setIsEditing] = useState(initialIsEditing);
-  const { fieldErrors, toastMessage, reportFieldErrors, clearAllFieldErrors } =
+  const { fieldErrors, reportFieldErrors, clearAllFieldErrors } =
     useSaveValidationFeedback();
 
   function handleChange(next: CoverLetter) {
@@ -203,15 +279,24 @@ export function ApplicationCoverLetter({
 
   function handleSave() {
     if (!coverLetter || !onSave) return;
-    if (reportFieldErrors(getCoverLetterFieldErrors(coverLetter))) return;
+    if (
+      reportFieldErrors(
+        translateCoverLetterFieldErrors(
+          getCoverLetterFieldErrors(coverLetter),
+          t,
+        ),
+      )
+    ) {
+      return;
+    }
     onSave();
   }
 
   if (isLoading) {
     return (
       <section className="cc-card p-8 text-center">
-        <h2 className="text-lg font-bold text-ink">Cover Letter</h2>
-        <p className="mt-2 text-sm text-muted">Generating your Cover Letter…</p>
+        <h2 className="text-lg font-bold text-ink">{t("coverLetter.title")}</h2>
+        <p className="mt-2 text-sm text-muted">{t("coverLetter.loading")}</p>
       </section>
     );
   }
@@ -224,22 +309,20 @@ export function ApplicationCoverLetter({
           className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between"
         >
           <div>
-            <p className="cc-kicker">Application document</p>
+            <p className="cc-kicker">{t("coverLetter.kicker")}</p>
             <h2
               id="cover-letter-title"
               className="mt-1 text-2xl font-bold text-ink"
             >
-              Cover Letter
+              {t("coverLetter.title")}
             </h2>
             {isEditing ? (
               <p className="mt-2 max-w-xl text-sm leading-6 text-muted">
-                Edit the application-specific letter text. Header details and
-                signature remain read-only.
+                {t("coverLetter.editDescription")}
               </p>
             ) : (
               <p className="mt-2 max-w-xl text-sm leading-6 text-muted">
-                Review the generated document. Enter Edit mode to update the
-                letter text.
+                {t("coverLetter.reviewDescription")}
               </p>
             )}
           </div>
@@ -250,7 +333,7 @@ export function ApplicationCoverLetter({
                 onClick={() => setIsEditing(false)}
                 className="cc-btn-primary"
               >
-                Done editing
+                {t("coverLetter.doneEditing")}
               </button>
             ) : (
               <button
@@ -258,7 +341,7 @@ export function ApplicationCoverLetter({
                 onClick={() => setIsEditing(true)}
                 className="cc-btn-primary"
               >
-                Edit
+                {t("coverLetter.edit")}
               </button>
             )}
             {onSave ? (
@@ -268,7 +351,7 @@ export function ApplicationCoverLetter({
                 disabled={isSaving}
                 className="cc-btn-secondary"
               >
-                {isSaving ? "Saving…" : "Save"}
+                {isSaving ? t("coverLetter.saving") : t("coverLetter.save")}
               </button>
             ) : null}
             <button
@@ -279,7 +362,7 @@ export function ApplicationCoverLetter({
               }}
               className="cc-btn-secondary"
             >
-              Generate again
+              {t("coverLetter.generateAgain")}
             </button>
             {onContinueToExport ? (
               <button
@@ -287,7 +370,7 @@ export function ApplicationCoverLetter({
                 onClick={onContinueToExport}
                 className="cc-btn-secondary"
               >
-                Continue to Export
+                {t("coverLetter.continueToExport")}
               </button>
             ) : null}
           </div>
@@ -298,7 +381,7 @@ export function ApplicationCoverLetter({
             {savedMessage}
           </p>
         ) : null}
-        <ValidationToast message={toastMessage} />
+        <ValidationToast message={getCoverLetterToastMessage(fieldErrors, t)} />
         {saveErrorMessage ? (
           <p role="alert" className="text-sm font-medium text-danger">
             {saveErrorMessage}
@@ -328,20 +411,19 @@ export function ApplicationCoverLetter({
       aria-labelledby="cover-letter-title"
       className="cc-card p-6 text-center sm:p-8"
     >
-      <p className="cc-kicker">Application document</p>
+      <p className="cc-kicker">{t("coverLetter.kicker")}</p>
       <h2 id="cover-letter-title" className="mt-1 text-2xl font-bold text-ink">
-        Cover Letter
+        {t("coverLetter.title")}
       </h2>
       <p className="mt-4 text-sm leading-6 text-muted">
-        {errorMessage ??
-          "Generate a Cover Letter tailored to this job opportunity from your Master CV, Job Analysis, Profile Match, and saved Optimized CV."}
+        {errorMessage ?? t("coverLetter.generateDescription")}
       </p>
       <button
         type="button"
         onClick={onGenerate}
         className="cc-btn-primary mt-6"
       >
-        {errorMessage ? "Try again" : "Generate Cover Letter"}
+        {errorMessage ? t("coverLetter.tryAgain") : t("coverLetter.generate")}
       </button>
     </section>
   );

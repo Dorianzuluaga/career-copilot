@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { useLocale } from "../hooks/useLocale";
 import {
   WorkspaceNavigation,
   type WorkspaceSection,
@@ -30,6 +31,8 @@ export function ApplicationWorkspace({
   onSectionChange,
   children,
 }: ApplicationWorkspaceProps) {
+  const { t } = useLocale();
+
   return (
     <div className="space-y-8">
       <header className="cc-card p-6 sm:p-8">
@@ -37,7 +40,7 @@ export function ApplicationWorkspace({
           to="/dashboard"
           className="text-sm font-semibold text-brand hover:text-navy"
         >
-          ← Dashboard
+          ← {t("nav.dashboard")}
         </GuardedLink>
 
         <div className="mt-6 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
@@ -60,7 +63,7 @@ export function ApplicationWorkspace({
         onSectionChange={onSectionChange}
       />
 
-      <section aria-label="Application workspace content">{children}</section>
+      <section aria-label={t("workspace.contentAriaLabel")}>{children}</section>
     </div>
   );
 }
