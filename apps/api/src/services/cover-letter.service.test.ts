@@ -270,6 +270,32 @@ describe("saveCoverLetter", () => {
     expect(upsertCoverLetter).not.toHaveBeenCalled();
   });
 
+  it("rejects invalid email, phone, and date values", async () => {
+    await expect(
+      saveCoverLetter(applicationId, userId, {
+        ...coverLetter,
+        email: "not-an-email",
+      }),
+    ).rejects.toEqual(
+      new CoverLetterError("email must be a valid email address.", 400),
+    );
+    await expect(
+      saveCoverLetter(applicationId, userId, {
+        ...coverLetter,
+        phone: "hello",
+      }),
+    ).rejects.toEqual(
+      new CoverLetterError("phone must be a valid phone number.", 400),
+    );
+    await expect(
+      saveCoverLetter(applicationId, userId, {
+        ...coverLetter,
+        date: "tomorrow",
+      }),
+    ).rejects.toEqual(new CoverLetterError("date must be a valid date.", 400));
+    expect(upsertCoverLetter).not.toHaveBeenCalled();
+  });
+
   it("allows empty editable letter body fields", async () => {
     const cleared = {
       ...coverLetter,

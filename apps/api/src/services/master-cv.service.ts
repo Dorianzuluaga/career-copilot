@@ -1,4 +1,10 @@
 import {
+  isValidDate,
+  isValidEmail,
+  isValidPhone,
+  isValidUrl,
+} from "../lib/field-validation.js";
+import {
   createMasterCv,
   findMasterCvByUserId,
   updateMasterCv,
@@ -100,6 +106,52 @@ function optionalString(
   return value.trim() || null;
 }
 
+function requiredEmail(input: Record<string, unknown>, field: string): string {
+  const value = requiredString(input, field);
+  if (!isValidEmail(value)) {
+    throw new MasterCvError(`${field} must be a valid email address.`, 400);
+  }
+  return value;
+}
+
+function optionalFormatted(
+  value: string | null,
+  field: string,
+  isValid: (candidate: string) => boolean,
+  kind: "phone number" | "URL" | "date",
+): string | null {
+  if (value === null || value.trim() === "") return null;
+  const trimmed = value.trim();
+  if (!isValid(trimmed)) {
+    throw new MasterCvError(`${field} must be a valid ${kind}.`, 400);
+  }
+  return trimmed;
+}
+
+function optionalPhone(
+  input: Record<string, unknown>,
+  field: string,
+): string | null {
+  return optionalFormatted(
+    optionalString(input, field),
+    field,
+    isValidPhone,
+    "phone number",
+  );
+}
+
+function optionalUrl(
+  input: Record<string, unknown>,
+  field: string,
+): string | null {
+  return optionalFormatted(
+    optionalString(input, field),
+    field,
+    isValidUrl,
+    "URL",
+  );
+}
+
 function arrayOf<T>(
   input: Record<string, unknown>,
   field: string,
@@ -148,18 +200,76 @@ export function validateMasterCvInput(value: unknown): MasterCvInput {
 
   return {
     fullName: requiredString(input, "fullName"),
-    email: requiredString(input, "email"),
-    phone: optionalString(input, "phone"),
+    email: requiredEmail(input, "email"),
+    phone: optionalPhone(input, "phone"),
     location: optionalString(input, "location"),
-    linkedin: optionalString(input, "linkedin"),
-    portfolio: optionalString(input, "portfolio"),
+    linkedin: optionalUrl(input, "linkedin"),
+    portfolio: optionalUrl(input, "portfolio"),
     professionalSummary: requiredString(input, "professionalSummary"),
-    experience: arrayOf(input, "experience", isExperience, true),
-    education: arrayOf(input, "education", isEducation),
+    experience: arrayOf(input, "experience", isExperience, true).map(
+      (item, index) => ({
+        ...item,
+        startDate: optionalFormatted(
+          item.startDate,
+          `experience[${index}].startDate`,
+          isValidDate,
+          "date",
+        ),
+        endDate: optionalFormatted(
+          item.endDate,
+          `experience[${index}].endDate`,
+          isValidDate,
+          "date",
+        ),
+      }),
+    ),
+    education: arrayOf(input, "education", isEducation).map((item, index) => ({
+      ...item,
+      startDate: optionalFormatted(
+        item.startDate,
+        `education[${index}].startDate`,
+        isValidDate,
+        "date",
+      ),
+      endDate: optionalFormatted(
+        item.endDate,
+        `education[${index}].endDate`,
+        isValidDate,
+        "date",
+      ),
+    })),
     skills,
     languages: arrayOf(input, "languages", isLanguage),
-    certifications: arrayOf(input, "certifications", isCertification),
-    ...(personalProjects === undefined ? {} : { personalProjects }),
+    certifications: arrayOf(input, "certifications", isCertification).map(
+      (item, index) => ({
+        ...item,
+        issueDate: optionalFormatted(
+          item.issueDate,
+          `certifications[${index}].issueDate`,
+          isValidDate,
+          "date",
+        ),
+        credentialUrl: optionalFormatted(
+          item.credentialUrl,
+          `certifications[${index}].credentialUrl`,
+          isValidUrl,
+          "URL",
+        ),
+      }),
+    ),
+    ...(personalProjects === undefined
+      ? {}
+      : {
+          personalProjects: personalProjects.map((item, index) => ({
+            ...item,
+            url: optionalFormatted(
+              item.url,
+              `personalProjects[${index}].url`,
+              isValidUrl,
+              "URL",
+            ),
+          })),
+        }),
   };
 }
 

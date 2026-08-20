@@ -1,4 +1,10 @@
 import { useState, type ReactNode } from "react";
+import { ValidationToast } from "./ValidationToast";
+import { useSaveValidationFeedback } from "../hooks/useSaveValidationFeedback";
+import {
+  getCoverLetterFieldErrors,
+  hasFieldErrors,
+} from "../lib/field-validation";
 import type { CoverLetter } from "../types/cover-letter";
 
 interface ApplicationCoverLetterProps {
@@ -70,20 +76,37 @@ export function CoverLetterDocument({
   isEditing?: boolean;
   onChange?: (coverLetter: CoverLetter) => void;
 }) {
-  const contactDetails = [coverLetter.email, coverLetter.phone].filter(hasText);
   const canEdit = isEditing && onChange !== undefined;
 
   const header = (
     <header>
-      <p className="text-2xl font-bold tracking-tight text-ink">
+      <p
+        className="text-2xl font-bold tracking-tight text-ink"
+        data-field="candidateName"
+        tabIndex={-1}
+      >
         {coverLetter.candidateName}
       </p>
-      {contactDetails.length > 0 ? (
+      {hasText(coverLetter.email) || hasText(coverLetter.phone) ? (
         <p className="mt-2 text-sm leading-6 text-muted">
-          {contactDetails.join(" · ")}
+          {hasText(coverLetter.email) ? (
+            <span data-field="email" tabIndex={-1}>
+              {coverLetter.email}
+            </span>
+          ) : null}
+          {hasText(coverLetter.email) && hasText(coverLetter.phone)
+            ? " · "
+            : null}
+          {hasText(coverLetter.phone) ? (
+            <span data-field="phone" tabIndex={-1}>
+              {coverLetter.phone}
+            </span>
+          ) : null}
         </p>
       ) : null}
-      <p className="mt-4 text-sm text-muted">{coverLetter.date}</p>
+      <p className="mt-4 text-sm text-muted" data-field="date" tabIndex={-1}>
+        {coverLetter.date}
+      </p>
       {hasText(coverLetter.companyName) ? (
         <p className="mt-1 text-sm text-muted">{coverLetter.companyName}</p>
       ) : null}
@@ -91,7 +114,11 @@ export function CoverLetterDocument({
   );
 
   const signature = (
-    <p className="whitespace-pre-wrap text-sm leading-7 text-ink">
+    <p
+      className="whitespace-pre-wrap text-sm leading-7 text-ink"
+      data-field="signature"
+      tabIndex={-1}
+    >
       {coverLetter.signature}
     </p>
   );
@@ -166,6 +193,19 @@ export function ApplicationCoverLetter({
   savedMessage = null,
 }: ApplicationCoverLetterProps) {
   const [isEditing, setIsEditing] = useState(initialIsEditing);
+  const { fieldErrors, toastMessage, reportFieldErrors, clearAllFieldErrors } =
+    useSaveValidationFeedback();
+
+  function handleChange(next: CoverLetter) {
+    clearAllFieldErrors();
+    onChange(next);
+  }
+
+  function handleSave() {
+    if (!coverLetter || !onSave) return;
+    if (reportFieldErrors(getCoverLetterFieldErrors(coverLetter))) return;
+    onSave();
+  }
 
   if (isLoading) {
     return (
@@ -224,7 +264,7 @@ export function ApplicationCoverLetter({
             {onSave ? (
               <button
                 type="button"
-                onClick={onSave}
+                onClick={handleSave}
                 disabled={isSaving}
                 className="cc-btn-secondary"
               >
@@ -258,16 +298,26 @@ export function ApplicationCoverLetter({
             {savedMessage}
           </p>
         ) : null}
+        <ValidationToast message={toastMessage} />
         {saveErrorMessage ? (
           <p role="alert" className="text-sm font-medium text-danger">
             {saveErrorMessage}
           </p>
         ) : null}
+        {hasFieldErrors(fieldErrors) ? (
+          <div role="alert" className="space-y-1">
+            {Object.entries(fieldErrors).map(([key, message]) => (
+              <p key={key} className="text-sm font-medium text-danger">
+                {message}
+              </p>
+            ))}
+          </div>
+        ) : null}
 
         <CoverLetterDocument
           coverLetter={coverLetter}
           isEditing={isEditing}
-          onChange={onChange}
+          onChange={handleChange}
         />
       </div>
     );

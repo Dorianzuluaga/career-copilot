@@ -75,6 +75,10 @@
     @apply rounded-lg border border-danger/20 bg-danger/5 p-4 text-danger;
   }
 
+  .cc-toast {
+    @apply fixed top-4 left-1/2 z-40 w-[min(36rem,calc(100%-2rem))] -translate-x-1/2 shadow-card;
+  }
+
   .cc-tab {
     @apply rounded-lg border border-line bg-surface px-4 py-2.5 text-sm font-semibold text-ink transition hover:bg-canvas;
   }

@@ -1,4 +1,9 @@
 import {
+  isValidDate,
+  isValidEmail,
+  isValidPhone,
+} from "../lib/field-validation.js";
+import {
   findCoverLetterByApplicationId,
   upsertCoverLetter,
 } from "../repositories/cover-letter.repository.js";
@@ -53,6 +58,34 @@ function editableString(input: Record<string, unknown>, field: string): string {
   return value;
 }
 
+function requiredEmail(input: Record<string, unknown>, field: string): string {
+  const value = requiredString(input, field);
+  if (!isValidEmail(value)) {
+    throw new CoverLetterError(`${field} must be a valid email address.`, 400);
+  }
+  return value;
+}
+
+function requiredDate(input: Record<string, unknown>, field: string): string {
+  const value = requiredString(input, field);
+  if (!isValidDate(value)) {
+    throw new CoverLetterError(`${field} must be a valid date.`, 400);
+  }
+  return value;
+}
+
+function optionalPhone(
+  input: Record<string, unknown>,
+  field: string,
+): string | null {
+  const value = optionalString(input, field);
+  if (value === null) return null;
+  if (!isValidPhone(value)) {
+    throw new CoverLetterError(`${field} must be a valid phone number.`, 400);
+  }
+  return value;
+}
+
 export function validateCoverLetterInput(value: unknown): CoverLetter {
   if (!value || typeof value !== "object" || Array.isArray(value)) {
     throw new CoverLetterError("Cover Letter data is required.", 400);
@@ -60,9 +93,9 @@ export function validateCoverLetterInput(value: unknown): CoverLetter {
   const input = value as Record<string, unknown>;
   return {
     candidateName: requiredString(input, "candidateName"),
-    email: requiredString(input, "email"),
-    phone: optionalString(input, "phone"),
-    date: requiredString(input, "date"),
+    email: requiredEmail(input, "email"),
+    phone: optionalPhone(input, "phone"),
+    date: requiredDate(input, "date"),
     companyName: optionalString(input, "companyName"),
     greeting: editableString(input, "greeting"),
     introduction: editableString(input, "introduction"),
