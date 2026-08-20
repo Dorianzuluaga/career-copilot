@@ -1,4 +1,6 @@
 import { useState } from "react";
+import { useLocale } from "../hooks/useLocale";
+import type { TranslationKey } from "../i18n/messages";
 import {
   ApiError,
   exportApplicationDocument,
@@ -11,9 +13,12 @@ import { CoverLetterDocument } from "./ApplicationCoverLetter";
 import { OptimizedCvDocument } from "./ApplicationOptimizedCv";
 
 const previewDocuments = [
-  { id: "optimized-cv", label: "Optimized CV" },
-  { id: "cover-letter", label: "Cover Letter" },
-] as const;
+  { id: "optimized-cv", labelKey: "export.optimizedCv" },
+  { id: "cover-letter", labelKey: "export.coverLetter" },
+] as const satisfies ReadonlyArray<{
+  id: string;
+  labelKey: TranslationKey;
+}>;
 
 type PreviewDocument = (typeof previewDocuments)[number]["id"];
 
@@ -65,6 +70,7 @@ export function ApplicationExport({
   coverLetter,
   optimizedCv,
 }: ApplicationExportProps) {
+  const { t } = useLocale();
   const [activePreview, setActivePreview] =
     useState<PreviewDocument>("optimized-cv");
   const [selectedDocuments, setSelectedDocuments] =
@@ -98,7 +104,7 @@ export function ApplicationExport({
       setDownloadError(
         error instanceof ApiError
           ? error.message
-          : "Unable to download the selected documents.",
+          : t("export.downloadFailed"),
       );
     } finally {
       setIsDownloading(false);
@@ -108,21 +114,19 @@ export function ApplicationExport({
   return (
     <div className="space-y-6">
       <section aria-labelledby="export-title" className="cc-card p-6 sm:p-8">
-        <p className="cc-kicker">Application documents</p>
+        <p className="cc-kicker">{t("export.kicker")}</p>
         <h2 id="export-title" className="mt-1 text-2xl font-bold text-ink">
-          Export
+          {t("export.title")}
         </h2>
         <p className="mt-4 text-sm leading-6 text-muted">
-          Preview the latest saved application documents and choose which ones
-          will be downloaded. Editing is available in the Optimized CV and Cover
-          Letter sections.
+          {t("export.description")}
         </p>
 
         {hasPreviewDocuments ? (
           <>
             <fieldset className="mt-6">
               <legend className="text-sm font-semibold text-ink">
-                Documents to download
+                {t("export.documentsToDownload")}
               </legend>
               <div className="mt-3 flex flex-wrap gap-4">
                 <label className="flex items-center gap-2 text-sm font-medium text-ink">
@@ -140,7 +144,7 @@ export function ApplicationExport({
                       )
                     }
                   />
-                  Optimized CV
+                  {t("export.optimizedCv")}
                 </label>
                 <label className="flex items-center gap-2 text-sm font-medium text-ink">
                   <input
@@ -157,7 +161,7 @@ export function ApplicationExport({
                       )
                     }
                   />
-                  Cover Letter
+                  {t("export.coverLetter")}
                 </label>
               </div>
             </fieldset>
@@ -169,7 +173,7 @@ export function ApplicationExport({
                 disabled={isDownloading}
                 className="cc-btn-primary"
               >
-                {isDownloading ? "Downloading…" : "Download"}
+                {isDownloading ? t("export.downloading") : t("export.download")}
               </button>
               {downloadError ? (
                 <p className="text-sm text-danger" role="alert">
@@ -180,7 +184,7 @@ export function ApplicationExport({
 
             <div
               role="tablist"
-              aria-label="Document preview"
+              aria-label={t("export.previewAria")}
               className="mt-6 flex flex-wrap gap-2"
             >
               {previewDocuments.map((document) => {
@@ -195,7 +199,7 @@ export function ApplicationExport({
                     onClick={() => setActivePreview(document.id)}
                     className={isActive ? "cc-tab-active" : "cc-tab"}
                   >
-                    {document.label}
+                    {t(document.labelKey)}
                   </button>
                 );
               })}
@@ -208,7 +212,9 @@ export function ApplicationExport({
         <div
           role="tabpanel"
           aria-label={
-            activePreview === "optimized-cv" ? "Optimized CV" : "Cover Letter"
+            activePreview === "optimized-cv"
+              ? t("export.optimizedCv")
+              : t("export.coverLetter")
           }
         >
           {activePreview === "optimized-cv" && optimizedCv ? (
@@ -220,8 +226,7 @@ export function ApplicationExport({
       ) : (
         <section className="cc-card p-6 text-center sm:p-8">
           <p className="text-sm leading-6 text-muted">
-            Saved Optimized CV and Cover Letter are required before documents
-            can be previewed.
+            {t("export.requiresDocuments")}
           </p>
         </section>
       )}

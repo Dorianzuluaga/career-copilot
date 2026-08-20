@@ -9,6 +9,7 @@ import {
 } from "react";
 import { Link, useNavigate, type LinkProps } from "react-router";
 import { ConfirmDialog } from "../components/ConfirmDialog";
+import { useLocale } from "../hooks/useLocale";
 import type { UnsavedDocument } from "../lib/unsaved-documents";
 
 export interface UnsavedChangesGuardRegistration {
@@ -39,6 +40,7 @@ export function UnsavedChangesGuardProvider({
 }: {
   children: ReactNode;
 }) {
+  const { t } = useLocale();
   const registrationRef = useRef<UnsavedChangesGuardRegistration | null>(null);
   const [pending, setPending] = useState<PendingNavigation | null>(null);
   const [isSaving, setIsSaving] = useState(false);
@@ -113,14 +115,11 @@ export function UnsavedChangesGuardProvider({
       {children}
       <ConfirmDialog
         open={pending !== null}
-        title="Unsaved changes"
+        title={t("workspace.unsaved.title")}
         description={
           pending ? (
             <div className="space-y-3">
-              <p>
-                You have unsaved changes that will be lost if you leave without
-                saving.
-              </p>
+              <p>{t("workspace.unsaved.description")}</p>
               <ul className="list-disc space-y-1 pl-5">
                 {pending.documents.map((document) => (
                   <li key={document.id}>{document.label}</li>
@@ -130,18 +129,20 @@ export function UnsavedChangesGuardProvider({
           ) : null
         }
         cancelAction={{
-          label: "Cancel",
+          label: t("workspace.unsaved.cancel"),
           onClick: handleCancel,
           disabled: isSaving,
         }}
         secondaryAction={{
-          label: "Leave Without Saving",
+          label: t("workspace.unsaved.leaveWithoutSaving"),
           onClick: handleLeaveWithoutSaving,
           variant: "danger",
           disabled: isSaving,
         }}
         primaryAction={{
-          label: isSaving ? "Saving…" : "Save and Continue",
+          label: isSaving
+            ? t("workspace.unsaved.saving")
+            : t("workspace.unsaved.saveAndContinue"),
           onClick: handleSaveAndContinue,
           variant: "primary",
           disabled: isSaving,

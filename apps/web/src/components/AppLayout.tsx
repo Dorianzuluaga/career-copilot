@@ -1,6 +1,8 @@
 import type { SVGProps } from "react";
 import { Outlet, useLocation } from "react-router";
 import { GuardedLink } from "../context/UnsavedChangesGuardProvider";
+import { useLocale } from "../hooks/useLocale";
+import { LanguageSelector } from "./LanguageSelector";
 
 function headerLinkClass(isActive: boolean): string {
   return isActive
@@ -52,13 +54,13 @@ function DocumentIcon(props: SVGProps<SVGSVGElement>) {
 const mainNavItems = [
   {
     to: "/dashboard",
-    label: "Dashboard",
+    labelKey: "nav.dashboard",
     icon: DashboardIcon,
     isActive: (pathname: string) => pathname === "/dashboard",
   },
   {
     to: "/master-cv",
-    label: "Master CV",
+    labelKey: "nav.masterCv",
     icon: DocumentIcon,
     isActive: (pathname: string) =>
       pathname === "/master-cv" || pathname.startsWith("/onboarding/master-cv"),
@@ -67,6 +69,7 @@ const mainNavItems = [
 
 export function AppLayout() {
   const { pathname } = useLocation();
+  const { t } = useLocale();
   const isProfileActive = pathname === "/profile";
 
   return (
@@ -84,7 +87,10 @@ export function AppLayout() {
             />
             Career Copilot
           </GuardedLink>
-          <nav aria-label="Account" className="ml-auto flex items-center gap-1">
+          <nav
+            aria-label={t("nav.account")}
+            className="ml-auto flex items-center gap-1"
+          >
             {mainNavItems.map((item) => (
               <GuardedLink
                 key={item.to}
@@ -92,24 +98,25 @@ export function AppLayout() {
                 aria-current={item.isActive(pathname) ? "page" : undefined}
                 className={`lg:hidden ${headerLinkClass(item.isActive(pathname))}`}
               >
-                {item.label}
+                {t(item.labelKey)}
               </GuardedLink>
             ))}
+            <LanguageSelector />
             <GuardedLink
               to="/profile"
               aria-current={isProfileActive ? "page" : undefined}
               className={headerLinkClass(isProfileActive)}
             >
-              Profile
+              {t("nav.profile")}
             </GuardedLink>
           </nav>
         </div>
       </header>
 
       <aside className="hidden w-64 flex-col border-r border-line bg-surface lg:flex">
-        <nav aria-label="Main" className="px-3 py-6">
+        <nav aria-label={t("nav.main")} className="px-3 py-6">
           <p className="mb-2 px-3 text-[11px] font-semibold uppercase tracking-wider text-muted">
-            MAIN
+            {t("nav.main")}
           </p>
           <ul className="space-y-1">
             {mainNavItems.map((item) => {
@@ -124,7 +131,7 @@ export function AppLayout() {
                     className={sidebarLinkClass(isActive)}
                   >
                     <Icon className="h-5 w-5 shrink-0" />
-                    {item.label}
+                    {t(item.labelKey)}
                   </GuardedLink>
                 </li>
               );
@@ -134,12 +141,12 @@ export function AppLayout() {
       </aside>
 
       <div className="flex min-w-0 flex-col">
-        <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-8 sm:px-6 sm:py-12 lg:px-8">
+        <main className="mx-auto w-full max-w-7xl flex-1 px-4 py-8 sm:px-6 sm:py-12 lg:px-8">
           <Outlet />
         </main>
 
         <footer className="border-t border-line bg-surface">
-          <div className="mx-auto w-full max-w-6xl px-4 py-5 text-sm text-muted sm:px-6 lg:px-8">
+          <div className="mx-auto w-full max-w-7xl px-4 py-5 text-sm text-muted sm:px-6 lg:px-8">
             Career Copilot
           </div>
         </footer>

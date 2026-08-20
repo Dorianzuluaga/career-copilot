@@ -1,11 +1,13 @@
 import { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router";
 import { ApplicationCard } from "../components/ApplicationCard";
+import { useLocale } from "../hooks/useLocale";
 import { ApiError } from "../services/api";
 import { deleteApplication, listApplications } from "../services/job-analysis";
 import type { PersistedApplication } from "../types/job-analysis";
 
 export function DashboardPage() {
+  const { t } = useLocale();
   const [applications, setApplications] = useState<PersistedApplication[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [deletingId, setDeletingId] = useState<string | null>(null);
@@ -20,12 +22,12 @@ export function DashboardPage() {
       setErrorMessage(
         error instanceof ApiError
           ? error.message
-          : "Unexpected error. Try again later.",
+          : t("dashboard.unexpectedError"),
       );
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [t]);
 
   useEffect(() => {
     void loadApplications();
@@ -35,13 +37,13 @@ export function DashboardPage() {
     const jobTitle =
       application.jobAnalysis?.title ??
       application.jobOffer?.title ??
-      "this opportunity";
+      t("dashboard.fallbackJobTitle");
     const company =
       application.jobAnalysis?.company ??
       application.jobOffer?.company ??
-      "the company";
+      t("dashboard.fallbackCompany");
     const confirmed = window.confirm(
-      `Delete the application for ${jobTitle} at ${company}?`,
+      t("dashboard.deleteConfirm", { jobTitle, company }),
     );
 
     if (!confirmed) return;
@@ -57,7 +59,7 @@ export function DashboardPage() {
       setErrorMessage(
         error instanceof ApiError
           ? error.message
-          : "Unexpected error. Try again later.",
+          : t("dashboard.unexpectedError"),
       );
     } finally {
       setDeletingId(null);
@@ -69,18 +71,18 @@ export function DashboardPage() {
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="mt-1 text-3xl font-bold tracking-tight sm:text-4xl">
-            Application dashboard
+            {t("dashboard.title")}
           </h1>
           <p className="mt-2 max-w-2xl text-muted">
-            Create and organize your job applications in one place.
+            {t("dashboard.description")}
           </p>
         </div>
         <div className="flex flex-wrap gap-3">
           <Link to="/master-cv" className="cc-btn-secondary w-fit">
-            Edit Master CV
+            {t("dashboard.editMasterCv")}
           </Link>
           <Link to="/applications/new" className="cc-btn-primary w-fit">
-            New Application
+            {t("dashboard.newApplication")}
           </Link>
         </div>
       </div>
@@ -96,20 +98,22 @@ export function DashboardPage() {
             onClick={() => void loadApplications()}
             className="cc-btn-danger w-fit px-3 py-2"
           >
-            Try again
+            {t("dashboard.tryAgain")}
           </button>
         </div>
       )}
 
       {isLoading ? (
         <div className="cc-card mt-10 px-6 py-14 text-center">
-          <p className="text-sm text-muted">Loading applications…</p>
+          <p className="text-sm text-muted">{t("dashboard.loading")}</p>
         </div>
       ) : applications.length === 0 && !errorMessage ? (
         <div className="mt-10 rounded-xl border border-dashed border-line bg-surface px-6 py-14 text-center">
-          <h2 className="text-lg font-bold text-ink">No applications yet</h2>
+          <h2 className="text-lg font-bold text-ink">
+            {t("dashboard.emptyTitle")}
+          </h2>
           <p className="mx-auto mt-2 max-w-md text-sm text-muted">
-            Create your first application to start organizing your job search.
+            {t("dashboard.emptyDescription")}
           </p>
         </div>
       ) : (

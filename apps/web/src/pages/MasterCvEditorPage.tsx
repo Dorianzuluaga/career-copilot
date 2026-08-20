@@ -2,17 +2,19 @@ import { useEffect, useState } from "react";
 import { Navigate } from "react-router";
 import { MasterCvForm } from "../components/MasterCvForm";
 import { MasterCvImport } from "../components/MasterCvImport";
+import { useLocale } from "../hooks/useLocale";
 import { ApiError, getMasterCv, updateMasterCv } from "../services/master-cv";
 import type { MasterCvInput } from "../types/master-cv";
 
 export function MasterCvEditorPage() {
+  const { t } = useLocale();
   const [formValue, setFormValue] = useState<MasterCvInput | null>(null);
   const [formRevision, setFormRevision] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
   const [isMissing, setIsMissing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const [savedMessage, setSavedMessage] = useState<string | null>(null);
+  const [isSaved, setIsSaved] = useState(false);
 
   useEffect(() => {
     let isActive = true;
@@ -27,7 +29,7 @@ export function MasterCvEditorPage() {
           setErrorMessage(
             error instanceof ApiError
               ? error.message
-              : "Unable to load your Master CV.",
+              : t("masterCv.editor.loadFailed"),
           );
         }
       })
@@ -37,21 +39,21 @@ export function MasterCvEditorPage() {
     return () => {
       isActive = false;
     };
-  }, []);
+  }, [t]);
 
   async function handleSave(input: MasterCvInput) {
     setErrorMessage(null);
-    setSavedMessage(null);
+    setIsSaved(false);
     setIsSaving(true);
     try {
       const updated = await updateMasterCv(input);
       setFormValue(updated);
-      setSavedMessage("Master CV saved.");
+      setIsSaved(true);
     } catch (error) {
       setErrorMessage(
         error instanceof ApiError
           ? error.message
-          : "Unable to save your Master CV.",
+          : t("masterCv.editor.saveFailed"),
       );
     } finally {
       setIsSaving(false);
@@ -61,12 +63,12 @@ export function MasterCvEditorPage() {
   function handleImport(input: MasterCvInput) {
     setFormValue(input);
     setFormRevision((revision) => revision + 1);
-    setSavedMessage(null);
+    setIsSaved(false);
     setErrorMessage(null);
   }
 
   if (isLoading) {
-    return <p className="text-sm text-muted">Loading your Master CV…</p>;
+    return <p className="text-sm text-muted">{t("masterCv.editor.loading")}</p>;
   }
   if (isMissing) return <Navigate to="/onboarding/master-cv" replace />;
 
@@ -82,26 +84,24 @@ export function MasterCvEditorPage() {
     <section className="mx-auto max-w-4xl">
       <div className="flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between">
         <div>
-          <p className="cc-kicker">Professional profile</p>
+          <p className="cc-kicker">{t("masterCv.editor.kicker")}</p>
           <h1 className="mt-1 text-3xl font-bold tracking-tight">
-            Edit your Master CV
+            {t("masterCv.editor.title")}
           </h1>
-          <p className="mt-2 text-muted">
-            Keep your source profile accurate for future applications.
-          </p>
+          <p className="mt-2 text-muted">{t("masterCv.editor.description")}</p>
         </div>
         <MasterCvImport onImport={handleImport} />
       </div>
-      {savedMessage ? (
+      {isSaved ? (
         <p role="status" className="mt-5 text-sm font-medium text-success">
-          {savedMessage}
+          {t("masterCv.editor.saved")}
         </p>
       ) : null}
       <div className="mt-8">
         <MasterCvForm
           key={formRevision}
           initialValue={formValue}
-          submitLabel="Save changes"
+          submitLabel={t("masterCv.editor.save")}
           isSaving={isSaving}
           errorMessage={errorMessage}
           onSubmit={handleSave}

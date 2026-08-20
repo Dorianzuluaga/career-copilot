@@ -1,11 +1,17 @@
+import { useLocale } from "../hooks/useLocale";
+import type { TranslationKey } from "../i18n/messages";
+
 const workspaceSections = [
-  { id: "overview", label: "Overview" },
-  { id: "job-analysis", label: "Job Analysis" },
-  { id: "profile-match", label: "Profile Match" },
-  { id: "optimized-cv", label: "Optimized CV" },
-  { id: "cover-letter", label: "Cover Letter" },
-  { id: "export", label: "Export" },
-] as const;
+  { id: "overview", labelKey: "workspace.sections.overview" },
+  { id: "job-analysis", labelKey: "workspace.sections.jobAnalysis" },
+  { id: "profile-match", labelKey: "workspace.sections.profileMatch" },
+  { id: "optimized-cv", labelKey: "workspace.sections.optimizedCv" },
+  { id: "cover-letter", labelKey: "workspace.sections.coverLetter" },
+  { id: "export", labelKey: "workspace.sections.export" },
+] as const satisfies ReadonlyArray<{
+  id: string;
+  labelKey: TranslationKey;
+}>;
 
 export type WorkspaceSection = (typeof workspaceSections)[number]["id"];
 
@@ -26,25 +32,36 @@ export function WorkspaceNavigation({
   isCoverLetterCompleted,
   onSectionChange,
 }: WorkspaceNavigationProps) {
+  const { t } = useLocale();
+
   const completedSections = [
-    isJobAnalysisCompleted ? "Job Analysis" : null,
-    isProfileMatchCompleted ? "Profile Match" : null,
-    isOptimizedCvCompleted ? "Optimized CV" : null,
-    isCoverLetterCompleted ? "Cover Letter" : null,
+    isJobAnalysisCompleted ? t("workspace.sections.jobAnalysis") : null,
+    isProfileMatchCompleted ? t("workspace.sections.profileMatch") : null,
+    isOptimizedCvCompleted ? t("workspace.sections.optimizedCv") : null,
+    isCoverLetterCompleted ? t("workspace.sections.coverLetter") : null,
   ].filter((section): section is string => section !== null);
 
   const nextRecommendedStep = !isJobAnalysisCompleted
-    ? "Job Analysis"
+    ? t("workspace.sections.jobAnalysis")
     : !isProfileMatchCompleted
-      ? "Profile Match"
+      ? t("workspace.sections.profileMatch")
       : !isOptimizedCvCompleted
-        ? "Optimized CV"
+        ? t("workspace.sections.optimizedCv")
         : !isCoverLetterCompleted
-          ? "Cover Letter"
-          : "Export";
+          ? t("workspace.sections.coverLetter")
+          : t("workspace.sections.export");
+
+  const stepItemClassName =
+    "flex min-h-16 h-full w-full min-w-0 flex-wrap items-center justify-between gap-x-2 gap-y-1 rounded-lg px-4 py-3 text-left text-sm font-semibold lg:flex-col lg:items-stretch lg:justify-center lg:px-3";
+  const stepLabelClassName = "min-w-0 max-w-full wrap-break-word";
+  const stepStatusClassName =
+    "min-w-0 max-w-full wrap-break-word text-xs font-medium";
 
   return (
-    <nav aria-label="Application workspace sections" className="cc-card p-4">
+    <nav
+      aria-label={t("workspace.sectionsAriaLabel")}
+      className="cc-card p-4 lg:px-3"
+    >
       <ol className="grid gap-2 sm:grid-cols-2 lg:grid-cols-6">
         {workspaceSections.map((section) => {
           const isCurrent = section.id === activeSection;
@@ -64,43 +81,51 @@ export function WorkspaceNavigation({
             (section.id === "cover-letter" && isCoverLetterCompleted);
 
           return (
-            <li key={section.id}>
+            <li key={section.id} className="min-w-0">
               {isCurrent ? (
                 <span
                   aria-current="page"
-                  className="flex min-h-16 items-center justify-between gap-2 rounded-lg bg-brand px-4 py-3 text-sm font-semibold text-white"
+                  className={`${stepItemClassName} bg-brand text-white`}
                 >
-                  <span>{section.label}</span>
-                  <span className="text-xs font-medium text-white/80">
-                    Current
+                  <span className={stepLabelClassName}>
+                    {t(section.labelKey)}
+                  </span>
+                  <span className={`${stepStatusClassName} text-white/80`}>
+                    {t("workspace.current")}
                   </span>
                 </span>
               ) : isAvailable ? (
                 <button
                   type="button"
                   onClick={() => onSectionChange(section.id)}
-                  className="flex min-h-16 w-full items-center justify-between gap-2 rounded-lg border border-line bg-surface px-4 py-3 text-left text-sm font-semibold text-ink transition hover:border-brand/40 hover:bg-brand-soft"
+                  className={`${stepItemClassName} border border-line bg-surface text-ink transition hover:border-brand/40 hover:bg-brand-soft`}
                 >
-                  <span>{section.label}</span>
+                  <span className={stepLabelClassName}>
+                    {t(section.labelKey)}
+                  </span>
                   <span
                     className={
                       isCompleted
-                        ? "text-xs font-medium text-accent"
-                        : "text-xs font-medium text-muted"
+                        ? `${stepStatusClassName} text-accent`
+                        : `${stepStatusClassName} text-muted`
                     }
                   >
-                    {isCompleted ? "Completed" : "Available"}
+                    {isCompleted
+                      ? t("workspace.completed")
+                      : t("workspace.available")}
                   </span>
                 </button>
               ) : (
                 <button
                   type="button"
                   disabled
-                  className="flex min-h-16 w-full cursor-not-allowed items-center justify-between gap-2 rounded-lg border border-line bg-canvas px-4 py-3 text-left text-sm font-semibold text-muted"
+                  className={`${stepItemClassName} cursor-not-allowed border border-line bg-canvas text-muted`}
                 >
-                  <span>{section.label}</span>
-                  <span className="text-xs font-medium text-muted/70">
-                    Locked
+                  <span className={stepLabelClassName}>
+                    {t(section.labelKey)}
+                  </span>
+                  <span className={`${stepStatusClassName} text-muted/70`}>
+                    {t("workspace.locked")}
                   </span>
                 </button>
               )}
@@ -110,11 +135,15 @@ export function WorkspaceNavigation({
       </ol>
       <div className="mt-3 flex flex-col gap-1 text-xs text-muted sm:flex-row sm:justify-between">
         <p>
-          Completed sections:{" "}
-          {completedSections.length > 0 ? completedSections.join(", ") : "None"}
+          {t("workspace.completedSections", {
+            sections:
+              completedSections.length > 0
+                ? completedSections.join(", ")
+                : t("workspace.completedNone"),
+          })}
         </p>
         <p>
-          Next recommended step:{" "}
+          {t("workspace.nextStep")}{" "}
           <span className="font-semibold text-ink">{nextRecommendedStep}</span>
         </p>
       </div>

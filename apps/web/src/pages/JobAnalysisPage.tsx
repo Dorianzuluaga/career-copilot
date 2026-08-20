@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router";
 import { JobAnalysisForm } from "../components/JobAnalysisForm";
+import { useLocale } from "../hooks/useLocale";
 import { ApiError } from "../services/api";
 import {
   analyzeJobOffer,
@@ -16,6 +17,7 @@ interface AnalysisAttempt {
 
 export function JobAnalysisPage() {
   const navigate = useNavigate();
+  const { t } = useLocale();
   const [description, setDescription] = useState("");
   const [attempt, setAttempt] = useState<AnalysisAttempt | null>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
@@ -57,7 +59,7 @@ export function JobAnalysisPage() {
       setErrorMessage(
         error instanceof ApiError
           ? error.message
-          : "Unexpected error. Try again later.",
+          : t("jobAnalysis.page.unexpectedError"),
       );
     } finally {
       setIsAnalyzing(false);
@@ -66,13 +68,12 @@ export function JobAnalysisPage() {
 
   return (
     <section className="mx-auto max-w-3xl">
-      <p className="cc-kicker">New application</p>
+      <p className="cc-kicker">{t("jobAnalysis.page.kicker")}</p>
       <h1 className="mt-1 text-3xl font-bold tracking-tight sm:text-4xl">
-        Analyze a job description
+        {t("jobAnalysis.page.title")}
       </h1>
       <p className="mt-2 max-w-2xl text-muted">
-        Paste the complete offer. Career Copilot will extract only information
-        present in the source and create your application workspace.
+        {t("jobAnalysis.page.description")}
       </p>
 
       <div className="mt-8">

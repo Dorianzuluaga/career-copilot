@@ -9,6 +9,7 @@ import { ApplicationProfileMatch } from "../components/ApplicationProfileMatch";
 import { ApplicationWorkspace } from "../components/ApplicationWorkspace";
 import type { WorkspaceSection } from "../components/WorkspaceNavigation";
 import { useUnsavedChangesGuard } from "../context/UnsavedChangesGuardProvider";
+import { useLocale } from "../hooks/useLocale";
 import { useUnsavedChangesRegistration } from "../hooks/useUnsavedChangesRegistration";
 import {
   getDocumentsBlockingSectionLeave,
@@ -46,6 +47,7 @@ export function ApplicationWorkspacePage() {
   const { applicationId } = useParams();
   const currentApplicationId = useRef(applicationId);
   currentApplicationId.current = applicationId;
+  const { t } = useLocale();
   const { requestNavigation } = useUnsavedChangesGuard();
   const [application, setApplication] = useState<PersistedApplication | null>(
     null,
@@ -93,14 +95,14 @@ export function ApplicationWorkspacePage() {
   const documentDescriptors: UnsavedDocumentDescriptor[] = [
     {
       id: OPTIMIZED_CV_DOCUMENT_ID,
-      label: "Optimized CV",
+      label: t("workspace.sections.optimizedCv"),
       section: "optimized-cv",
       working: optimizedCv,
       saved: savedOptimizedCv,
     },
     {
       id: COVER_LETTER_DOCUMENT_ID,
-      label: "Cover Letter",
+      label: t("workspace.sections.coverLetter"),
       section: "cover-letter",
       working: coverLetter,
       saved: savedCoverLetter,
@@ -132,7 +134,6 @@ export function ApplicationWorkspacePage() {
     setMasterCvPersonalProjects([]);
 
     if (!applicationId) {
-      setErrorMessage("Application not found.");
       setIsLoading(false);
       return;
     }
@@ -168,7 +169,7 @@ export function ApplicationWorkspacePage() {
           setErrorMessage(
             error instanceof ApiError
               ? error.message
-              : "Unexpected error. Try again later.",
+              : t("workspace.unexpectedError"),
           );
         }
       })
@@ -195,7 +196,7 @@ export function ApplicationWorkspacePage() {
         setProfileComparisonError(
           error instanceof ApiError
             ? error.message
-            : "Unexpected error. Try again later.",
+            : t("profileMatch.unexpectedError"),
         );
       }
     } finally {
@@ -223,7 +224,7 @@ export function ApplicationWorkspacePage() {
         setOptimizedCvError(
           error instanceof ApiError
             ? error.message
-            : "Unexpected error. Try again later.",
+            : t("optimizedCv.unexpectedError"),
         );
       }
     } finally {
@@ -244,7 +245,7 @@ export function ApplicationWorkspacePage() {
       if (currentApplicationId.current === applicationId) {
         setOptimizedCv(saved);
         setSavedOptimizedCv(saved);
-        setOptimizedCvSavedMessage("Optimized CV saved.");
+        setOptimizedCvSavedMessage(t("optimizedCv.saved"));
       }
       return true;
     } catch (error) {
@@ -252,7 +253,7 @@ export function ApplicationWorkspacePage() {
         setOptimizedCvSaveError(
           error instanceof ApiError
             ? error.message
-            : "Unable to save this Optimized CV.",
+            : t("optimizedCv.saveFailed"),
         );
       }
       return false;
@@ -281,9 +282,9 @@ export function ApplicationWorkspacePage() {
         setCoverLetterError(
           error instanceof ApiError
             ? error.message === "Optimized CV not found."
-              ? "Save an Optimized CV before generating a Cover Letter."
+              ? t("coverLetter.requiresOptimizedCv")
               : error.message
-            : "Unexpected error. Try again later.",
+            : t("coverLetter.unexpectedError"),
         );
       }
     } finally {
@@ -304,7 +305,7 @@ export function ApplicationWorkspacePage() {
       if (currentApplicationId.current === applicationId) {
         setCoverLetter(saved);
         setSavedCoverLetter(saved);
-        setCoverLetterSavedMessage("Cover Letter saved.");
+        setCoverLetterSavedMessage(t("coverLetter.saved"));
       }
       return true;
     } catch (error) {
@@ -312,7 +313,7 @@ export function ApplicationWorkspacePage() {
         setCoverLetterSaveError(
           error instanceof ApiError
             ? error.message
-            : "Unable to save this Cover Letter.",
+            : t("coverLetter.saveFailed"),
         );
       }
       return false;
@@ -383,7 +384,7 @@ export function ApplicationWorkspacePage() {
   if (isLoading) {
     return (
       <section className="cc-card p-8 text-center">
-        <p className="text-sm text-muted">Loading application workspace…</p>
+        <p className="text-sm text-muted">{t("workspace.loading")}</p>
       </section>
     );
   }
@@ -391,12 +392,12 @@ export function ApplicationWorkspacePage() {
   if (!application || errorMessage) {
     return (
       <section className="cc-card p-8 text-center">
-        <h1 className="text-2xl font-bold">Application not found</h1>
+        <h1 className="text-2xl font-bold">{t("workspace.notFoundTitle")}</h1>
         <p className="mt-2 text-muted">
-          {errorMessage ?? "This application is not available."}
+          {errorMessage ?? t("workspace.notFoundDescription")}
         </p>
         <Link to="/dashboard" className="cc-btn-primary mt-6">
-          Return to dashboard
+          {t("workspace.returnToDashboard")}
         </Link>
       </section>
     );
@@ -405,11 +406,11 @@ export function ApplicationWorkspacePage() {
   const title =
     application.jobAnalysis?.title ??
     application.jobOffer?.title ??
-    "Untitled opportunity";
+    t("dashboard.untitledOpportunity");
   const company =
     application.jobAnalysis?.company ??
     application.jobOffer?.company ??
-    "Company not identified";
+    t("dashboard.companyUnknown");
   const hasSavedOptimizedCv = savedOptimizedCv !== null;
   const hasSavedCoverLetter = savedCoverLetter !== null;
 

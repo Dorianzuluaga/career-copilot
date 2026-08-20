@@ -1,4 +1,5 @@
 import { useRef, useState } from "react";
+import { useLocale } from "../hooks/useLocale";
 import {
   ApiError,
   masterCvInputFromExtraction,
@@ -11,6 +12,7 @@ export function MasterCvImport({
 }: {
   onImport: (input: MasterCvInput) => void;
 }) {
+  const { t } = useLocale();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isImporting, setIsImporting] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -20,9 +22,7 @@ export function MasterCvImport({
     setIsImporting(true);
     try {
       const extraction = await uploadMasterCv(file);
-      const confirmed = window.confirm(
-        "Replace the current editor data with the information extracted from this CV? Nothing will be updated until you save.",
-      );
+      const confirmed = window.confirm(t("masterCv.import.confirm"));
 
       if (!confirmed) return;
 
@@ -31,7 +31,7 @@ export function MasterCvImport({
       setErrorMessage(
         error instanceof ApiError
           ? error.message
-          : "We couldn't extract your CV automatically.",
+          : t("masterCv.import.extractFailed"),
       );
     } finally {
       setIsImporting(false);
@@ -46,6 +46,7 @@ export function MasterCvImport({
         type="file"
         accept="application/pdf,.pdf"
         className="sr-only"
+        aria-label={t("masterCv.import.fileLabel")}
         onChange={(event) => {
           const file = event.target.files?.[0];
           if (file) void handleImport(file);
@@ -57,7 +58,9 @@ export function MasterCvImport({
         onClick={() => fileInputRef.current?.click()}
         className="cc-btn-secondary w-fit"
       >
-        {isImporting ? "Importing…" : "Import Existing CV"}
+        {isImporting
+          ? t("masterCv.import.importing")
+          : t("masterCv.import.action")}
       </button>
       {errorMessage ? (
         <p role="alert" className="max-w-sm text-sm font-medium text-danger">
