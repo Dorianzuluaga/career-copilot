@@ -1,8 +1,9 @@
 import "dotenv/config";
-import { app } from "./app.js";
 import { validateEnvironment } from "./config/environment.js";
 
 validateEnvironment();
+
+const { app } = await import("./app.js");
 const port = Number(process.env.PORT ?? 3001);
 
 app.listen(port, () => {

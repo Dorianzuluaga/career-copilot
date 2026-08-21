@@ -1,5 +1,6 @@
 import { randomBytes } from "node:crypto";
 import type { User } from "../../generated/prisma/index.js";
+import { isProduction } from "../config/environment.js";
 import { firebaseAuth } from "../lib/firebase-admin.js";
 import {
   createUserSession,
@@ -9,6 +10,22 @@ import {
 
 export const SESSION_COOKIE_NAME = "career_copilot_session";
 export const SESSION_MAX_AGE_MS = 7 * 24 * 60 * 60 * 1000;
+
+export function getSessionCookieOptions(): {
+  httpOnly: true;
+  sameSite: "lax" | "none";
+  secure: boolean;
+  path: "/";
+} {
+  const production = isProduction();
+
+  return {
+    httpOnly: true,
+    sameSite: production ? "none" : "lax",
+    secure: production,
+    path: "/",
+  };
+}
 
 export class AuthenticationError extends Error {}
 
