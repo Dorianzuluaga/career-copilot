@@ -1,13 +1,53 @@
+# Dependencies
 node_modules/
+
+# Build and generated artifacts
 dist/
 coverage/
+*.tsbuildinfo
+/apps/api/generated/prisma
 
+# Environment files and secrets
 .env
 .env.*
 !.env.example
+!.env*.example
 
+# Credentials and private keys
+*.pem
+*.p12
+*.pfx
+*.key
+id_rsa
+*service-account*.json
+*firebase-adminsdk*.json
+
+# Local databases, dumps, and backups
+*.sqlite
+*.sqlite3
+*.db
+*.dump
+*.bak
+dump.sql
+
+# Uploads, generated documents, and temporary files
+uploads/
+tmp/
+temp/
 *.log
-*.tsbuildinfo
-.DS_Store
+logs/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
 
-/apps/api/generated/prisma
+# Hosting CLI caches
+.vercel
+.railway
+
+# IDE and OS files
+.idea/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+Desktop.ini

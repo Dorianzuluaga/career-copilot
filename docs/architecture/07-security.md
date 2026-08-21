@@ -2,15 +2,15 @@
 
 ## Metadata
 
-| Property | Value |
-|----------|-------|
-| Product | Career Copilot |
-| Category | Career Relationship Management (CRM) Platform |
-| Document | Security Overview |
-| Version | 1.0.0 |
-| Status | Draft |
-| Owner | Dorian Zuluaga |
-| Last Updated | 2026-07-18 |
+| Property     | Value                                         |
+| ------------ | --------------------------------------------- |
+| Product      | Career Copilot                                |
+| Category     | Career Relationship Management (CRM) Platform |
+| Document     | Security Overview                             |
+| Version      | 1.0.0                                         |
+| Status       | Draft                                         |
+| Owner        | Dorian Zuluaga                                |
+| Last Updated | 2026-07-18                                    |
 
 ---
 
@@ -133,15 +133,22 @@ AI responses should always be validated before becoming persistent user data.
 
 Sensitive configuration values must remain outside the source code.
 
-Examples include:
+Examples of **SERVER-ONLY / SECRET** values:
 
-- Google OAuth Client ID
-- Google OAuth Client Secret
-- JWT Secret (if application sessions are token-based)
-- Database credentials
-- OpenAI API Key
+- Firebase Admin service account (`GOOGLE_APPLICATION_CREDENTIALS` or `FIREBASE_SERVICE_ACCOUNT`)
+- Database credentials (`DATABASE_URL`)
+- OpenAI API key (`OPENAI_API_KEY`)
+
+Examples of **PUBLIC / CLIENT-SAFE** values:
+
+- Frontend API origin (`VITE_API_URL`)
+- Firebase web app config (`VITE_FIREBASE_API_KEY`, `VITE_FIREBASE_AUTH_DOMAIN`, `VITE_FIREBASE_PROJECT_ID`, `VITE_FIREBASE_APP_ID`)
+
+Frontend variables must only contain values that are safe to expose in the browser.
 
 Environment files must never be committed to version control.
+
+Production hosting setup, required variables, and the deployment checklist are documented in `docs/engineering/DEPLOYMENT.md`.
 
 ---
 

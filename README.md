@@ -176,9 +176,17 @@ Master CV extraction uses:
 - `OPENAI_API_KEY` — required; a server-side OpenAI API key.
 - `OPENAI_MODEL` — optional; defaults to `gpt-4.1-mini`.
 
-The API validates `OPENAI_API_KEY` during startup and stops with a clear error
-when it is missing or empty. The committed `.env.example` contains placeholders
-only; real credentials must remain in the ignored `apps/api/.env` file.
+The API validates required server environment variables during startup and
+stops with a clear error when they are missing. The committed `.env.example`
+files contain placeholders only; real credentials must remain in ignored
+`.env` files.
+
+Production hosting, environment variable classification, Vercel, Railway, and
+the production checklist are documented in:
+
+```text
+docs/engineering/DEPLOYMENT.md
+```
 
 Replace the placeholder `DATABASE_URL` before using database commands. Load it
 into the current shell and generate the Prisma Client:

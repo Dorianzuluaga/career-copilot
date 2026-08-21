@@ -1,5 +1,5 @@
 import request from "supertest";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("./services/auth.service.js", () => ({
   SESSION_COOKIE_NAME: "career_copilot_session",
@@ -7,6 +7,15 @@ vi.mock("./services/auth.service.js", () => ({
   AuthenticationError: class AuthenticationError extends Error {},
   authenticateWithGoogle: vi.fn(),
   getAuthenticatedUser: vi.fn(),
+  getSessionCookieOptions: () => {
+    const production = process.env.NODE_ENV === "production";
+    return {
+      httpOnly: true,
+      sameSite: production ? "none" : "lax",
+      secure: production,
+      path: "/",
+    };
+  },
   logout: vi.fn(),
 }));
 
@@ -184,6 +193,10 @@ beforeEach(() => {
   vi.clearAllMocks();
 });
 
+afterEach(() => {
+  vi.unstubAllEnvs();
+});
+
 describe("authentication API", () => {
   it("creates a session cookie after Google authentication", async () => {
     vi.mocked(authenticateWithGoogle).mockResolvedValue({
@@ -204,6 +217,36 @@ describe("authentication API", () => {
     expect(response.headers["set-cookie"]?.[0]).toContain("SameSite=Lax");
     expect(response.headers["set-cookie"]?.[0]).toContain("Max-Age=604800");
     expect(response.headers["set-cookie"]?.[0]).not.toContain("Secure");
+  });
+
+  it("sets SameSite=None and Secure on the session cookie in production", async () => {
+    vi.stubEnv("NODE_ENV", "production");
+    vi.mocked(authenticateWithGoogle).mockResolvedValue({
+      sessionId: "opaque-session-id",
+      user,
+    });
+
+    const response = await request(app)
+      .post("/api/auth/google")
+      .send({ idToken: "firebase-id-token" });
+
+    expect(response.status).toBe(200);
+    expect(response.headers["set-cookie"]?.[0]).toContain("SameSite=None");
+    expect(response.headers["set-cookie"]?.[0]).toContain("Secure");
+  });
+
+  it("does not expose internal error details to the client", async () => {
+    vi.mocked(authenticateWithGoogle).mockRejectedValue(
+      new Error("database connection failed"),
+    );
+
+    const response = await request(app)
+      .post("/api/auth/google")
+      .send({ idToken: "firebase-id-token" });
+
+    expect(response.status).toBe(500);
+    expect(response.body).toEqual({ message: "Internal server error." });
+    expect(JSON.stringify(response.body)).not.toContain("database connection");
   });
 
   it("returns the required response when Google authentication fails", async () => {
@@ -987,5 +1030,36 @@ describe("Job Analysis API", () => {
       message:
         "A saved Optimized CV and Cover Letter are required before export.",
     });
+  });
+});
+
+describe("production HTTP configuration", () => {
+  it("reports a healthy process without exposing internals", async () => {
+    const response = await request(app).get("/health");
+
+    expect(response.status).toBe(200);
+    expect(response.body).toEqual({ status: "ok" });
+    expect(response.headers["x-powered-by"]).toBeUndefined();
+  });
+
+  it("allows credentialed requests from the configured frontend origin", async () => {
+    const response = await request(app)
+      .get("/health")
+      .set("Origin", "http://localhost:5173");
+
+    expect(response.headers["access-control-allow-origin"]).toBe(
+      "http://localhost:5173",
+    );
+    expect(response.headers["access-control-allow-credentials"]).toBe("true");
+  });
+
+  it("does not reflect an unknown CORS origin", async () => {
+    vi.stubEnv("FRONTEND_ORIGIN", "https://app.example.com");
+
+    const response = await request(app)
+      .get("/health")
+      .set("Origin", "https://evil.example");
+
+    expect(response.headers["access-control-allow-origin"]).toBeUndefined();
   });
 });

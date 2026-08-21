@@ -3,6 +3,7 @@ import {
   authenticateWithGoogle,
   AuthenticationError,
   getAuthenticatedUser,
+  getSessionCookieOptions,
   logout as logoutSession,
   SESSION_COOKIE_NAME,
   SESSION_MAX_AGE_MS,
@@ -50,11 +51,8 @@ export async function googleAuthentication(
     const { sessionId, user } = await authenticateWithGoogle(idToken);
 
     response.cookie(SESSION_COOKIE_NAME, sessionId, {
-      httpOnly: true,
-      sameSite: "lax",
-      secure: process.env.NODE_ENV === "production",
+      ...getSessionCookieOptions(),
       maxAge: SESSION_MAX_AGE_MS,
-      path: "/",
     });
     response.status(200).json({ authenticated: true, user });
   } catch (error) {
@@ -103,12 +101,7 @@ export async function logout(
       await logoutSession(sessionId);
     }
 
-    response.clearCookie(SESSION_COOKIE_NAME, {
-      httpOnly: true,
-      sameSite: "lax",
-      secure: process.env.NODE_ENV === "production",
-      path: "/",
-    });
+    response.clearCookie(SESSION_COOKIE_NAME, getSessionCookieOptions());
     response.status(200).json({ authenticated: false });
   } catch {
     response.status(500).json({ message: "Internal server error." });

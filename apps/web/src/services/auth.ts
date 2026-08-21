@@ -1,8 +1,7 @@
 import { GoogleAuthProvider, signInWithPopup, signOut } from "firebase/auth";
 import { firebaseAuth } from "../lib/firebase";
 import type { AuthenticationResponse } from "../types/auth";
-
-const apiUrl = import.meta.env.VITE_API_URL ?? "http://localhost:3001";
+import { apiUrl } from "./api";
 
 async function readAuthenticationResponse(
   response: Response,
