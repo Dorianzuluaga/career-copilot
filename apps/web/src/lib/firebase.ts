@@ -17,7 +17,7 @@ if (
   Object.values(firebaseConfig).some((value) => !String(value ?? "").trim())
 ) {
   throw new Error(
-    "Firebase web configuration is required for production builds. Set the VITE_FIREBASE_* variables in the Vercel project environment.",
+    "Firebase web configuration is required for production builds. Set the VITE_FIREBASE_* variables on the Railway Web service before building.",
   );
 }
 

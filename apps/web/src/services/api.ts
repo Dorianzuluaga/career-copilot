@@ -2,7 +2,7 @@ const configuredApiUrl = import.meta.env.VITE_API_URL?.trim();
 
 if (import.meta.env.PROD && !configuredApiUrl) {
   throw new Error(
-    "VITE_API_URL is required for production builds. Set it in the Vercel project environment.",
+    "VITE_API_URL is required for production builds. Set it on the Railway Web service before building.",
   );
 }
 

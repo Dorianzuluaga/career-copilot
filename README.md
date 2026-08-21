@@ -75,8 +75,7 @@ implemented yet.
 
 ### Deployment
 
-- Vercel (Frontend)
-- Railway (Backend)
+- Railway (Web, API, and PostgreSQL)
 
 ### Testing
 
@@ -181,7 +180,7 @@ stops with a clear error when they are missing. The committed `.env.example`
 files contain placeholders only; real credentials must remain in ignored
 `.env` files.
 
-Production hosting, environment variable classification, Vercel, Railway, and
+Production hosting, environment variable classification, Railway, and
 the production checklist are documented in:
 
 ```text

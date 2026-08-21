@@ -2,15 +2,15 @@
 
 ## Metadata
 
-| Property | Value |
-|----------|-------|
-| Product | Career Copilot |
-| Category | Career Relationship Management (CRM) Platform |
-| Document | Technology Stack |
-| Version | 1.0.0 |
-| Status | Draft |
-| Owner | Dorian Zuluaga |
-| Last Updated | 2026-07-18 |
+| Property     | Value                                         |
+| ------------ | --------------------------------------------- |
+| Product      | Career Copilot                                |
+| Category     | Career Relationship Management (CRM) Platform |
+| Document     | Technology Stack                              |
+| Version      | 1.0.0                                         |
+| Status       | Draft                                         |
+| Owner        | Dorian Zuluaga                                |
+| Last Updated | 2026-07-18                                    |
 
 ---
 
@@ -264,30 +264,17 @@ Used for:
 
 # Deployment
 
-## Vercel
-
-**Role**
-
-Frontend hosting.
-
-**Why**
-
-- Excellent React support.
-- Automatic deployments.
-- Fast CDN.
-
----
-
 ## Railway
 
 **Role**
 
-Backend and database hosting.
+Frontend, API, and PostgreSQL hosting.
 
 **Why**
 
-- Easy deployment.
+- Hosts the full production stack in one platform.
 - PostgreSQL support.
+- Automatic deployments.
 - Developer-friendly workflow.
 
 ---
