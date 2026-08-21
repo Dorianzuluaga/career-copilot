@@ -9,6 +9,7 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
+    "start": "node scripts/serve-production.mjs",
     "lint": "eslint .",
     "preview": "vite preview",
     "test": "vitest run",
