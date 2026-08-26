@@ -3,6 +3,7 @@ import { Outlet, useLocation } from "react-router";
 import { GuardedLink } from "../context/UnsavedChangesGuardProvider";
 import { useLocale } from "../hooks/useLocale";
 import { LanguageSelector } from "./LanguageSelector";
+import { ThemeToggle } from "./ThemeToggle";
 
 function headerLinkClass(isActive: boolean): string {
   return isActive
@@ -102,6 +103,7 @@ export function AppLayout() {
               </GuardedLink>
             ))}
             <LanguageSelector />
+            <ThemeToggle variant="chrome" />
             <GuardedLink
               to="/profile"
               aria-current={isProfileActive ? "page" : undefined}

@@ -782,7 +782,7 @@ export function OptimizedCvDocument({
   return (
     <article
       aria-label={t("optimizedCv.title")}
-      className="cc-card px-6 py-8 sm:px-10 sm:py-10"
+      className="cc-card cc-document px-6 py-8 sm:px-10 sm:py-10"
     >
       <DocumentHeader cv={cv} isEditing={isEditing} />
 

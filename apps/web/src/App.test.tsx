@@ -30,8 +30,10 @@ import { MasterCvImport } from "./components/MasterCvImport";
 import { ValidationToast } from "./components/ValidationToast";
 import { AuthContext } from "./context/auth-context";
 import { LocaleProvider } from "./context/LocaleProvider";
+import { ThemeProvider } from "./context/ThemeProvider";
 import { writeStoredLocale } from "./i18n/storage";
 import { masterCvInputFromExtraction } from "./services/master-cv";
+import { writeStoredTheme } from "./theme/storage";
 import type { AuthenticatedUser } from "./types/auth";
 import type { PersistedApplication } from "./types/job-analysis";
 
@@ -57,7 +59,9 @@ function renderApp(
         }}
       >
         <LocaleProvider>
-          <App />
+          <ThemeProvider>
+            <App />
+          </ThemeProvider>
         </LocaleProvider>
       </AuthContext.Provider>
     </MemoryRouter>,
@@ -122,6 +126,19 @@ describe("App", () => {
     expect(markup).toContain(">Perfil<");
   });
 
+  it("renders an accessible theme toggle in the header next to Profile", () => {
+    const markup = renderApp("/dashboard");
+
+    expect(markup).toContain('aria-label="Tema"');
+    expect(markup).toContain('aria-pressed="false"');
+    expect(markup).toContain("M20.25 14.37A7.75 7.75 0 0 1 9.63 3.75");
+    expect(markup).not.toContain("M12 4.25V2.5");
+    expect(markup).not.toContain(">Claro<");
+    expect(markup).toContain(">Perfil<");
+    expect(markup).toContain('aria-label="Idioma"');
+    expect(markup).not.toContain(">Settings<");
+  });
+
   it.each([
     {
       locale: "en" as const,
@@ -131,6 +148,7 @@ describe("App", () => {
       profile: "Profile",
       account: "Account",
       language: "Language",
+      theme: "Theme",
     },
     {
       locale: "fr" as const,
@@ -140,10 +158,20 @@ describe("App", () => {
       profile: "Profil",
       account: "Compte",
       language: "Langue",
+      theme: "Thème",
     },
   ])(
     "translates the navbar and sidebar when $locale is stored",
-    ({ locale, main, dashboard, masterCv, profile, account, language }) => {
+    ({
+      locale,
+      main,
+      dashboard,
+      masterCv,
+      profile,
+      account,
+      language,
+      theme,
+    }) => {
       const storage = new Map<string, string>();
       vi.stubGlobal("localStorage", {
         getItem(key: string) {
@@ -170,6 +198,8 @@ describe("App", () => {
       expect(markup).toContain(`aria-label="${main}"`);
       expect(markup).toContain(`aria-label="${account}"`);
       expect(markup).toContain(`aria-label="${language}"`);
+      expect(markup).toContain(`aria-label="${theme}"`);
+      expect(markup).toContain("M20.25 14.37A7.75 7.75 0 0 1 9.63 3.75");
     },
   );
 
@@ -1036,6 +1066,7 @@ describe("App", () => {
         optimizedCv={sampleOptimizedCv}
       />,
     );
+    expect(reviewMarkup).toContain("cc-document");
     expect(reviewMarkup).toContain("Generar de nuevo");
     expect(reviewMarkup).toContain(">Editar<");
     expect(reviewMarkup).toContain(">Guardar<");
@@ -1746,6 +1777,7 @@ describe("App", () => {
         onGenerate={() => undefined}
       />,
     );
+    expect(reviewMarkup).toContain("cc-document");
     expect(reviewMarkup).toContain("Revisa el documento generado.");
     expect(reviewMarkup).toContain(
       "Entra en el modo de edición para actualizar el texto de la carta.",
@@ -2554,6 +2586,38 @@ describe("App", () => {
 
     expect(markup).toContain("Welcome");
     expect(markup).toContain("Continue with Google");
+    expect(markup).toContain('aria-label="Tema"');
+    expect(markup).toContain('aria-pressed="false"');
+    expect(markup).toContain("M20.25 14.37A7.75 7.75 0 0 1 9.63 3.75");
+    expect(markup).not.toContain("M12 4.25V2.5");
+    expect(markup).not.toContain(">Claro<");
+  });
+
+  it("restores a stored Dark theme on Login", () => {
+    const storage = new Map<string, string>();
+    vi.stubGlobal("localStorage", {
+      getItem(key: string) {
+        return storage.get(key) ?? null;
+      },
+      setItem(key: string, value: string) {
+        storage.set(key, value);
+      },
+      removeItem(key: string) {
+        storage.delete(key);
+      },
+      clear() {
+        storage.clear();
+      },
+    });
+    writeStoredTheme("dark");
+
+    const markup = renderApp("/login", null);
+
+    expect(markup).toContain("Continue with Google");
+    expect(markup).toContain('aria-pressed="true"');
+    expect(markup).toContain("M12 4.25V2.5");
+    expect(markup).not.toContain("M20.25 14.37A7.75 7.75 0 0 1 9.63 3.75");
+    expect(markup).not.toContain(">Oscuro<");
   });
 
   it("renders the job analysis form", () => {

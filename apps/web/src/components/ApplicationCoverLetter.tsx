@@ -201,7 +201,7 @@ export function CoverLetterDocument({
   return (
     <article
       aria-label={t("coverLetter.title")}
-      className="cc-card px-6 py-8 sm:px-10 sm:py-10"
+      className="cc-card cc-document px-6 py-8 sm:px-10 sm:py-10"
     >
       {canEdit ? <ReadOnlyBlock>{header}</ReadOnlyBlock> : header}
 
