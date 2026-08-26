@@ -20,6 +20,15 @@ describe("translate", () => {
     expect(translate("es", "languageSelector.label")).toBe("Idioma");
     expect(translate("en", "languageSelector.label")).toBe("Language");
     expect(translate("fr", "languageSelector.label")).toBe("Langue");
+    expect(translate("es", "theme.toggle")).toBe("Tema");
+    expect(translate("en", "theme.toggle")).toBe("Theme");
+    expect(translate("fr", "theme.toggle")).toBe("Thème");
+    expect(translate("es", "theme.light")).toBe("Claro");
+    expect(translate("en", "theme.light")).toBe("Light");
+    expect(translate("fr", "theme.light")).toBe("Clair");
+    expect(translate("es", "theme.dark")).toBe("Oscuro");
+    expect(translate("en", "theme.dark")).toBe("Dark");
+    expect(translate("fr", "theme.dark")).toBe("Sombre");
     expect(translate("es", "nav.dashboard")).toBe("Panel");
     expect(translate("en", "nav.dashboard")).toBe("Dashboard");
     expect(translate("fr", "nav.dashboard")).toBe("Tableau de bord");
@@ -259,6 +268,9 @@ describe("translate", () => {
     const expectedKeys = collectKeys(spanishMessages);
     const requiredKeys: TranslationKey[] = [
       "languageSelector.label",
+      "theme.toggle",
+      "theme.light",
+      "theme.dark",
       "nav.dashboard",
       "nav.masterCv",
       "nav.profile",

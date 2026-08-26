@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Navigate, useNavigate } from "react-router";
+import { ThemeToggle } from "../components/ThemeToggle";
 import { useAuth } from "../hooks/useAuth";
 
 const LOGIN_ERROR_MESSAGE = "Unable to sign in. Please try again.";
@@ -37,7 +38,10 @@ export function LoginPage() {
   }
 
   return (
-    <main className="flex min-h-screen items-center justify-center bg-canvas px-4 py-12">
+    <main className="relative flex min-h-screen items-center justify-center bg-canvas px-4 py-12">
+      <div className="absolute right-4 top-4 sm:right-6 sm:top-6">
+        <ThemeToggle variant="page" />
+      </div>
       <section className="cc-card w-full max-w-md p-8 sm:p-10">
         <p className="text-center text-xl font-bold tracking-tight text-ink">
           Career Copilot

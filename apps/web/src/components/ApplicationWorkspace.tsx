@@ -38,7 +38,7 @@ export function ApplicationWorkspace({
       <header className="cc-card p-6 sm:p-8">
         <GuardedLink
           to="/dashboard"
-          className="text-sm font-semibold text-brand hover:text-navy"
+          className="text-sm font-semibold text-brand hover:text-ink"
         >
           ← {t("nav.dashboard")}
         </GuardedLink>

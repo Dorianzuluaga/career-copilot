@@ -11,6 +11,11 @@ export const spanishMessages = {
   languageSelector: {
     label: "Idioma",
   },
+  theme: {
+    toggle: "Tema",
+    light: "Claro",
+    dark: "Oscuro",
+  },
   nav: {
     dashboard: "Panel",
     masterCv: "CV Maestro",
@@ -387,6 +392,11 @@ const englishMessages: Messages = {
   languageSelector: {
     label: "Language",
   },
+  theme: {
+    toggle: "Theme",
+    light: "Light",
+    dark: "Dark",
+  },
   nav: {
     dashboard: "Dashboard",
     masterCv: "Master CV",
@@ -740,6 +750,11 @@ const englishMessages: Messages = {
 const frenchMessages: Messages = {
   languageSelector: {
     label: "Langue",
+  },
+  theme: {
+    toggle: "Thème",
+    light: "Clair",
+    dark: "Sombre",
   },
   nav: {
     dashboard: "Tableau de bord",
