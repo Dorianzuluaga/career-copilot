@@ -24,11 +24,12 @@ const originalApiKey = process.env.OPENAI_API_KEY;
 const input: ProfileComparisonInput = {
   masterCv: {
     fullName: "Taylor Smith",
+    professionalTitle: null,
     email: "taylor@example.com",
     phone: null,
     location: null,
     linkedin: null,
-    portfolio: null,
+    website: null,
     professionalSummary: "Software engineer building web APIs.",
     experience: [
       {

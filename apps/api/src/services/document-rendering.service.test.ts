@@ -5,11 +5,12 @@ import { renderDocument } from "./document-rendering.service.js";
 
 const sampleOptimizedCv: OptimizedCv = {
   fullName: "Taylor Smith",
+  professionalTitle: null,
   email: "taylor@example.com",
   phone: null,
   location: "Berlin",
   linkedin: null,
-  portfolio: null,
+  website: null,
   professionalSummary: "TypeScript engineer building APIs.",
   experience: [
     {
@@ -139,6 +140,88 @@ describe("document rendering service", () => {
     expect(extractPdfText(withEmpty)).not.toContain("Career Copilot");
   });
 
+  it("renders the structured header and omits empty optional fields", async () => {
+    const allFields: OptimizedCv = {
+      ...sampleOptimizedCv,
+      professionalTitle: "Full Stack Developer",
+      phone: "+1 555 0100",
+      linkedin: "https://linkedin.com/in/taylor",
+      website: "https://example.com/very/long/portfolio-path",
+    };
+    const requiredOnly: OptimizedCv = {
+      ...sampleOptimizedCv,
+      professionalTitle: null,
+      phone: null,
+      location: null,
+      linkedin: null,
+      website: null,
+    };
+    const partialPairs: OptimizedCv = {
+      ...sampleOptimizedCv,
+      professionalTitle: null,
+      phone: null,
+      location: "Berlin",
+      linkedin: null,
+      website: null,
+    };
+    const migratedWebsite: OptimizedCv = {
+      ...sampleOptimizedCv,
+      website: "https://example.com/old-portfolio",
+    };
+
+    const allText = extractPdfText(
+      await renderDocument({ type: "optimized-cv", data: allFields }),
+    );
+    const requiredText = extractPdfText(
+      await renderDocument({ type: "optimized-cv", data: requiredOnly }),
+    );
+    const partialText = extractPdfText(
+      await renderDocument({ type: "optimized-cv", data: partialPairs }),
+    );
+    const migratedText = extractPdfText(
+      await renderDocument({ type: "optimized-cv", data: migratedWebsite }),
+    );
+
+    expect(allText).toContain("Taylor Smith");
+    expect(allText).toContain("Full Stack Developer");
+    expect(allText).toContain("+1 555 0100");
+    expect(allText).toContain("taylor@example.com");
+    expect(allText).toContain("Berlin");
+    expect(allText).toContain("https://linkedin.com/in/taylor");
+    expect(allText).toContain("https://example.com/very/long/portfolio-path");
+    expect(allText).not.toContain(
+      "taylor@example.com · +1 555 0100 · Berlin · https://linkedin.com/in/taylor · https://example.com/very/long/portfolio-path",
+    );
+
+    expect(requiredText).toContain("Taylor Smith");
+    expect(requiredText).toContain("taylor@example.com");
+    expect(requiredText).not.toContain("Full Stack Developer");
+    expect(requiredText).not.toContain("+1 555 0100");
+    expect(requiredText).not.toContain("Berlin");
+    expect(requiredText).not.toContain("https://linkedin.com/in/taylor");
+    expect(requiredText).not.toContain("https://example.com");
+
+    expect(partialText).toContain("taylor@example.com");
+    expect(partialText).toContain("Berlin");
+    expect(partialText).not.toContain("+1 555 0100");
+    expect(partialText).not.toContain("https://linkedin.com/in/taylor");
+
+    expect(migratedText).toContain("https://example.com/old-portfolio");
+  });
+
+  it("does not backfill professional title from later Master CV values", async () => {
+    const savedSnapshot: OptimizedCv = {
+      ...sampleOptimizedCv,
+      professionalTitle: null,
+    };
+    const text = extractPdfText(
+      await renderDocument({ type: "optimized-cv", data: savedSnapshot }),
+    );
+
+    expect(text).toContain("Taylor Smith");
+    expect(text).not.toContain("Full Stack Developer");
+  });
+
   it("renders a cover letter as a PDF buffer", async () => {
     const buffer = await renderDocument({
       type: "cover-letter",
@@ -158,5 +241,11 @@ describe("document rendering service", () => {
     });
 
     expect(buffer.subarray(0, 4).toString()).toBe("%PDF");
+    const text = extractPdfText(buffer);
+    expect(text).toContain("Taylor Smith");
+    expect(text).toContain("taylor@example.com");
+    expect(text).not.toContain("Software Engineer");
+    expect(text).not.toContain("https://linkedin.com");
+    expect(text).not.toContain("https://example.com");
   });
 });

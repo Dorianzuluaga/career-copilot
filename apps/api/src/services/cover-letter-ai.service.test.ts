@@ -22,11 +22,12 @@ const originalApiKey = process.env.OPENAI_API_KEY;
 const input: CoverLetterGenerationInput = {
   masterCv: {
     fullName: "Taylor Smith",
+    professionalTitle: null,
     email: "taylor@example.com",
     phone: "+1 555 0100",
     location: "Berlin",
     linkedin: null,
-    portfolio: null,
+    website: null,
     professionalSummary: "Software engineer building web APIs.",
     experience: [
       {
@@ -68,11 +69,12 @@ const input: CoverLetterGenerationInput = {
   },
   optimizedCv: {
     fullName: "Taylor Smith",
+    professionalTitle: null,
     email: "taylor@example.com",
     phone: "+1 555 0100",
     location: "Berlin",
     linkedin: null,
-    portfolio: null,
+    website: null,
     professionalSummary: "TypeScript engineer building APIs.",
     experience: [
       {

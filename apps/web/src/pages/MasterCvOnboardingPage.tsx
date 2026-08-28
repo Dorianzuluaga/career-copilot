@@ -13,11 +13,12 @@ import type { MasterCvInput } from "../types/master-cv";
 
 const emptyMasterCv = (): MasterCvInput => ({
   fullName: "",
+  professionalTitle: null,
   email: "",
   phone: null,
   location: null,
   linkedin: null,
-  portfolio: null,
+  website: null,
   professionalSummary: "",
   experience: [],
   education: [],

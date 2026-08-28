@@ -101,7 +101,8 @@ const optimizedCvSchema = {
     "phone",
     "location",
     "linkedin",
-    "portfolio",
+    "website",
+    "professionalTitle",
     "professionalSummary",
     "experience",
     "education",
@@ -116,7 +117,8 @@ const optimizedCvSchema = {
     phone: nullableString,
     location: nullableString,
     linkedin: nullableString,
-    portfolio: nullableString,
+    website: nullableString,
+    professionalTitle: nullableString,
     professionalSummary: { type: "string" },
     experience: { type: "array", items: experienceItemSchema },
     education: { type: "array", items: educationItemSchema },
@@ -195,7 +197,8 @@ function isOptimizedCvDraft(value: unknown): value is MasterCvInput {
     isNullableString(data.phone) &&
     isNullableString(data.location) &&
     isNullableString(data.linkedin) &&
-    isNullableString(data.portfolio) &&
+    isNullableString(data.website) &&
+    isNullableString(data.professionalTitle) &&
     typeof data.professionalSummary === "string" &&
     Array.isArray(data.experience) &&
     data.experience.every(isExperience) &&
@@ -292,11 +295,12 @@ export function enforceMasterCvIntegrity(
 ): OptimizedCv {
   return {
     fullName: masterCv.fullName,
+    professionalTitle: masterCv.professionalTitle,
     email: masterCv.email,
     phone: masterCv.phone,
     location: masterCv.location,
     linkedin: masterCv.linkedin,
-    portfolio: masterCv.portfolio,
+    website: masterCv.website,
     professionalSummary:
       generated.professionalSummary.trim() || masterCv.professionalSummary,
     experience: masterCv.experience.map((item, index) => {
@@ -367,6 +371,7 @@ export async function generateOptimizedCvDraft(
               "Do not invent or remove those sections or their items.",
               "Do not invent professional experience, projects, achievements, skills, education, languages, or certifications.",
               "Do not modify personal information, employment dates, company names, job titles, education institutions, degrees, or certification names.",
+              "Do not invent a professional title or website. Do not replace Master CV personal information, including professionalTitle and website.",
               "Personal Projects are optional. Evaluate Master CV personalProjects against the Job Analysis and Profile Match.",
               "Include only relevant Personal Projects. Omit irrelevant Personal Projects.",
               "Prioritize the most relevant projects when multiple projects are available.",

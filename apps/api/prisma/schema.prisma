@@ -36,11 +36,12 @@ model MasterCv {
   userId              String   @unique @db.Uuid
   user                User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   fullName            String
+  professionalTitle   String?
   email               String
   phone               String?
   location            String?
   linkedin            String?
-  portfolio           String?
+  website             String?
   professionalSummary String
   experience          Json
   education           Json
@@ -131,11 +132,12 @@ model OptimizedCv {
   applicationId       String      @unique @db.Uuid
   application         Application @relation(fields: [applicationId], references: [id], onDelete: Cascade)
   fullName            String
+  professionalTitle   String?
   email               String
   phone               String?
   location            String?
   linkedin            String?
-  portfolio           String?
+  website             String?
   professionalSummary String
   experience          Json
   education           Json

@@ -971,11 +971,12 @@ describe("App", () => {
   it("presents the Optimized CV generation and review workflow after Profile Match", () => {
     const sampleOptimizedCv = {
       fullName: "Taylor Smith",
+      professionalTitle: null,
       email: "taylor@example.com",
       phone: null,
       location: "Berlin",
       linkedin: null,
-      portfolio: null,
+      website: null,
       professionalSummary: "TypeScript engineer building APIs.",
       experience: [
         {
@@ -1079,6 +1080,17 @@ describe("App", () => {
     expect(reviewMarkup).toContain("Berlin");
     expect(reviewMarkup).toContain('data-field="fullName"');
     expect(reviewMarkup).toContain('data-field="email"');
+    expect(reviewMarkup).toContain("data-cv-header");
+    expect(reviewMarkup).toContain("data-cv-header-identity");
+    expect(reviewMarkup).toContain('data-cv-header-row="phone-email"');
+    expect(reviewMarkup).toContain('data-cv-header-row="location-linkedin"');
+    expect(reviewMarkup).not.toContain('data-cv-header-row="website"');
+    expect(reviewMarkup).not.toContain('data-field="professionalTitle"');
+    expect(reviewMarkup).not.toContain('data-field="linkedin"');
+    expect(reviewMarkup).not.toContain('data-field="website"');
+    expect(reviewMarkup).toContain("<svg");
+    expect(reviewMarkup).toContain('aria-hidden="true"');
+    expect(reviewMarkup).not.toContain("data-cv-header-photo");
     expect(reviewMarkup).toContain('data-field-group="experience.0"');
     expect(reviewMarkup).toContain("Resumen profesional");
     expect(reviewMarkup).toContain("text-justify");
@@ -1231,14 +1243,139 @@ describe("App", () => {
     expect(errorMarkup).toContain("Reintentar");
   });
 
-  it("reviews and edits selected Personal Projects without exposing Master CV identity as editable", () => {
-    const sampleOptimizedCv = {
+  it("renders structured Optimized CV header rows and omits empty optional fields", () => {
+    const baseCv = {
       fullName: "Taylor Smith",
+      professionalTitle: null,
       email: "taylor@example.com",
       phone: null,
       location: "Berlin",
       linkedin: null,
-      portfolio: null,
+      website: null,
+      professionalSummary: "TypeScript engineer building APIs.",
+      experience: [],
+      education: [],
+      skills: ["TypeScript"],
+      languages: [],
+      certifications: [],
+    };
+
+    const allFieldsMarkup = renderWithLocale(
+      <ApplicationOptimizedCv
+        errorMessage={null}
+        isLoading={false}
+        onChange={() => undefined}
+        onGenerate={() => undefined}
+        optimizedCv={{
+          ...baseCv,
+          professionalTitle: "Software Engineer",
+          phone: "+1 555 0100",
+          linkedin: "https://linkedin.com/in/taylor",
+          website: "https://example.com/very/long/portfolio-path",
+        }}
+      />,
+    );
+    expect(allFieldsMarkup).toContain("Taylor Smith");
+    expect(allFieldsMarkup).toContain("Software Engineer");
+    expect(allFieldsMarkup).toContain("+1 555 0100");
+    expect(allFieldsMarkup).toContain("taylor@example.com");
+    expect(allFieldsMarkup).toContain("Berlin");
+    expect(allFieldsMarkup).toContain("https://linkedin.com/in/taylor");
+    expect(allFieldsMarkup).toContain(
+      "https://example.com/very/long/portfolio-path",
+    );
+    expect(allFieldsMarkup).toContain('data-field="professionalTitle"');
+    expect(allFieldsMarkup).toContain('data-cv-header-row="website"');
+    expect(allFieldsMarkup.indexOf("Software Engineer")).toBeGreaterThan(
+      allFieldsMarkup.indexOf("Taylor Smith"),
+    );
+    expect(allFieldsMarkup.indexOf("+1 555 0100")).toBeGreaterThan(
+      allFieldsMarkup.indexOf("Software Engineer"),
+    );
+    expect(allFieldsMarkup.indexOf("taylor@example.com")).toBeGreaterThan(
+      allFieldsMarkup.indexOf("+1 555 0100"),
+    );
+    expect(allFieldsMarkup.indexOf("Berlin")).toBeGreaterThan(
+      allFieldsMarkup.indexOf("taylor@example.com"),
+    );
+    expect(
+      allFieldsMarkup.indexOf("https://linkedin.com/in/taylor"),
+    ).toBeGreaterThan(allFieldsMarkup.indexOf("Berlin"));
+    expect(
+      allFieldsMarkup.indexOf("https://example.com/very/long/portfolio-path"),
+    ).toBeGreaterThan(
+      allFieldsMarkup.indexOf("https://linkedin.com/in/taylor"),
+    );
+    expect(allFieldsMarkup).not.toContain(" · ");
+    expect(allFieldsMarkup).not.toContain("data-cv-header-photo");
+
+    const requiredOnlyMarkup = renderWithLocale(
+      <ApplicationOptimizedCv
+        errorMessage={null}
+        isLoading={false}
+        onChange={() => undefined}
+        onGenerate={() => undefined}
+        optimizedCv={{
+          ...baseCv,
+          location: null,
+        }}
+      />,
+    );
+    expect(requiredOnlyMarkup).toContain("Taylor Smith");
+    expect(requiredOnlyMarkup).toContain("taylor@example.com");
+    expect(requiredOnlyMarkup).toContain('data-cv-header-row="phone-email"');
+    expect(requiredOnlyMarkup).not.toContain("Software Engineer");
+    expect(requiredOnlyMarkup).not.toContain(
+      'data-cv-header-row="location-linkedin"',
+    );
+    expect(requiredOnlyMarkup).not.toContain('data-cv-header-row="website"');
+    expect(requiredOnlyMarkup).not.toContain('data-field="professionalTitle"');
+
+    const partialMarkup = renderWithLocale(
+      <ApplicationOptimizedCv
+        errorMessage={null}
+        isLoading={false}
+        onChange={() => undefined}
+        onGenerate={() => undefined}
+        optimizedCv={baseCv}
+      />,
+    );
+    expect(partialMarkup).toContain('data-field="email"');
+    expect(partialMarkup).toContain('data-field="location"');
+    expect(partialMarkup).not.toContain('data-field="phone"');
+    expect(partialMarkup).not.toContain('data-field="linkedin"');
+    expect(partialMarkup).not.toContain('data-field="website"');
+
+    const editMarkup = renderWithLocale(
+      <ApplicationOptimizedCv
+        errorMessage={null}
+        initialIsEditing
+        isLoading={false}
+        onChange={() => undefined}
+        onGenerate={() => undefined}
+        optimizedCv={{
+          ...baseCv,
+          professionalTitle: "Software Engineer",
+          website: "https://example.com/old-portfolio",
+        }}
+      />,
+    );
+    expect(editMarkup).toContain("Software Engineer");
+    expect(editMarkup).toContain("https://example.com/old-portfolio");
+    expect(editMarkup).not.toContain('id="professional-title"');
+    expect(editMarkup).not.toContain('id="website"');
+    expect(editMarkup).not.toContain('type="file"');
+  });
+
+  it("reviews and edits selected Personal Projects without exposing Master CV identity as editable", () => {
+    const sampleOptimizedCv = {
+      fullName: "Taylor Smith",
+      professionalTitle: null,
+      email: "taylor@example.com",
+      phone: null,
+      location: "Berlin",
+      linkedin: null,
+      website: null,
       professionalSummary: "TypeScript engineer building APIs.",
       experience: [
         {
@@ -1332,11 +1469,12 @@ describe("App", () => {
     };
     const sampleOptimizedCv = {
       fullName: "Taylor Smith",
+      professionalTitle: null,
       email: "taylor@example.com",
       phone: null,
       location: "Berlin",
       linkedin: null,
-      portfolio: null,
+      website: null,
       professionalSummary: "TypeScript engineer building APIs.",
       experience: [
         {
@@ -1532,11 +1670,12 @@ describe("App", () => {
 
       const sampleOptimizedCv = {
         fullName: "Taylor Smith",
+        professionalTitle: null,
         email: "taylor@example.com",
         phone: null,
         location: "Berlin",
         linkedin: null,
-        portfolio: null,
+        website: null,
         professionalSummary: "TypeScript engineer building APIs.",
         experience: [
           {
@@ -1791,6 +1930,12 @@ describe("App", () => {
     expect(reviewMarkup).toContain('data-field="phone"');
     expect(reviewMarkup).toContain('data-field="email"');
     expect(reviewMarkup).toContain('data-field="date"');
+    expect(reviewMarkup).not.toContain('data-field="professionalTitle"');
+    expect(reviewMarkup).not.toContain('data-field="linkedin"');
+    expect(reviewMarkup).not.toContain('data-field="website"');
+    expect(reviewMarkup).not.toContain('data-field="location"');
+    expect(reviewMarkup).not.toContain("data-cv-header");
+    expect(reviewMarkup).not.toContain("<svg");
     expect(reviewMarkup).toContain("Acme");
     expect(reviewMarkup).toContain("Dear Hiring Manager,");
     expect(reviewMarkup).toContain(
@@ -2219,11 +2364,12 @@ describe("App", () => {
   it("previews saved application documents in Export without editing controls", () => {
     const sampleOptimizedCv = {
       fullName: "Taylor Smith",
+      professionalTitle: null,
       email: "taylor@example.com",
       phone: null,
       location: "Berlin",
       linkedin: null,
-      portfolio: null,
+      website: null,
       professionalSummary: "TypeScript engineer building APIs.",
       experience: [
         {
@@ -2438,11 +2584,12 @@ describe("App", () => {
 
       const sampleOptimizedCv = {
         fullName: "Taylor Smith",
+        professionalTitle: null,
         email: "taylor@example.com",
         phone: null,
         location: "Berlin",
         linkedin: null,
-        portfolio: null,
+        website: null,
         professionalSummary: "TypeScript engineer building APIs.",
         experience: [
           {
@@ -2757,11 +2904,12 @@ describe("App", () => {
       <MasterCvForm
         initialValue={{
           fullName: "",
+          professionalTitle: null,
           email: "",
           phone: null,
           location: null,
           linkedin: null,
-          portfolio: null,
+          website: null,
           professionalSummary: "",
           experience: [],
           education: [],
@@ -2788,6 +2936,22 @@ describe("App", () => {
     expect(markup).toContain("noValidate");
     expect(markup).toContain('data-field="phone"');
     expect(markup).toContain('data-field="fullName"');
+    expect(markup).toContain('data-field="professionalTitle"');
+    expect(markup).toContain('data-field="website"');
+    expect(markup).toContain("Título profesional");
+    expect(markup).toContain("Sitio web o perfil profesional");
+    expect(markup).toContain("LinkedIn");
+    expect(markup).not.toContain("Portafolio");
+    expect(markup).not.toContain('data-field="portfolio"');
+    expect(markup.indexOf("Título profesional")).toBeGreaterThan(
+      markup.indexOf("Nombre completo"),
+    );
+    expect(markup.indexOf('data-field="phone"')).toBeGreaterThan(
+      markup.indexOf('data-field="professionalTitle"'),
+    );
+    expect(markup.indexOf('data-field="email"')).toBeGreaterThan(
+      markup.indexOf('data-field="phone"'),
+    );
   });
 
   it.each([
@@ -2795,17 +2959,28 @@ describe("App", () => {
       locale: "en" as const,
       personalInformation: "Personal information",
       personalProjects: "Personal projects",
+      professionalTitle: "Professional title",
+      website: "Website or professional profile",
       importAction: "Import Existing CV",
     },
     {
       locale: "fr" as const,
       personalInformation: "Informations personnelles",
       personalProjects: "Projets personnels",
+      professionalTitle: "Titre professionnel",
+      website: "Site web ou profil professionnel",
       importAction: "Importer un CV existant",
     },
   ])(
     "translates Master CV form chrome when $locale is stored",
-    ({ locale, personalInformation, personalProjects, importAction }) => {
+    ({
+      locale,
+      personalInformation,
+      personalProjects,
+      professionalTitle,
+      website,
+      importAction,
+    }) => {
       const storage = new Map<string, string>();
       vi.stubGlobal("localStorage", {
         getItem(key: string) {
@@ -2827,11 +3002,12 @@ describe("App", () => {
         <MasterCvForm
           initialValue={{
             fullName: "",
+            professionalTitle: null,
             email: "",
             phone: null,
             location: null,
             linkedin: null,
-            portfolio: null,
+            website: null,
             professionalSummary: "",
             experience: [],
             education: [],
@@ -2851,6 +3027,10 @@ describe("App", () => {
 
       expect(formMarkup).toContain(personalInformation);
       expect(formMarkup).toContain(personalProjects);
+      expect(formMarkup).toContain(professionalTitle);
+      expect(formMarkup).toContain(website);
+      expect(formMarkup).toContain("LinkedIn");
+      expect(formMarkup).not.toContain("Portfolio");
       expect(importMarkup).toContain(importAction);
     },
   );
@@ -2871,11 +3051,12 @@ describe("App", () => {
     const input = masterCvInputFromExtraction({
       personalInformation: {
         fullName: "Taylor Smith",
+        professionalTitle: null,
         email: null,
         phone: null,
         location: "Berlin",
         linkedin: null,
-        portfolio: null,
+        website: null,
       },
       professionalSummary: null,
       experience: [],
@@ -2887,9 +3068,11 @@ describe("App", () => {
     });
 
     expect(input.fullName).toBe("Taylor Smith");
+    expect(input.professionalTitle).toBeNull();
     expect(input.email).toBe("");
     expect(input.professionalSummary).toBe("");
     expect(input.location).toBe("Berlin");
+    expect(input.website).toBeNull();
     expect(input.skills).toEqual(["TypeScript"]);
     expect(input.personalProjects).toEqual([]);
   });
@@ -2899,11 +3082,12 @@ describe("App", () => {
       <MasterCvForm
         initialValue={{
           fullName: "Taylor Smith",
+          professionalTitle: null,
           email: "taylor@example.com",
           phone: null,
           location: null,
           linkedin: null,
-          portfolio: null,
+          website: null,
           professionalSummary: "Software engineer",
           experience: [
             {

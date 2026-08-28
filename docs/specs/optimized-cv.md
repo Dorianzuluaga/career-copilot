@@ -88,7 +88,7 @@ Profile Match
 
 The Master CV may contain:
 
-Personal Information
+Personal Information, including optional `professionalTitle` and `website`
 Professional Summary
 Experience
 Education
@@ -96,6 +96,8 @@ Skills
 Languages
 Certifications
 Personal Projects
+
+Personal Information is protected Master CV data. Optional `professionalTitle` and `website` remain part of that protected information and are copied from the Master CV during Optimized CV generation.
 
 The AI must evaluate Personal Projects against the available application context and may include projects that are relevant to the target job opportunity.
 
@@ -222,7 +224,7 @@ Changes to these factual project identity fields must always be performed in the
 
 The following information remains read-only because it belongs to the Master CV:
 
-- Personal information
+- Personal information, including optional `professionalTitle` and `website`
 - Employment dates
 - Company names
 - Job titles

@@ -14,11 +14,12 @@ import {
 
 const validMasterCv: MasterCvInput = {
   fullName: "Taylor Smith",
+  professionalTitle: null,
   email: "taylor@example.com",
   phone: "+1 555 0100",
   location: "New York",
   linkedin: "https://linkedin.com/in/taylor",
-  portfolio: "https://example.com",
+  website: "https://example.com",
   professionalSummary: "Software engineer",
   experience: [
     {
@@ -94,6 +95,7 @@ describe("getMasterCvFieldErrors", () => {
       getMasterCvFieldErrors({
         ...validMasterCv,
         fullName: "   ",
+        professionalTitle: null,
         email: "",
         professionalSummary: " ",
         skills: [],
@@ -112,7 +114,7 @@ describe("getMasterCvFieldErrors", () => {
         ...validMasterCv,
         phone: null,
         linkedin: null,
-        portfolio: "",
+        website: "",
       }),
     ).toEqual({});
     expect(
@@ -121,6 +123,7 @@ describe("getMasterCvFieldErrors", () => {
         email: "not-an-email",
         phone: "abc",
         linkedin: "not a url",
+        website: "not a url",
         personalProjects: [
           {
             name: "Career Copilot",
@@ -140,6 +143,7 @@ describe("getMasterCvFieldErrors", () => {
       email: "Enter a valid email address.",
       phone: "Enter a valid phone number.",
       linkedin: "Enter a valid URL.",
+      website: "Enter a valid URL.",
       "personalProjects.0.url": "Enter a valid URL.",
       "experience.0.startDate": "Enter a valid date.",
     });

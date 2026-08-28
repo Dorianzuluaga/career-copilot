@@ -73,11 +73,12 @@ const userId = "4e9c843b-5c3d-4e65-8514-7de898b2aca6";
 
 const masterCv = {
   fullName: "Taylor Smith",
+  professionalTitle: null,
   email: "taylor@example.com",
   phone: null,
   location: null,
   linkedin: null,
-  portfolio: null,
+  website: null,
   professionalSummary: "Software engineer",
   experience: [
     {
@@ -153,11 +154,12 @@ beforeEach(() => {
     const input = value as typeof optimizedCv;
     return {
       fullName: input.fullName,
+      professionalTitle: input.professionalTitle,
       email: input.email,
       phone: input.phone,
       location: input.location,
       linkedin: input.linkedin,
-      portfolio: input.portfolio,
+      website: input.website,
       professionalSummary: input.professionalSummary,
       experience: input.experience,
       education: input.education,

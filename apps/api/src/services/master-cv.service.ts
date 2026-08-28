@@ -200,11 +200,12 @@ export function validateMasterCvInput(value: unknown): MasterCvInput {
 
   return {
     fullName: requiredString(input, "fullName"),
+    professionalTitle: optionalString(input, "professionalTitle"),
     email: requiredEmail(input, "email"),
     phone: optionalPhone(input, "phone"),
     location: optionalString(input, "location"),
     linkedin: optionalUrl(input, "linkedin"),
-    portfolio: optionalUrl(input, "portfolio"),
+    website: optionalUrl(input, "website"),
     professionalSummary: requiredString(input, "professionalSummary"),
     experience: arrayOf(input, "experience", isExperience, true).map(
       (item, index) => ({

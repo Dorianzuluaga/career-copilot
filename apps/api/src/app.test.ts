@@ -365,11 +365,12 @@ describe("Master CV API", () => {
     const extraction = {
       personalInformation: {
         fullName: "Taylor Smith",
+        professionalTitle: null,
         email: "taylor@example.com",
         phone: null,
         location: null,
         linkedin: null,
-        portfolio: null,
+        website: null,
       },
       professionalSummary: null,
       experience: [],
@@ -663,11 +664,12 @@ describe("Job Analysis API", () => {
   it("returns the generated Optimized CV for the authenticated user", async () => {
     const optimizedCv = {
       fullName: "Taylor Smith",
+      professionalTitle: null,
       email: "taylor@example.com",
       phone: null,
       location: null,
       linkedin: null,
-      portfolio: null,
+      website: null,
       professionalSummary: "TypeScript engineer building APIs.",
       experience: [
         {
@@ -717,11 +719,12 @@ describe("Job Analysis API", () => {
   it("returns the saved Optimized CV for the authenticated user", async () => {
     const optimizedCv = {
       fullName: "Taylor Smith",
+      professionalTitle: null,
       email: "taylor@example.com",
       phone: null,
       location: null,
       linkedin: null,
-      portfolio: null,
+      website: null,
       professionalSummary: "TypeScript engineer building APIs.",
       experience: [
         {
@@ -768,11 +771,12 @@ describe("Job Analysis API", () => {
   it("saves the Optimized CV for the authenticated user", async () => {
     const optimizedCv = {
       fullName: "Taylor Smith",
+      professionalTitle: null,
       email: "taylor@example.com",
       phone: null,
       location: null,
       linkedin: null,
-      portfolio: null,
+      website: null,
       professionalSummary: "TypeScript engineer building APIs.",
       experience: [
         {

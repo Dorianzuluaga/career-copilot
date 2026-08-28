@@ -85,11 +85,12 @@ The AI must return:
 {
   "personalInformation": {
     "fullName": "",
+    "professionalTitle": "",
     "email": "",
     "phone": "",
     "location": "",
     "linkedin": "",
-    "portfolio": ""
+    "website": ""
   },
   "professionalSummary": "",
   "experience": [],
@@ -212,10 +213,11 @@ Required fields:
 
 Optional fields:
 
+- Professional Title
 - Phone
 - Location
 - LinkedIn
-- Portfolio
+- Website
 - Education
 - Languages
 - Certifications

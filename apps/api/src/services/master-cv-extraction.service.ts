@@ -23,19 +23,21 @@ const extractionSchema = {
       additionalProperties: false,
       required: [
         "fullName",
+        "professionalTitle",
         "email",
         "phone",
         "location",
         "linkedin",
-        "portfolio",
+        "website",
       ],
       properties: {
         fullName: nullableString,
+        professionalTitle: nullableString,
         email: nullableString,
         phone: nullableString,
         location: nullableString,
         linkedin: nullableString,
-        portfolio: nullableString,
+        website: nullableString,
       },
     },
     professionalSummary: nullableString,
@@ -148,7 +150,9 @@ function hasNullableStrings(
   );
 }
 
-function isExtraction(value: unknown): value is MasterCvExtraction {
+export function isMasterCvExtraction(
+  value: unknown,
+): value is MasterCvExtraction {
   if (!isRecord(value)) return false;
   const data = value;
   const personal = data.personalInformation;
@@ -164,11 +168,12 @@ function isExtraction(value: unknown): value is MasterCvExtraction {
   return (
     hasNullableStrings(personal, [
       "fullName",
+      "professionalTitle",
       "email",
       "phone",
       "location",
       "linkedin",
-      "portfolio",
+      "website",
     ]) &&
     isNullableString(data.professionalSummary) &&
     Array.isArray(data.experience) &&
@@ -237,6 +242,11 @@ export async function extractMasterCv(
               "Never infer or invent information.",
               "Use null for unknown scalar values and an empty array when a section has no entries.",
               "Preserve the source wording where possible.",
+              "Extract professionalTitle only when the uploaded CV presents a professional headline, typically under the name.",
+              "Do not copy an Experience jobTitle into professionalTitle unless that text is presented as the candidate's professional title independently of a specific employment entry.",
+              "Extract linkedin only for LinkedIn URLs.",
+              "Extract website for a personal website or other non-LinkedIn professional profile URL when present in the source document.",
+              "If several non-LinkedIn URLs are present, extract the one presented as the candidate's website or portfolio. Do not invent a URL. Do not concatenate URLs. Do not place a LinkedIn URL in website.",
               "Preserve the order in which Experience, Education, and Personal Projects appear in the document.",
               "Extract Personal Projects only when they are explicitly present.",
               "Never invent projects or project information.",
@@ -257,6 +267,7 @@ export async function extractMasterCv(
   });
 
   const parsed: unknown = JSON.parse(response.output_text);
-  if (!isExtraction(parsed)) throw new Error("Invalid extraction response.");
+  if (!isMasterCvExtraction(parsed))
+    throw new Error("Invalid extraction response.");
   return parsed;
 }
