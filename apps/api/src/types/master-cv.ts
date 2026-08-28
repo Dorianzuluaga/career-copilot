@@ -38,11 +38,12 @@ export interface PersonalProjectItem {
 
 export interface PersonalInformation {
   fullName: string | null;
+  professionalTitle: string | null;
   email: string | null;
   phone: string | null;
   location: string | null;
   linkedin: string | null;
-  portfolio: string | null;
+  website: string | null;
 }
 
 export interface MasterCvExtraction {
@@ -58,11 +59,12 @@ export interface MasterCvExtraction {
 
 export interface MasterCvInput {
   fullName: string;
+  professionalTitle: string | null;
   email: string;
   phone: string | null;
   location: string | null;
   linkedin: string | null;
-  portfolio: string | null;
+  website: string | null;
   professionalSummary: string;
   experience: ExperienceItem[];
   education: EducationItem[];

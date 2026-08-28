@@ -46,10 +46,11 @@ function translateMasterCvFieldErrors(
 function getMasterCvToastFieldLabel(key: string, t: Translate): string {
   const simpleLabels: Record<string, TranslationKey> = {
     fullName: "masterCv.form.fullName",
+    professionalTitle: "masterCv.form.professionalTitle",
     email: "masterCv.form.email",
     phone: "masterCv.form.phone",
     linkedin: "masterCv.form.linkedin",
-    portfolio: "masterCv.form.portfolio",
+    website: "masterCv.form.website",
     professionalSummary: "masterCv.form.professionalSummary",
     skills: "masterCv.form.skills",
   };
@@ -372,11 +373,12 @@ export function MasterCvForm({
   const { t } = useLocale();
   const [personal, setPersonal] = useState({
     fullName: initialValue.fullName,
+    professionalTitle: initialValue.professionalTitle,
     email: initialValue.email,
     phone: initialValue.phone,
     location: initialValue.location,
     linkedin: initialValue.linkedin,
-    portfolio: initialValue.portfolio,
+    website: initialValue.website,
   });
   const [professionalSummary, setProfessionalSummary] = useState(
     initialValue.professionalSummary,
@@ -401,10 +403,11 @@ export function MasterCvForm({
   function buildInput(): MasterCvInput {
     return {
       ...personal,
+      professionalTitle: nullable(personal.professionalTitle ?? ""),
       phone: nullable(personal.phone ?? ""),
       location: nullable(personal.location ?? ""),
       linkedin: nullable(personal.linkedin ?? ""),
-      portfolio: nullable(personal.portfolio ?? ""),
+      website: nullable(personal.website ?? ""),
       professionalSummary: professionalSummary.trim(),
       experience: experience.map(normalizeExperience),
       education: education.map(normalizeEducation),
@@ -498,16 +501,17 @@ export function MasterCvForm({
             }}
           />
           <TextField
-            id="email"
-            fieldKey="email"
-            label={t("masterCv.form.email")}
-            type="email"
-            value={personal.email}
-            required
-            error={fieldErrors.email}
-            onChange={(email) => {
-              clearFieldError("email");
-              setPersonal((value) => ({ ...value, email }));
+            id="professional-title"
+            fieldKey="professionalTitle"
+            label={t("masterCv.form.professionalTitle")}
+            value={personal.professionalTitle}
+            error={fieldErrors.professionalTitle}
+            onChange={(professionalTitle) => {
+              clearFieldError("professionalTitle");
+              setPersonal((value) => ({
+                ...value,
+                professionalTitle: optionalFieldValue(professionalTitle),
+              }));
             }}
           />
           <TextField
@@ -522,6 +526,19 @@ export function MasterCvForm({
                 ...value,
                 phone: optionalFieldValue(phone),
               }));
+            }}
+          />
+          <TextField
+            id="email"
+            fieldKey="email"
+            label={t("masterCv.form.email")}
+            type="email"
+            value={personal.email}
+            required
+            error={fieldErrors.email}
+            onChange={(email) => {
+              clearFieldError("email");
+              setPersonal((value) => ({ ...value, email }));
             }}
           />
           <TextField
@@ -549,16 +566,16 @@ export function MasterCvForm({
             }}
           />
           <TextField
-            id="portfolio"
-            fieldKey="portfolio"
-            label={t("masterCv.form.portfolio")}
-            value={personal.portfolio}
-            error={fieldErrors.portfolio}
-            onChange={(portfolio) => {
-              clearFieldError("portfolio");
+            id="website"
+            fieldKey="website"
+            label={t("masterCv.form.website")}
+            value={personal.website}
+            error={fieldErrors.website}
+            onChange={(website) => {
+              clearFieldError("website");
               setPersonal((value) => ({
                 ...value,
-                portfolio: optionalFieldValue(portfolio),
+                website: optionalFieldValue(website),
               }));
             }}
           />

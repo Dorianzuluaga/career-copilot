@@ -8,6 +8,12 @@ import {
   getMasterCvFieldErrors,
   type FieldErrors,
 } from "../lib/field-validation";
+import {
+  buildOptimizedCvHeaderModel,
+  OPTIMIZED_CV_HEADER_ICON_PATHS,
+  type OptimizedCvHeaderContactKind,
+  type OptimizedCvHeaderContactItem,
+} from "../lib/optimized-cv-header";
 import type {
   CertificationItem,
   EducationItem,
@@ -63,10 +69,11 @@ function translateMasterCvFieldErrors(
 function getMasterCvToastFieldLabel(key: string, t: Translate): string {
   const simpleLabels: Record<string, TranslationKey> = {
     fullName: "masterCv.form.fullName",
+    professionalTitle: "masterCv.form.professionalTitle",
     email: "masterCv.form.email",
     phone: "masterCv.form.phone",
     linkedin: "masterCv.form.linkedin",
-    portfolio: "masterCv.form.portfolio",
+    website: "masterCv.form.website",
     professionalSummary: "masterCv.form.professionalSummary",
     skills: "masterCv.form.skills",
   };
@@ -237,6 +244,52 @@ function ReadOnlyValue({ children }: { children: ReactNode }) {
   );
 }
 
+function HeaderContactIcon({ kind }: { kind: OptimizedCvHeaderContactKind }) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      width="12"
+      height="12"
+      aria-hidden="true"
+      focusable="false"
+      className="mt-0.5 shrink-0 text-muted"
+    >
+      {OPTIMIZED_CV_HEADER_ICON_PATHS[kind].map((d) => (
+        <path key={d} d={d} fill="currentColor" />
+      ))}
+    </svg>
+  );
+}
+
+function HeaderContactRow({
+  items,
+  row,
+}: {
+  items: OptimizedCvHeaderContactItem[];
+  row: "phone-email" | "location-linkedin" | "website";
+}) {
+  if (items.length === 0) return null;
+
+  return (
+    <div
+      className="mt-1.5 flex flex-wrap items-start gap-x-5 gap-y-1"
+      data-cv-header-row={row}
+    >
+      {items.map((item) => (
+        <span
+          key={item.kind}
+          className="inline-flex min-w-0 max-w-full items-start gap-1.5 text-sm leading-5 text-muted"
+          data-field={item.kind}
+          tabIndex={-1}
+        >
+          <HeaderContactIcon kind={item.kind} />
+          <span className="min-w-0 break-all">{item.value}</span>
+        </span>
+      ))}
+    </div>
+  );
+}
+
 function DocumentHeader({
   cv,
   isEditing,
@@ -244,40 +297,40 @@ function DocumentHeader({
   cv: OptimizedCv;
   isEditing: boolean;
 }) {
-  const contactItems = [
-    { key: "email", value: cv.email },
-    { key: "phone", value: cv.phone },
-    { key: "location", value: cv.location },
-    { key: "linkedin", value: cv.linkedin },
-    { key: "portfolio", value: cv.portfolio },
-  ].filter((item) => hasText(item.value));
+  const header = buildOptimizedCvHeaderModel(cv);
 
   const content = (
-    <>
+    <div className="w-full" data-cv-header-identity>
       <p
         className="text-2xl font-bold tracking-tight text-ink"
         data-field="fullName"
         tabIndex={-1}
       >
-        {cv.fullName}
+        {header.fullName}
       </p>
-      {contactItems.length > 0 ? (
-        <p className="mt-2 text-sm leading-6 text-muted">
-          {contactItems.map((item, index) => (
-            <span key={item.key}>
-              {index > 0 ? " · " : null}
-              <span data-field={item.key} tabIndex={-1}>
-                {item.value}
-              </span>
-            </span>
-          ))}
+      {header.professionalTitle ? (
+        <p
+          className="mt-1 text-sm font-medium text-ink"
+          data-field="professionalTitle"
+          tabIndex={-1}
+        >
+          {header.professionalTitle}
         </p>
       ) : null}
-    </>
+      <HeaderContactRow items={header.phoneEmail} row="phone-email" />
+      <HeaderContactRow
+        items={header.locationLinkedin}
+        row="location-linkedin"
+      />
+      <HeaderContactRow
+        items={header.website ? [header.website] : []}
+        row="website"
+      />
+    </div>
   );
 
   return (
-    <header>
+    <header className="w-full" data-cv-header>
       {isEditing ? <ReadOnlyValue>{content}</ReadOnlyValue> : content}
     </header>
   );

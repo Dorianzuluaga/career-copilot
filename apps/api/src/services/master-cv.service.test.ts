@@ -10,11 +10,12 @@ import { MasterCvError, validateMasterCvInput } from "./master-cv.service.js";
 
 const validInput = {
   fullName: "Taylor Smith",
+  professionalTitle: null,
   email: "taylor@example.com",
   phone: null,
   location: null,
   linkedin: null,
-  portfolio: null,
+  website: null,
   professionalSummary: "Software engineer",
   experience: [
     {
@@ -152,7 +153,7 @@ describe("validateMasterCvInput", () => {
       ...validInput,
       phone: "+1 555 0100",
       linkedin: "linkedin.com/in/taylor",
-      portfolio: "https://example.com",
+      website: "https://example.com",
       experience: [
         {
           ...validInput.experience[0],
@@ -171,7 +172,29 @@ describe("validateMasterCvInput", () => {
 
     expect(result.phone).toBe("+1 555 0100");
     expect(result.linkedin).toBe("linkedin.com/in/taylor");
+    expect(result.website).toBe("https://example.com");
     expect(result.experience[0].startDate).toBe("2020-01");
     expect(result.education[0].startDate).toBe("2016");
+  });
+
+  it("persists optional professional title and rejects an invalid website URL", () => {
+    expect(
+      validateMasterCvInput({
+        ...validInput,
+        professionalTitle: "  Full Stack Developer  ",
+      }).professionalTitle,
+    ).toBe("Full Stack Developer");
+    expect(
+      validateMasterCvInput({
+        ...validInput,
+        professionalTitle: "   ",
+      }).professionalTitle,
+    ).toBeNull();
+    expect(() =>
+      validateMasterCvInput({
+        ...validInput,
+        website: "javascript:alert(1)",
+      }),
+    ).toThrow("website must be a valid URL.");
   });
 });

@@ -1,7 +1,21 @@
-import { Document, Page, StyleSheet, Text, View } from "@react-pdf/renderer";
+import {
+  Document,
+  Page,
+  Path,
+  StyleSheet,
+  Svg,
+  Text,
+  View,
+} from "@react-pdf/renderer";
 import type { ReactNode } from "react";
 import type { OptimizedCv } from "../types/optimized-cv.js";
 import { formatDateRange, hasText } from "./document-helpers.js";
+import {
+  buildOptimizedCvHeaderModel,
+  OPTIMIZED_CV_HEADER_ICON_PATHS,
+  type OptimizedCvHeaderContactKind,
+  type OptimizedCvHeaderContactItem,
+} from "./optimized-cv-header.js";
 
 const styles = StyleSheet.create({
   page: {
@@ -14,16 +28,43 @@ const styles = StyleSheet.create({
   },
   header: {
     marginBottom: 16,
+    width: "100%",
+  },
+  identity: {
+    width: "100%",
   },
   name: {
     fontSize: 20,
     fontFamily: "Helvetica-Bold",
     color: "#020617",
   },
-  contact: {
+  professionalTitle: {
+    marginTop: 4,
+    fontSize: 11,
+    color: "#334155",
+  },
+  contactRow: {
     marginTop: 6,
+    flexDirection: "row",
+    flexWrap: "wrap",
+    alignItems: "flex-start",
+    gap: 12,
+  },
+  contactItem: {
+    flexDirection: "row",
+    flexWrap: "nowrap",
+    alignItems: "flex-start",
+    maxWidth: "100%",
+    flexShrink: 1,
+  },
+  contactIcon: {
+    marginRight: 4,
+    marginTop: 1,
+  },
+  contactValue: {
     fontSize: 9,
     color: "#475569",
+    flexShrink: 1,
   },
   columns: {
     flexDirection: "row",
@@ -121,14 +162,37 @@ function Section({
   );
 }
 
+function HeaderContactIcon({ kind }: { kind: OptimizedCvHeaderContactKind }) {
+  return (
+    <Svg viewBox="0 0 24 24" width={9} height={9} style={styles.contactIcon}>
+      {OPTIMIZED_CV_HEADER_ICON_PATHS[kind].map((d) => (
+        <Path key={d} d={d} fill="#475569" />
+      ))}
+    </Svg>
+  );
+}
+
+function HeaderContactRow({
+  items,
+}: {
+  items: OptimizedCvHeaderContactItem[];
+}) {
+  if (items.length === 0) return null;
+
+  return (
+    <View style={styles.contactRow}>
+      {items.map((item) => (
+        <View key={item.kind} style={styles.contactItem}>
+          <HeaderContactIcon kind={item.kind} />
+          <Text style={styles.contactValue}>{item.value}</Text>
+        </View>
+      ))}
+    </View>
+  );
+}
+
 export function OptimizedCvPdfDocument({ cv }: { cv: OptimizedCv }) {
-  const contactDetails = [
-    cv.email,
-    cv.phone,
-    cv.location,
-    cv.linkedin,
-    cv.portfolio,
-  ].filter(hasText);
+  const header = buildOptimizedCvHeaderModel(cv);
   const showProfessionalSummary = hasText(cv.professionalSummary);
   const showExperience = cv.experience.length > 0;
   const showEducation = cv.education.length > 0;
@@ -167,10 +231,17 @@ export function OptimizedCvPdfDocument({ cv }: { cv: OptimizedCv }) {
     <Document>
       <Page size="A4" style={styles.page}>
         <View style={styles.header}>
-          <Text style={styles.name}>{cv.fullName}</Text>
-          {contactDetails.length > 0 ? (
-            <Text style={styles.contact}>{contactDetails.join(" · ")}</Text>
-          ) : null}
+          <View style={styles.identity}>
+            <Text style={styles.name}>{header.fullName}</Text>
+            {header.professionalTitle ? (
+              <Text style={styles.professionalTitle}>
+                {header.professionalTitle}
+              </Text>
+            ) : null}
+            <HeaderContactRow items={header.phoneEmail} />
+            <HeaderContactRow items={header.locationLinkedin} />
+            <HeaderContactRow items={header.website ? [header.website] : []} />
+          </View>
         </View>
 
         {showLeft || showRight ? (

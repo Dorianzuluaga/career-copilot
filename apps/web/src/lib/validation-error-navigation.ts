@@ -2,10 +2,11 @@ import { hasFieldErrors, type FieldErrors } from "./field-validation";
 
 const FIELD_LABELS: Record<string, string> = {
   fullName: "Full name",
+  professionalTitle: "Professional title",
   email: "Email",
   phone: "Phone",
   linkedin: "LinkedIn",
-  portfolio: "Portfolio",
+  website: "Website or professional profile",
   professionalSummary: "Professional summary",
   skills: "Skills",
   companyName: "Company name",

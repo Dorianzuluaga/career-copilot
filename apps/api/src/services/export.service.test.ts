@@ -76,11 +76,12 @@ const userId = "4e9c843b-5c3d-4e65-8514-7de898b2aca6";
 
 const optimizedCv = {
   fullName: "Taylor Smith",
+  professionalTitle: null,
   email: "taylor@example.com",
   phone: null,
   location: null,
   linkedin: null,
-  portfolio: null,
+  website: null,
   professionalSummary: "Summary",
   experience: [],
   education: [],
@@ -157,6 +158,11 @@ describe("exportApplicationDocument", () => {
     );
 
     expect(result.filename).toBe("juan-perez_full-stack-developer_cv.pdf");
+    expect(renderDocument).toHaveBeenCalledWith(
+      { type: "optimized-cv", data: optimizedCv },
+      "pdf",
+    );
+    expect(optimizedCv.professionalTitle).toBeNull();
   });
 
   it("renders a cover letter PDF with the Master CV candidate name", async () => {

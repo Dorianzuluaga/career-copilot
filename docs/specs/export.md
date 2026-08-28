@@ -87,6 +87,8 @@ The preview must:
 
 The preview is rendered directly from the saved application documents.
 
+The Optimized CV header rendered by Export follows `docs/specs/master-cv-personal-information.md`. Export still must not read Master CV Personal Information to fill the document body. Filename ownership of `professionalTitle` remains on the Master CV.
+
 The preview never renders or downloads PDF files.
 
 No editing.
@@ -240,6 +242,10 @@ PDF generation must:
 - Match the preview shown to the user.
 - Preserve document formatting.
 - Produce professional printable documents.
+- Render the Optimized CV header from the saved Optimized CV according to `docs/specs/master-cv-personal-information.md`.
+- Never read Master CV Personal Information to fill the Optimized CV or Cover Letter document body.
+
+`professionalTitle` used in Optimized CV filenames remains owned by the Master CV.
 
 PDF rendering is performed exclusively by the backend through the reusable document rendering service.
 

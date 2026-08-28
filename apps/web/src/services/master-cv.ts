@@ -11,11 +11,12 @@ export function masterCvInputFromExtraction(
 ): MasterCvInput {
   return {
     fullName: extraction.personalInformation.fullName ?? "",
+    professionalTitle: extraction.personalInformation.professionalTitle,
     email: extraction.personalInformation.email ?? "",
     phone: extraction.personalInformation.phone,
     location: extraction.personalInformation.location,
     linkedin: extraction.personalInformation.linkedin,
-    portfolio: extraction.personalInformation.portfolio,
+    website: extraction.personalInformation.website,
     professionalSummary: extraction.professionalSummary ?? "",
     experience: extraction.experience,
     education: extraction.education,

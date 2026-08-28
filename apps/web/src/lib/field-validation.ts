@@ -143,13 +143,7 @@ export function getMasterCvFieldErrors(input: MasterCvInput): FieldErrors {
   }
   addOptionalFormatError(errors, "phone", input.phone, isValidPhone, "phone");
   addOptionalFormatError(errors, "linkedin", input.linkedin, isValidUrl, "URL");
-  addOptionalFormatError(
-    errors,
-    "portfolio",
-    input.portfolio,
-    isValidUrl,
-    "URL",
-  );
+  addOptionalFormatError(errors, "website", input.website, isValidUrl, "URL");
   if (!input.professionalSummary.trim()) {
     errors.professionalSummary = "Professional summary is required.";
   }

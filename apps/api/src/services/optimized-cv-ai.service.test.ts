@@ -21,11 +21,12 @@ const originalApiKey = process.env.OPENAI_API_KEY;
 const input: OptimizedCvGenerationInput = {
   masterCv: {
     fullName: "Taylor Smith",
+    professionalTitle: null,
     email: "taylor@example.com",
     phone: null,
     location: "Berlin",
     linkedin: null,
-    portfolio: null,
+    website: null,
     professionalSummary: "Software engineer building web APIs.",
     experience: [
       {
@@ -172,11 +173,12 @@ describe("enforceMasterCvIntegrity", () => {
 
     expect(enforceMasterCvIntegrity(input.masterCv, generated)).toEqual({
       fullName: "Taylor Smith",
+      professionalTitle: null,
       email: "taylor@example.com",
       phone: null,
       location: "Berlin",
       linkedin: null,
-      portfolio: null,
+      website: null,
       professionalSummary: "TypeScript engineer focused on REST APIs.",
       experience: [
         {
@@ -278,6 +280,38 @@ describe("enforceMasterCvIntegrity", () => {
       }).personalProjects,
     ).toEqual([]);
   });
+
+  it("copies professionalTitle and website from the Master CV", () => {
+    const masterCv = {
+      ...input.masterCv,
+      professionalTitle: "Software Engineer",
+      website: "https://example.com/old-portfolio",
+    };
+
+    expect(
+      enforceMasterCvIntegrity(masterCv, {
+        ...masterCv,
+        professionalTitle: "Invented Title",
+        website: "https://invented.example.com",
+      }),
+    ).toMatchObject({
+      professionalTitle: "Software Engineer",
+      website: "https://example.com/old-portfolio",
+    });
+  });
+
+  it("keeps empty professionalTitle and website empty when the Master CV has none", () => {
+    expect(
+      enforceMasterCvIntegrity(input.masterCv, {
+        ...input.masterCv,
+        professionalTitle: "Invented Title",
+        website: "https://invented.example.com",
+      }),
+    ).toMatchObject({
+      professionalTitle: null,
+      website: null,
+    });
+  });
 });
 
 describe("generateOptimizedCvDraft", () => {
@@ -340,6 +374,9 @@ describe("generateOptimizedCvDraft", () => {
     const prompt = createResponse.mock.calls[0][0].input[0].content[0]
       .text as string;
     expect(prompt).toContain("single A4 page");
+    expect(prompt).toContain(
+      "Do not invent a professional title or website. Do not replace Master CV personal information, including professionalTitle and website.",
+    );
     expect(prompt).toContain("one-page fit");
     expect(prompt).toContain("3-4 bullets");
     expect(prompt).toContain(

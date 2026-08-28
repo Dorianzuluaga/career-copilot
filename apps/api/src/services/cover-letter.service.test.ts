@@ -73,11 +73,12 @@ const userId = "4e9c843b-5c3d-4e65-8514-7de898b2aca6";
 
 const masterCv = {
   fullName: "Taylor Smith",
+  professionalTitle: null,
   email: "taylor@example.com",
   phone: "+1 555 0100",
   location: "Berlin",
   linkedin: null,
-  portfolio: null,
+  website: null,
   professionalSummary: "Software engineer",
   experience: [
     {

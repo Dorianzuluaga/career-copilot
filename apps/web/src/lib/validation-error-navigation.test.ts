@@ -10,6 +10,8 @@ import {
 describe("getFieldLabel", () => {
   it("uses readable names for identity and nested collection fields", () => {
     expect(getFieldLabel("phone")).toBe("Phone");
+    expect(getFieldLabel("professionalTitle")).toBe("Professional title");
+    expect(getFieldLabel("website")).toBe("Website or professional profile");
     expect(getFieldLabel("jobUrl")).toBe("Job URL");
     expect(getFieldLabel("experience.0.startDate")).toBe(
       "Experience 1 start date",
@@ -54,12 +56,12 @@ describe("getValidationToastMessage", () => {
       getValidationToastMessage({
         phone: "Enter a valid phone number.",
         linkedin: "Enter a valid URL.",
-        portfolio: "Enter a valid URL.",
+        website: "Enter a valid URL.",
         "experience.0.startDate": "Enter a valid date.",
         "education.0.endDate": "Enter a valid date.",
       }),
     ).toBe(
-      "Changes could not be saved. Phone, LinkedIn, Portfolio, and 2 more fields have validation errors.",
+      "Changes could not be saved. Phone, LinkedIn, Website or professional profile, and 2 more fields have validation errors.",
     );
   });
 
@@ -80,11 +82,12 @@ describe("firstInvalidFieldKey", () => {
   it("moves to the next remaining Master CV field after the first error is fixed", () => {
     const errors = getMasterCvFieldErrors({
       fullName: "Taylor Smith",
+      professionalTitle: null,
       email: "taylor@example.com",
       phone: "abc",
       location: null,
       linkedin: "not a url",
-      portfolio: null,
+      website: null,
       professionalSummary: "Software engineer",
       experience: [],
       education: [],
