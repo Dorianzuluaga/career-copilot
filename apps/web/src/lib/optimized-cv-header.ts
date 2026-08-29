@@ -12,6 +12,7 @@ export type OptimizedCvHeaderModel = {
   phoneEmail: OptimizedCvHeaderContactItem[];
   locationLinkedin: OptimizedCvHeaderContactItem[];
   website: OptimizedCvHeaderContactItem | null;
+  photo: { assetId: string; positionX: number; positionY: number } | null;
 };
 
 export type OptimizedCvHeaderInput = {
@@ -22,7 +23,53 @@ export type OptimizedCvHeaderInput = {
   location?: string | null;
   linkedin?: string | null;
   website?: string | null;
+  profilePhotoAssetId?: string | null;
+  profilePhotoPositionX?: number | null;
+  profilePhotoPositionY?: number | null;
 };
+
+export const OPTIMIZED_CV_HEADER_PDF_PHOTO_SIZE = 84;
+export const OPTIMIZED_CV_HEADER_PDF_PHOTO_TRAILING_INSET = 50;
+export const OPTIMIZED_CV_HEADER_PREVIEW_PHOTO_LEFT_SHIFT = 4;
+export const OPTIMIZED_CV_HEADER_PHOTO_VIGNETTE_START = 125;
+export const OPTIMIZED_CV_HEADER_PHOTO_VIGNETTE_MIDPOINT = 130;
+export const OPTIMIZED_CV_HEADER_PHOTO_VIGNETTE_MIDPOINT_OPACITY = 0.05;
+export const OPTIMIZED_CV_HEADER_PHOTO_VIGNETTE_EDGE_OPACITY = 0.99;
+export const CSS_PIXELS_PER_PDF_POINT = 96 / 72;
+export const OPTIMIZED_CV_HEADER_PHOTO_SIZE =
+  OPTIMIZED_CV_HEADER_PDF_PHOTO_SIZE * CSS_PIXELS_PER_PDF_POINT;
+export const OPTIMIZED_CV_HEADER_PHOTO_TRAILING_INSET =
+  OPTIMIZED_CV_HEADER_PDF_PHOTO_TRAILING_INSET * CSS_PIXELS_PER_PDF_POINT +
+  OPTIMIZED_CV_HEADER_PREVIEW_PHOTO_LEFT_SHIFT;
+export const OPTIMIZED_CV_HEADER_PHOTO_DEFAULT_POSITION = 50;
+
+export function getOptimizedCvHeaderPhotoFrameStyle() {
+  return {
+    width: OPTIMIZED_CV_HEADER_PHOTO_SIZE,
+    height: OPTIMIZED_CV_HEADER_PHOTO_SIZE,
+    marginRight: OPTIMIZED_CV_HEADER_PHOTO_TRAILING_INSET,
+    position: "relative" as const,
+  };
+}
+
+export function getOptimizedCvHeaderPhotoImageStyle(
+  photo: NonNullable<OptimizedCvHeaderModel["photo"]>,
+) {
+  return {
+    width: "100%",
+    height: "100%",
+    objectPosition: `${photo.positionX}% ${photo.positionY}%`,
+  };
+}
+
+export function getOptimizedCvHeaderPhotoEdgeMaskStyle() {
+  const maskImage = `radial-gradient(circle closest-side at center, rgb(0 0 0 / 1) ${OPTIMIZED_CV_HEADER_PHOTO_VIGNETTE_START}%, rgb(0 0 0 / ${1 - OPTIMIZED_CV_HEADER_PHOTO_VIGNETTE_MIDPOINT_OPACITY}) ${OPTIMIZED_CV_HEADER_PHOTO_VIGNETTE_MIDPOINT}%, rgb(0 0 0 / ${1 - OPTIMIZED_CV_HEADER_PHOTO_VIGNETTE_EDGE_OPACITY}) 100%)`;
+
+  return {
+    maskImage,
+    WebkitMaskImage: maskImage,
+  };
+}
 
 export function hasHeaderText(
   value: string | null | undefined,
@@ -37,9 +84,16 @@ function contactItem(
   return hasHeaderText(value) ? { kind, value } : null;
 }
 
+function photoPosition(value: number | null | undefined): number {
+  return Number.isInteger(value) && value! >= 0 && value! <= 100
+    ? value!
+    : OPTIMIZED_CV_HEADER_PHOTO_DEFAULT_POSITION;
+}
+
 export function buildOptimizedCvHeaderModel(
   cv: OptimizedCvHeaderInput,
 ): OptimizedCvHeaderModel {
+  const assetId = cv.profilePhotoAssetId;
   return {
     fullName: cv.fullName,
     professionalTitle: hasHeaderText(cv.professionalTitle)
@@ -54,6 +108,14 @@ export function buildOptimizedCvHeaderModel(
       contactItem("linkedin", cv.linkedin),
     ].filter((item): item is OptimizedCvHeaderContactItem => item !== null),
     website: contactItem("website", cv.website),
+    photo:
+      typeof assetId === "string" && assetId.trim().length > 0
+        ? {
+            assetId,
+            positionX: photoPosition(cv.profilePhotoPositionX),
+            positionY: photoPosition(cv.profilePhotoPositionY),
+          }
+        : null,
   };
 }
 

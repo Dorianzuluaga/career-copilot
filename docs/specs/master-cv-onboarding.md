@@ -109,6 +109,7 @@ Rules:
 - If no Personal Projects are present in the uploaded CV, return an empty `personalProjects` array.
 - Preserve the order in which Experience, Education, and Personal Projects are identified in the source document.
 - Do not create Personal Projects that are not supported by the uploaded CV.
+- Do not extract, attach, or invent a profile photo. The extraction object has no photo field. Profile photo is user-uploaded and is specified in `docs/specs/master-cv-profile-photo.md`.
 
 ## Manual Flow
 
@@ -214,6 +215,7 @@ Required fields:
 Optional fields:
 
 - Professional Title
+- Profile Photo
 - Phone
 - Location
 - LinkedIn
@@ -222,6 +224,8 @@ Optional fields:
 - Languages
 - Certifications
 - Personal Projects
+
+Profile photo is optional, user-uploaded, and never extracted from an uploaded CV. Upload, replace, remove, storage, and snapshot behavior are specified in `docs/specs/master-cv-profile-photo.md`.
 
 Only one Master CV exists per authenticated user.
 
@@ -232,6 +236,8 @@ POST   /api/master-cv
 PUT    /api/master-cv
 
 POST   /api/master-cv/upload
+
+Profile photo routes are specified in `docs/specs/master-cv-profile-photo.md`. `POST /api/master-cv/upload` remains PDF extraction only and must not store a photo.
 
 There is No /parse endpoint.
 
@@ -274,6 +280,7 @@ The order of Experience, Education, and Personal Projects is persisted as part o
 - Never trust client userId.
 - One Master CV per authenticated user.
 - Uploaded PDFs are processed temporarily and deleted immediately.
+- Profile photo objects are private and are specified in `docs/specs/master-cv-profile-photo.md`.
 
 ## Routing
 
@@ -336,6 +343,7 @@ Do not implement:
 - Personal Projects are persisted as part of the Master CV.
 - Uploaded CVs can populate Personal Projects when projects are explicitly present in the source document.
 - The AI must not invent Personal Projects.
+- Uploaded CVs must not populate a profile photo.
 
 ### Ordering
 

@@ -42,6 +42,8 @@ This specification extends:
 - `docs/specs/optimized-cv.md`
 - `docs/specs/export.md`
 
+Profile photo upload, storage, snapshot, and rendering are specified in `docs/specs/master-cv-profile-photo.md`. This specification remains the source of truth for identity fields, contact rows, and header content order.
+
 Preserve those documents' terminology and architecture:
 
 - Master CV is the single source of truth.
@@ -89,8 +91,8 @@ Load only:
 
 1. User opens the Master CV editor (onboarding or existing-user editor).
 2. User sees Personal Information fields in document order, including optional Professional title and Website or professional profile.
-3. User enters or reviews values. Empty optional fields remain editable in the form.
-4. If the user uploads a CV, extraction may prefill the new fields only when they are present in the source document.
+3. User enters or reviews values. Empty optional fields remain editable in the form. Optional profile photo follows `docs/specs/master-cv-profile-photo.md`.
+4. If the user uploads a CV, extraction may prefill the new fields only when they are present in the source document. Extraction must not extract a photo.
 5. User saves the Master CV.
 6. User generates or regenerates an Optimized CV for an Application Workspace.
 7. The Optimized CV copies Personal Information from the Master CV, including `professionalTitle` and `website`.
@@ -120,6 +122,8 @@ Personal Information belongs to the Master CV and is copied onto each Optimized 
 | `linkedin` | No | string or null | `null` | Unchanged. URL-validated. |
 | `website` | No | string or null | `null` | Replaces `portfolio`. URL-validated. |
 
+Profile photo is not a string Personal Information field in this table. It is specified in `docs/specs/master-cv-profile-photo.md`.
+
 The public JSON and API shape uses `website`. After this change, `portfolio` is not a field name.
 
 The Optimized CV continues to use the Master CV input shape. Adding these fields to the Master CV adds them to the Optimized CV.
@@ -135,6 +139,7 @@ Required Master CV fields remain:
 Optional Master CV fields become:
 
 - Professional Title
+- Profile Photo (specified in `docs/specs/master-cv-profile-photo.md`)
 - Phone
 - Location
 - LinkedIn
@@ -238,7 +243,7 @@ Filenames already specified in the Export specification become able to include `
 - Preview and PDF use the same structural order.
 - Optional header fields, icons, and rows are omitted when the corresponding value is empty.
 - Cover Letter preview and PDF headers remain unchanged.
-- No photo is uploaded, stored, or rendered.
+- Profile photo behavior is defined in `docs/specs/master-cv-profile-photo.md`.
 - Application business logic outside the Master CV Personal Information data flow remains unchanged.
 
 ---
@@ -293,10 +298,10 @@ Do not model a list of social links.
 
 ## Optimized CV Header
 
-The header is identity content only in this phase. Structure it as a horizontal header row that can accept a future photo sibling without redesigning the identity block:
+Structure the header as a horizontal header row with an identity block and an optional photo sibling:
 
-- Identity block: grows to use available width. It contains name, professional title, and contact rows. It is the only rendered header child in this phase.
-- Photo region: not rendered. Do not draw an empty photo box, spacer, or reserved column.
+- Identity block: grows to use remaining width. It contains name, professional title, and contact rows.
+- Photo sibling: presence, storage, and rendering are defined in `docs/specs/master-cv-profile-photo.md`. When the Optimized CV snapshot has no photo, do not draw an empty photo box, spacer, or reserved column.
 
 Identity content order:
 
@@ -369,7 +374,7 @@ Presence rules:
 
 If a field is empty, its icon is not rendered.
 
-The identity block must occupy the full header width while no photo is rendered.
+The identity block must occupy the full header width when no photo is rendered.
 
 Body sections, columns, typography outside the header, and page layout remain unchanged except as required to attach this header.
 
@@ -510,7 +515,7 @@ Context requirements: extract only what the source document contains.
 
 Validation rules: unknown values are `null`. Never invent a professional title or website.
 
-Token optimization: do not add a list of social networks or photo-related fields to the extraction contract.
+Token optimization: do not add a list of social networks or photo-related fields to the extraction contract. Profile photo is user-uploaded and is specified in `docs/specs/master-cv-profile-photo.md`.
 
 ---
 
@@ -672,25 +677,25 @@ Then the header remains candidate name, email and phone, date, and company name 
 
 And it does not show professional title, location, LinkedIn, website, or contact icons.
 
-### AC16 — No photo
+### AC16 — Empty photo occupies no space
 
-Given any Master CV or Optimized CV
+Given an Optimized CV snapshot with no photo
 
-When the user edits, previews, or exports
+When preview or PDF is rendered
 
-Then no photo upload control or photo rendering is present
+Then the header does not reserve an empty photo box, spacer, or reserved column
 
-And the header does not reserve an empty photo box.
+And the identity block uses the full header width.
 
-### AC17 — Future photo structure
+Photo upload, snapshot, and rendering when a photo is present are specified in `docs/specs/master-cv-profile-photo.md`.
 
-Given the Optimized CV header with no photo
+### AC17 — Photo sibling does not change identity order
 
-When it is rendered
+Given the Optimized CV header
 
-Then the identity block is the only header child and uses the available header width
+When a photo sibling is present or omitted according to `docs/specs/master-cv-profile-photo.md`
 
-And the layout can accept a future fixed-size photo sibling without changing the identity content order.
+Then the identity content order defined in this specification does not change.
 
 ### AC18 — Export filename fallback
 
@@ -756,7 +761,7 @@ Use existing document-rendering tests and Optimized CV preview markup tests. Thi
 
 Do not implement:
 
-- Photo upload, storage, cropping, or rendering
+- Photo behavior other than the header layout contracts in AC16 and AC17. Photo upload, storage, snapshot, and rendering are specified in `docs/specs/master-cv-profile-photo.md`
 - An empty photo placeholder
 - Multiple websites or a list of social links
 - Merging LinkedIn into `website`
@@ -786,6 +791,7 @@ Do not implement:
 - `docs/product/07-optimized-cv.md`
 - `docs/product/09-export.md`
 - `docs/specs/master-cv-onboarding.md`
+- `docs/specs/master-cv-profile-photo.md`
 - `docs/specs/optimized-cv.md`
 - `docs/specs/export.md`
 - `docs/specs/cover-letter.md`
@@ -829,4 +835,4 @@ State that those fields remain protected Master CV information and are copied du
 
 Keep filename ownership of `professionalTitle` on the Master CV.
 
-Note that the Optimized CV header rendered by Export follows this specification, and that Export still must not read Master CV Personal Information to fill the document body.
+Note that the Optimized CV header rendered by Export follows this specification for identity content, and `docs/specs/master-cv-profile-photo.md` for the photo sibling. Export still must not read Master CV Personal Information to fill the document body.

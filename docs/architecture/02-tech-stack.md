@@ -10,7 +10,7 @@
 | Version      | 1.0.0                                         |
 | Status       | Draft                                         |
 | Owner        | Dorian Zuluaga                                |
-| Last Updated | 2026-07-18                                    |
+| Last Updated | 2026-08-28                                    |
 
 ---
 
@@ -268,14 +268,47 @@ Used for:
 
 **Role**
 
-Frontend, API, and PostgreSQL hosting.
+Frontend, API, PostgreSQL, and private object storage hosting.
 
 **Why**
 
 - Hosts the full production stack in one platform.
 - PostgreSQL support.
+- Private S3-compatible Buckets for CV photos.
 - Automatic deployments.
 - Developer-friendly workflow.
+
+---
+
+# Object Storage
+
+## Railway Buckets
+
+**Role**
+
+Private object storage for Master CV and Optimized CV profile photos.
+
+**Why**
+
+- Already on the production platform.
+- Private by default. Public buckets are not supported.
+- S3-compatible Put, Get, Copy, Delete, and List.
+- Persistent storage independent of the API container disk.
+
+The browser never reads or writes the bucket. The API is the only client. PostgreSQL stores object keys, not image bytes.
+
+Firebase Authentication remains the identity provider. Firebase Storage is not used.
+
+**Alternatives Considered**
+
+- Firebase Storage
+- Cloudflare R2
+- PostgreSQL BYTEA
+- Railway Volumes
+
+**Trade-offs**
+
+Bucket credentials are server-only. Preview and PDF read authenticated bytes through the API. Signed URLs are out of scope for V1.
 
 ---
 

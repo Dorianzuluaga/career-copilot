@@ -8,6 +8,7 @@ import {
   getMasterCv,
   masterCvInputFromExtraction,
   uploadMasterCv,
+  uploadMasterCvPhoto,
 } from "../services/master-cv";
 import type { MasterCvInput } from "../types/master-cv";
 
@@ -40,6 +41,7 @@ export function MasterCvOnboardingPage() {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [isMasterCvCreated, setIsMasterCvCreated] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [saveError, setSaveError] = useState<string | null>(null);
 
@@ -76,11 +78,31 @@ export function MasterCvOnboardingPage() {
     }
   }
 
-  async function handleSave(input: MasterCvInput) {
+  async function handleSave(
+    input: MasterCvInput,
+    pendingPhoto: File | null,
+    pendingPhotoPositionX: number | null,
+    pendingPhotoPositionY: number | null,
+  ) {
     setSaveError(null);
     setIsSaving(true);
     try {
-      await createMasterCv(input);
+      if (!isMasterCvCreated) {
+        await createMasterCv(input);
+        setIsMasterCvCreated(true);
+      }
+      if (pendingPhoto) {
+        try {
+          await uploadMasterCvPhoto(
+            pendingPhoto,
+            pendingPhotoPositionX ?? 50,
+            pendingPhotoPositionY ?? 50,
+          );
+        } catch {
+          setSaveError(t("masterCv.validation.photoUploadFailed"));
+          return;
+        }
+      }
       navigate("/dashboard", { replace: true });
     } catch (error) {
       setSaveError(
@@ -225,6 +247,7 @@ export function MasterCvOnboardingPage() {
         submitLabel={t("masterCv.onboarding.save")}
         isSaving={isSaving}
         errorMessage={saveError}
+        photoPersistence={isMasterCvCreated ? "immediate" : "deferred"}
         onSubmit={handleSave}
       />
     </section>

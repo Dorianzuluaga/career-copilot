@@ -34,3 +34,30 @@ export function updateMasterCv(userId: string, input: MasterCvInput) {
     data: toData(input),
   });
 }
+
+export function updateMasterCvProfilePhoto(
+  userId: string,
+  profilePhotoObjectKey: string | null,
+  profilePhotoPositionX: number | null,
+  profilePhotoPositionY: number | null,
+) {
+  return prisma.masterCv.update({
+    where: { userId },
+    data: {
+      profilePhotoObjectKey,
+      profilePhotoPositionX,
+      profilePhotoPositionY,
+    },
+  });
+}
+
+export function updateMasterCvProfilePhotoPosition(
+  userId: string,
+  profilePhotoPositionX: number,
+  profilePhotoPositionY: number,
+) {
+  return prisma.masterCv.update({
+    where: { userId },
+    data: { profilePhotoPositionX, profilePhotoPositionY },
+  });
+}

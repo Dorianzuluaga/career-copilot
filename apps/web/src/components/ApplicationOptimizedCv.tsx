@@ -1,6 +1,7 @@
 import { useState, type ReactNode } from "react";
 import { ValidationToast } from "./ValidationToast";
 import type { LocaleContextValue } from "../context/locale-context";
+import { useAuthenticatedImage } from "../hooks/useAuthenticatedImage";
 import { useLocale } from "../hooks/useLocale";
 import { useSaveValidationFeedback } from "../hooks/useSaveValidationFeedback";
 import type { TranslationKey } from "../i18n/messages";
@@ -10,6 +11,9 @@ import {
 } from "../lib/field-validation";
 import {
   buildOptimizedCvHeaderModel,
+  getOptimizedCvHeaderPhotoEdgeMaskStyle,
+  getOptimizedCvHeaderPhotoFrameStyle,
+  getOptimizedCvHeaderPhotoImageStyle,
   OPTIMIZED_CV_HEADER_ICON_PATHS,
   type OptimizedCvHeaderContactKind,
   type OptimizedCvHeaderContactItem,
@@ -22,10 +26,12 @@ import type {
   PersonalProjectItem,
 } from "../types/master-cv";
 import type { OptimizedCv } from "../types/optimized-cv";
+import { optimizedCvPhotoUrl } from "../services/optimized-cv";
 
 type Translate = LocaleContextValue["t"];
 
 interface ApplicationOptimizedCvProps {
+  applicationId?: string;
   errorMessage: string | null;
   initialIsEditing?: boolean;
   isLoading: boolean;
@@ -293,14 +299,23 @@ function HeaderContactRow({
 function DocumentHeader({
   cv,
   isEditing,
+  applicationId,
 }: {
   cv: OptimizedCv;
   isEditing: boolean;
+  applicationId?: string;
 }) {
+  const { t } = useLocale();
   const header = buildOptimizedCvHeaderModel(cv);
+  const photoSrc =
+    header.photo && applicationId
+      ? optimizedCvPhotoUrl(applicationId, header.photo.assetId)
+      : null;
+  const { objectUrl: previewSrc, hasError: hasPhotoLoadError } =
+    useAuthenticatedImage(photoSrc);
 
-  const content = (
-    <div className="w-full" data-cv-header-identity>
+  const identity = (
+    <div className="min-w-0 flex-1" data-cv-header-identity>
       <p
         className="text-2xl font-bold tracking-tight text-ink"
         data-field="fullName"
@@ -329,10 +344,43 @@ function DocumentHeader({
     </div>
   );
 
+  const photo =
+    header.photo && previewSrc ? (
+      <div
+        data-cv-header-photo=""
+        className="relative shrink-0 overflow-hidden"
+        style={{
+          ...getOptimizedCvHeaderPhotoFrameStyle(),
+          ...getOptimizedCvHeaderPhotoEdgeMaskStyle(),
+        }}
+      >
+        <img
+          alt={header.fullName}
+          src={previewSrc}
+          className="block object-cover"
+          style={getOptimizedCvHeaderPhotoImageStyle(header.photo)}
+        />
+      </div>
+    ) : null;
+
+  const content = (
+    <>
+      {identity}
+      {photo}
+    </>
+  );
+
   return (
-    <header className="w-full" data-cv-header>
-      {isEditing ? <ReadOnlyValue>{content}</ReadOnlyValue> : content}
-    </header>
+    <>
+      <header className="flex w-full items-start gap-4" data-cv-header>
+        {isEditing ? <ReadOnlyValue>{content}</ReadOnlyValue> : content}
+      </header>
+      {hasPhotoLoadError ? (
+        <p role="alert" className="mt-2 text-sm font-medium text-danger">
+          {t("workspace.photoLoadFailed")}
+        </p>
+      ) : null}
+    </>
   );
 }
 
@@ -789,12 +837,14 @@ export function OptimizedCvDocument({
   masterCvPersonalProjects = [],
   fieldErrors = {},
   onChange,
+  applicationId,
 }: {
   cv: OptimizedCv;
   isEditing?: boolean;
   masterCvPersonalProjects?: PersonalProjectItem[];
   fieldErrors?: FieldErrors;
   onChange?: (optimizedCv: OptimizedCv) => void;
+  applicationId?: string;
 }) {
   const { t } = useLocale();
   const showProfessionalSummary = isEditing || hasText(cv.professionalSummary);
@@ -837,7 +887,11 @@ export function OptimizedCvDocument({
       aria-label={t("optimizedCv.title")}
       className="cc-card cc-document px-6 py-8 sm:px-10 sm:py-10"
     >
-      <DocumentHeader cv={cv} isEditing={isEditing} />
+      <DocumentHeader
+        cv={cv}
+        isEditing={isEditing}
+        applicationId={applicationId}
+      />
 
       {showLeft || showRight ? (
         <div className="mt-6 grid grid-cols-[minmax(0,68fr)_minmax(0,32fr)] items-start gap-x-8 gap-y-6">
@@ -1062,6 +1116,7 @@ export function OptimizedCvDocument({
 }
 
 export function ApplicationOptimizedCv({
+  applicationId,
   errorMessage,
   initialIsEditing = false,
   isLoading,
@@ -1212,6 +1267,7 @@ export function ApplicationOptimizedCv({
           masterCvPersonalProjects={masterCvPersonalProjects}
           fieldErrors={fieldErrors}
           onChange={handleChange}
+          applicationId={applicationId}
         />
       </div>
     );

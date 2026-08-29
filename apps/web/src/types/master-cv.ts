@@ -67,6 +67,9 @@ export interface MasterCv extends MasterCvInput {
   id: string;
   createdAt: string;
   updatedAt: string;
+  profilePhotoAssetId: string | null;
+  profilePhotoPositionX: number | null;
+  profilePhotoPositionY: number | null;
 }
 
 export interface MasterCvExtraction {

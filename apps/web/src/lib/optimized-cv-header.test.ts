@@ -1,8 +1,17 @@
 import { describe, expect, it } from "vitest";
 import {
   buildOptimizedCvHeaderModel,
+  CSS_PIXELS_PER_PDF_POINT,
   getOptimizedCvHeaderStructure,
+  getOptimizedCvHeaderPhotoEdgeMaskStyle,
+  getOptimizedCvHeaderPhotoFrameStyle,
+  getOptimizedCvHeaderPhotoImageStyle,
   OPTIMIZED_CV_HEADER_ICON_PATHS,
+  OPTIMIZED_CV_HEADER_PDF_PHOTO_SIZE,
+  OPTIMIZED_CV_HEADER_PDF_PHOTO_TRAILING_INSET,
+  OPTIMIZED_CV_HEADER_PREVIEW_PHOTO_LEFT_SHIFT,
+  OPTIMIZED_CV_HEADER_PHOTO_SIZE,
+  OPTIMIZED_CV_HEADER_PHOTO_TRAILING_INSET,
 } from "./optimized-cv-header";
 
 const fullHeader = {
@@ -58,6 +67,7 @@ describe("optimized CV header presence rules", () => {
     ]);
     expect(requiredOnly.locationLinkedin).toEqual([]);
     expect(requiredOnly.website).toBeNull();
+    expect(requiredOnly.photo).toBeNull();
   });
 
   it("keeps partial pair rows left-aligned with only the present item", () => {
@@ -93,5 +103,46 @@ describe("optimized CV header presence rules", () => {
     });
     expect(OPTIMIZED_CV_HEADER_ICON_PATHS.website.length).toBeGreaterThan(0);
     expect(OPTIMIZED_CV_HEADER_ICON_PATHS.linkedin.length).toBeGreaterThan(0);
+  });
+
+  it("includes a photo sibling only when a snapshot identifier is present", () => {
+    const empty = buildOptimizedCvHeaderModel(fullHeader);
+    const present = buildOptimizedCvHeaderModel({
+      ...fullHeader,
+      profilePhotoAssetId: "7e9c843b-5c3d-4e65-8514-7de898b2aca6",
+      profilePhotoPositionX: 25,
+      profilePhotoPositionY: 75,
+    });
+
+    expect(empty.photo).toBeNull();
+    expect(present.photo).toEqual({
+      assetId: "7e9c843b-5c3d-4e65-8514-7de898b2aca6",
+      positionX: 25,
+      positionY: 75,
+    });
+    expect(OPTIMIZED_CV_HEADER_PHOTO_SIZE).toBe(
+      OPTIMIZED_CV_HEADER_PDF_PHOTO_SIZE * CSS_PIXELS_PER_PDF_POINT,
+    );
+    expect(OPTIMIZED_CV_HEADER_PHOTO_TRAILING_INSET).toBe(
+      OPTIMIZED_CV_HEADER_PDF_PHOTO_TRAILING_INSET * CSS_PIXELS_PER_PDF_POINT +
+        OPTIMIZED_CV_HEADER_PREVIEW_PHOTO_LEFT_SHIFT,
+    );
+    expect(getOptimizedCvHeaderPhotoFrameStyle()).toEqual({
+      width: 112,
+      height: 112,
+      marginRight: OPTIMIZED_CV_HEADER_PHOTO_TRAILING_INSET,
+      position: "relative",
+    });
+    expect(getOptimizedCvHeaderPhotoImageStyle(present.photo!)).toEqual({
+      width: "100%",
+      height: "100%",
+      objectPosition: "25% 75%",
+    });
+    const maskImage =
+      "radial-gradient(circle closest-side at center, rgb(0 0 0 / 1) 125%, rgb(0 0 0 / 0.95) 130%, rgb(0 0 0 / 0.010000000000000009) 100%)";
+    expect(getOptimizedCvHeaderPhotoEdgeMaskStyle()).toEqual({
+      maskImage,
+      WebkitMaskImage: maskImage,
+    });
   });
 });

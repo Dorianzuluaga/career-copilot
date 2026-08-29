@@ -17,6 +17,7 @@ import {
   createOptimizedCv,
   replaceOptimizedCv,
   showOptimizedCv,
+  showOptimizedCvPhoto,
 } from "../controllers/optimized-cv.controller.js";
 import {
   prepareProfileComparison,
@@ -36,6 +37,7 @@ applicationRouter.post("/:id/job-analysis", createJobAnalysis);
 applicationRouter.post("/:id/profile-comparison", prepareProfileComparison);
 applicationRouter.get("/:id/profile-comparison", showProfileComparison);
 applicationRouter.post("/:id/optimized-cv", createOptimizedCv);
+applicationRouter.get("/:id/optimized-cv/photo", showOptimizedCvPhoto);
 applicationRouter.get("/:id/optimized-cv", showOptimizedCv);
 applicationRouter.put("/:id/optimized-cv", replaceOptimizedCv);
 applicationRouter.post("/:id/cover-letter", createCoverLetter);

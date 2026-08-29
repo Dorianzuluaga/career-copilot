@@ -444,6 +444,7 @@ export function ApplicationWorkspacePage() {
         />
       ) : activeSection === "optimized-cv" ? (
         <ApplicationOptimizedCv
+          applicationId={application.id}
           errorMessage={optimizedCvError}
           isLoading={isGeneratingOptimizedCv}
           isSaving={isSavingOptimizedCv}

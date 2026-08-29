@@ -175,6 +175,11 @@ export function isMasterCvExtraction(
       "linkedin",
       "website",
     ]) &&
+    !("photo" in personal) &&
+    !("profilePhoto" in personal) &&
+    !("profilePhotoObjectKey" in personal) &&
+    !("profilePhotoAssetId" in personal) &&
+    !("photo" in data) &&
     isNullableString(data.professionalSummary) &&
     Array.isArray(data.experience) &&
     data.experience.every(

@@ -7,6 +7,10 @@ vi.mock("../repositories/application.repository.js", () => ({
   findApplicationsByUserId: vi.fn(),
 }));
 
+vi.mock("./master-cv-photo.service.js", () => ({
+  deleteApplicationProfilePhotos: vi.fn(),
+}));
+
 import {
   deleteApplicationByIdForUser,
   findApplicationsByUserId,
@@ -16,12 +20,14 @@ import {
   listApplications,
   removeApplication,
 } from "./application.service.js";
+import { deleteApplicationProfilePhotos } from "./master-cv-photo.service.js";
 
 const applicationId = "8e9c843b-5c3d-4e65-8514-7de898b2aca6";
 const userId = "4e9c843b-5c3d-4e65-8514-7de898b2aca6";
 
 beforeEach(() => {
   vi.clearAllMocks();
+  vi.mocked(deleteApplicationProfilePhotos).mockResolvedValue();
 });
 
 describe("persisted application dashboard operations", () => {
@@ -44,6 +50,10 @@ describe("persisted application dashboard operations", () => {
     expect(deleteApplicationByIdForUser).toHaveBeenCalledWith(
       applicationId,
       userId,
+    );
+    expect(deleteApplicationProfilePhotos).toHaveBeenCalledWith(
+      userId,
+      applicationId,
     );
   });
 

@@ -19,6 +19,11 @@ function stubRequiredEnvironment() {
     "GOOGLE_APPLICATION_CREDENTIALS",
     "/tmp/firebase-service-account.json",
   );
+  vi.stubEnv("BUCKET", "career-copilot-test-bucket");
+  vi.stubEnv("ENDPOINT", "https://storage.railway.app");
+  vi.stubEnv("REGION", "auto");
+  vi.stubEnv("ACCESS_KEY_ID", "test-access-key-id");
+  vi.stubEnv("SECRET_ACCESS_KEY", "test-secret-access-key");
   vi.stubEnv("NODE_ENV", "test");
 }
 
@@ -39,6 +44,28 @@ describe("environment configuration", () => {
     expect(() => validateEnvironment()).toThrow(
       "Missing required API environment variable: DATABASE_URL. Set it in apps/api/.env for local development or in the hosting provider's environment for production.",
     );
+  });
+
+  it.each([
+    "BUCKET",
+    "ENDPOINT",
+    "REGION",
+    "ACCESS_KEY_ID",
+    "SECRET_ACCESS_KEY",
+  ] as const)("rejects startup when %s is missing", (name) => {
+    stubRequiredEnvironment();
+    vi.stubEnv(name, "");
+
+    expect(() => validateEnvironment()).toThrow(
+      `Missing required API environment variable: ${name}. Set it in apps/api/.env for local development or in the hosting provider's environment for production.`,
+    );
+  });
+
+  it("does not require FIREBASE_STORAGE_BUCKET", () => {
+    stubRequiredEnvironment();
+    vi.stubEnv("FIREBASE_STORAGE_BUCKET", "");
+
+    expect(() => validateEnvironment()).not.toThrow();
   });
 
   it("rejects startup when Firebase Admin credentials are missing", () => {

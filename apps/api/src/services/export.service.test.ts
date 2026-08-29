@@ -22,6 +22,7 @@ vi.mock("./optimized-cv.service.js", () => ({
     }
   },
   getOptimizedCv: vi.fn(),
+  readOptimizedCvPhoto: vi.fn(),
 }));
 
 vi.mock("./cover-letter.service.js", () => ({
@@ -69,7 +70,7 @@ import {
   validateExportDocumentType,
 } from "./export.service.js";
 import { getMasterCv } from "./master-cv.service.js";
-import { getOptimizedCv, OptimizedCvError } from "./optimized-cv.service.js";
+import { getOptimizedCv, OptimizedCvError, readOptimizedCvPhoto } from "./optimized-cv.service.js";
 
 const applicationId = "8e9c843b-5c3d-4e65-8514-7de898b2aca6";
 const userId = "4e9c843b-5c3d-4e65-8514-7de898b2aca6";
@@ -135,7 +136,11 @@ describe("exportApplicationDocument", () => {
     expect(getOptimizedCv).toHaveBeenCalledWith(applicationId, userId);
     expect(getCoverLetter).toHaveBeenCalledWith(applicationId, userId);
     expect(renderDocument).toHaveBeenCalledWith(
-      { type: "optimized-cv", data: optimizedCv },
+      {
+        type: "optimized-cv",
+        data: optimizedCv,
+        profilePhotoBytes: null,
+      },
       "pdf",
     );
     expect(result).toEqual({
@@ -159,10 +164,45 @@ describe("exportApplicationDocument", () => {
 
     expect(result.filename).toBe("juan-perez_full-stack-developer_cv.pdf");
     expect(renderDocument).toHaveBeenCalledWith(
-      { type: "optimized-cv", data: optimizedCv },
+      {
+        type: "optimized-cv",
+        data: optimizedCv,
+        profilePhotoBytes: null,
+      },
       "pdf",
     );
     expect(optimizedCv.professionalTitle).toBeNull();
+  });
+
+  it("loads Optimized CV snapshot bytes and does not read the Master CV photo", async () => {
+    const photoBytes = Buffer.from("photo-bytes");
+    vi.mocked(getOptimizedCv).mockResolvedValue({
+      ...optimizedCv,
+      profilePhotoAssetId: "7e9c843b-5c3d-4e65-8514-7de898b2aca6",
+    });
+    vi.mocked(readOptimizedCvPhoto).mockResolvedValue({
+      bytes: photoBytes,
+      contentType: "image/jpeg",
+    });
+
+    await exportApplicationDocument(applicationId, userId, "optimized-cv");
+
+    expect(readOptimizedCvPhoto).toHaveBeenCalledWith(
+      applicationId,
+      userId,
+      "7e9c843b-5c3d-4e65-8514-7de898b2aca6",
+    );
+    expect(renderDocument).toHaveBeenCalledWith(
+      {
+        type: "optimized-cv",
+        data: {
+          ...optimizedCv,
+          profilePhotoAssetId: "7e9c843b-5c3d-4e65-8514-7de898b2aca6",
+        },
+        profilePhotoBytes: photoBytes,
+      },
+      "pdf",
+    );
   });
 
   it("renders a cover letter PDF with the Master CV candidate name", async () => {

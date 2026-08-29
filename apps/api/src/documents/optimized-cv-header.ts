@@ -12,6 +12,7 @@ export type OptimizedCvHeaderModel = {
   phoneEmail: OptimizedCvHeaderContactItem[];
   locationLinkedin: OptimizedCvHeaderContactItem[];
   website: OptimizedCvHeaderContactItem | null;
+  photo: { assetId: string; positionX: number; positionY: number } | null;
 };
 
 export type OptimizedCvHeaderInput = {
@@ -22,7 +23,19 @@ export type OptimizedCvHeaderInput = {
   location?: string | null;
   linkedin?: string | null;
   website?: string | null;
+  profilePhotoAssetId?: string | null;
+  profilePhotoPositionX?: number | null;
+  profilePhotoPositionY?: number | null;
 };
+
+export const OPTIMIZED_CV_HEADER_PHOTO_SIZE = 84;
+export const OPTIMIZED_CV_HEADER_PHOTO_TRAILING_INSET = 16;
+export const OPTIMIZED_CV_HEADER_PDF_VIGNETTE_RADIUS = Math.SQRT1_2 * 100;
+export const OPTIMIZED_CV_HEADER_PDF_VIGNETTE_START = 125 / Math.SQRT2;
+export const OPTIMIZED_CV_HEADER_PDF_VIGNETTE_MIDPOINT = 130 / Math.SQRT2;
+export const OPTIMIZED_CV_HEADER_PDF_VIGNETTE_MIDPOINT_OPACITY = 0.4;
+export const OPTIMIZED_CV_HEADER_PDF_VIGNETTE_EDGE_OPACITY = 0.99;
+export const OPTIMIZED_CV_HEADER_PHOTO_DEFAULT_POSITION = 50;
 
 export function hasHeaderText(
   value: string | null | undefined,
@@ -37,9 +50,16 @@ function contactItem(
   return hasHeaderText(value) ? { kind, value } : null;
 }
 
+function photoPosition(value: number | null | undefined): number {
+  return Number.isInteger(value) && value! >= 0 && value! <= 100
+    ? value!
+    : OPTIMIZED_CV_HEADER_PHOTO_DEFAULT_POSITION;
+}
+
 export function buildOptimizedCvHeaderModel(
   cv: OptimizedCvHeaderInput,
 ): OptimizedCvHeaderModel {
+  const assetId = cv.profilePhotoAssetId;
   return {
     fullName: cv.fullName,
     professionalTitle: hasHeaderText(cv.professionalTitle)
@@ -54,6 +74,14 @@ export function buildOptimizedCvHeaderModel(
       contactItem("linkedin", cv.linkedin),
     ].filter((item): item is OptimizedCvHeaderContactItem => item !== null),
     website: contactItem("website", cv.website),
+    photo:
+      typeof assetId === "string" && assetId.trim().length > 0
+        ? {
+            assetId,
+            positionX: photoPosition(cv.profilePhotoPositionX),
+            positionY: photoPosition(cv.profilePhotoPositionY),
+          }
+        : null,
   };
 }
 

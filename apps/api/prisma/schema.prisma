@@ -46,11 +46,14 @@ model MasterCv {
   experience          Json
   education           Json
   skills              Json
-  languages           Json
-  certifications      Json
-  personalProjects    Json     @default("[]")
-  createdAt           DateTime @default(now())
-  updatedAt           DateTime @updatedAt
+  languages             Json
+  certifications        Json
+  personalProjects      Json     @default("[]")
+  profilePhotoObjectKey String?
+  profilePhotoPositionX Int?
+  profilePhotoPositionY Int?
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
 
   @@index([userId])
 }
@@ -142,11 +145,14 @@ model OptimizedCv {
   experience          Json
   education           Json
   skills              Json
-  languages           Json
-  certifications      Json
-  personalProjects    Json        @default("[]")
-  createdAt           DateTime    @default(now())
-  updatedAt           DateTime    @updatedAt
+  languages             Json
+  certifications        Json
+  personalProjects      Json        @default("[]")
+  profilePhotoObjectKey String?
+  profilePhotoPositionX Int?
+  profilePhotoPositionY Int?
+  createdAt             DateTime    @default(now())
+  updatedAt             DateTime    @updatedAt
 
   @@index([applicationId])
 }

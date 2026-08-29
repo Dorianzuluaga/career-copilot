@@ -1,5 +1,6 @@
 import {
   Document,
+  Image,
   Page,
   Path,
   StyleSheet,
@@ -13,6 +14,8 @@ import { formatDateRange, hasText } from "./document-helpers.js";
 import {
   buildOptimizedCvHeaderModel,
   OPTIMIZED_CV_HEADER_ICON_PATHS,
+  OPTIMIZED_CV_HEADER_PHOTO_SIZE,
+  OPTIMIZED_CV_HEADER_PHOTO_TRAILING_INSET,
   type OptimizedCvHeaderContactKind,
   type OptimizedCvHeaderContactItem,
 } from "./optimized-cv-header.js";
@@ -29,9 +32,27 @@ const styles = StyleSheet.create({
   header: {
     marginBottom: 16,
     width: "100%",
+    flexDirection: "row",
+    alignItems: "flex-start",
   },
   identity: {
+    flexGrow: 1,
+    flexShrink: 1,
+    flexBasis: 0,
+  },
+  identityFull: {
     width: "100%",
+  },
+  photoFrame: {
+    width: OPTIMIZED_CV_HEADER_PHOTO_SIZE,
+    height: OPTIMIZED_CV_HEADER_PHOTO_SIZE,
+    marginLeft: 12,
+    marginRight: OPTIMIZED_CV_HEADER_PHOTO_TRAILING_INSET,
+  },
+  photo: {
+    width: OPTIMIZED_CV_HEADER_PHOTO_SIZE,
+    height: OPTIMIZED_CV_HEADER_PHOTO_SIZE,
+    objectFit: "cover",
   },
   name: {
     fontSize: 20,
@@ -191,7 +212,13 @@ function HeaderContactRow({
   );
 }
 
-export function OptimizedCvPdfDocument({ cv }: { cv: OptimizedCv }) {
+export function OptimizedCvPdfDocument({
+  cv,
+  profilePhotoSrc = null,
+}: {
+  cv: OptimizedCv;
+  profilePhotoSrc?: string | null;
+}) {
   const header = buildOptimizedCvHeaderModel(cv);
   const showProfessionalSummary = hasText(cv.professionalSummary);
   const showExperience = cv.experience.length > 0;
@@ -231,7 +258,13 @@ export function OptimizedCvPdfDocument({ cv }: { cv: OptimizedCv }) {
     <Document>
       <Page size="A4" style={styles.page}>
         <View style={styles.header}>
-          <View style={styles.identity}>
+          <View
+            style={
+              header.photo && profilePhotoSrc
+                ? styles.identity
+                : styles.identityFull
+            }
+          >
             <Text style={styles.name}>{header.fullName}</Text>
             {header.professionalTitle ? (
               <Text style={styles.professionalTitle}>
@@ -242,6 +275,21 @@ export function OptimizedCvPdfDocument({ cv }: { cv: OptimizedCv }) {
             <HeaderContactRow items={header.locationLinkedin} />
             <HeaderContactRow items={header.website ? [header.website] : []} />
           </View>
+          {header.photo && profilePhotoSrc ? (
+            <View style={styles.photoFrame}>
+              <Image
+                src={profilePhotoSrc}
+                style={[
+                  styles.photo,
+                  {
+                    objectPositionX: `${header.photo.positionX}%`,
+                    objectPositionY: `${header.photo.positionY}%`,
+                  },
+                ]}
+                cache={false}
+              />
+            </View>
+          ) : null}
         </View>
 
         {showLeft || showRight ? (

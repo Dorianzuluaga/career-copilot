@@ -10,7 +10,7 @@
 | Version      | 1.0.0                                         |
 | Status       | Draft                                         |
 | Owner        | Dorian Zuluaga                                |
-| Last Updated | 2026-07-18                                    |
+| Last Updated | 2026-08-28                                    |
 
 ---
 
@@ -85,6 +85,7 @@ Examples include:
 - Job applications
 - AI-generated documents
 - Personal notes
+- Private profile photo objects
 
 Sensitive information must remain protected throughout its lifecycle.
 
@@ -138,6 +139,14 @@ Examples of **SERVER-ONLY / SECRET** values:
 - Firebase Admin service account (`GOOGLE_APPLICATION_CREDENTIALS` or `FIREBASE_SERVICE_ACCOUNT`)
 - Database credentials (`DATABASE_URL`)
 - OpenAI API key (`OPENAI_API_KEY`)
+- Railway Bucket S3 access key (`ACCESS_KEY_ID`)
+- Railway Bucket S3 secret key (`SECRET_ACCESS_KEY`)
+
+Examples of **SERVER-ONLY** values that are not secrets:
+
+- Railway Bucket S3 bucket name (`BUCKET`)
+- Railway Bucket S3 endpoint (`ENDPOINT`)
+- Railway Bucket S3 region (`REGION`)
 
 Examples of **PUBLIC / CLIENT-SAFE** values:
 
@@ -158,7 +167,7 @@ Generated documents should only be accessible to their owner.
 
 Uploaded files must be validated before processing.
 
-Future versions may include antivirus scanning and secure object storage.
+Master CV and Optimized CV profile photos are stored as private Railway Bucket objects. The browser never reads or writes the bucket. The API validates files, writes object keys to PostgreSQL, and serves authenticated photo bytes. Objects are not publicly readable. Firebase Storage is not used for CV photos. `User.avatar` is not a CV photo.
 
 ---
 

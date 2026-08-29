@@ -46,6 +46,29 @@ vi.mock("../repositories/optimized-cv.repository.js", () => ({
   upsertOptimizedCv: vi.fn(),
 }));
 
+vi.mock("../repositories/master-cv.repository.js", () => ({
+  findMasterCvByUserId: vi.fn(),
+}));
+
+vi.mock("./master-cv-photo.service.js", () => ({
+  ProfilePhotoError: class ProfilePhotoError extends Error {
+    constructor(
+      message: string,
+      public readonly statusCode: number,
+    ) {
+      super(message);
+    }
+  },
+  snapshotMasterCvPhoto: vi.fn(),
+  resolveOptimizedCvPhotoObjectKey: vi.fn(),
+  getOptimizedCvPhoto: vi.fn(),
+}));
+
+vi.mock("./profile-photo-storage.service.js", () => ({
+  deleteUnreferencedProfilePhotoObjects: vi.fn(),
+}));
+
+import { findMasterCvByUserId } from "../repositories/master-cv.repository.js";
 import {
   findOptimizedCvByApplicationId,
   upsertOptimizedCv,
@@ -55,6 +78,10 @@ import {
   getOwnedApplication,
 } from "./application.service.js";
 import { MasterCvError, validateMasterCvInput } from "./master-cv.service.js";
+import {
+  resolveOptimizedCvPhotoObjectKey,
+  snapshotMasterCvPhoto,
+} from "./master-cv-photo.service.js";
 import { generateOptimizedCvDraft } from "./optimized-cv-ai.service.js";
 import {
   generateOptimizedCv,
@@ -62,6 +89,7 @@ import {
   OptimizedCvError,
   saveOptimizedCv,
 } from "./optimized-cv.service.js";
+import { deleteUnreferencedProfilePhotoObjects } from "./profile-photo-storage.service.js";
 import {
   getProfileComparison,
   prepareProfileComparisonInput,
@@ -124,6 +152,9 @@ const profileMatch = {
 const optimizedCv = {
   ...masterCv,
   professionalSummary: "TypeScript engineer building APIs.",
+  profilePhotoAssetId: null,
+  profilePhotoPositionX: null,
+  profilePhotoPositionY: null,
 };
 
 const persistedOptimizedCv = {
@@ -142,6 +173,13 @@ beforeEach(() => {
   });
   vi.mocked(getProfileComparison).mockResolvedValue(profileMatch);
   vi.mocked(generateOptimizedCvDraft).mockResolvedValue(optimizedCv);
+  vi.mocked(findMasterCvByUserId).mockResolvedValue({
+    ...masterCv,
+    profilePhotoObjectKey: null,
+  } as never);
+  vi.mocked(snapshotMasterCvPhoto).mockResolvedValue(null);
+  vi.mocked(resolveOptimizedCvPhotoObjectKey).mockResolvedValue(null);
+  vi.mocked(deleteUnreferencedProfilePhotoObjects).mockResolvedValue();
   vi.mocked(getOwnedApplication).mockResolvedValue({
     id: applicationId,
   } as never);
@@ -181,11 +219,52 @@ describe("generateOptimizedCv", () => {
       userId,
     );
     expect(getProfileComparison).toHaveBeenCalledWith(applicationId, userId);
-    expect(generateOptimizedCvDraft).toHaveBeenCalledWith({
-      masterCv,
-      jobAnalysis,
-      profileMatch,
+    expect(generateOptimizedCvDraft).toHaveBeenCalledWith(
+      {
+        masterCv,
+        jobAnalysis,
+        profileMatch,
+      },
+      null,
+      null,
+      null,
+    );
+  });
+
+  it("snapshots the Master CV photo to a new application key", async () => {
+    const snapshotKey = `users/${userId}/applications/${applicationId}/optimized-cv/profile-photo/7e9c843b-5c3d-4e65-8514-7de898b2aca6`;
+    vi.mocked(findMasterCvByUserId).mockResolvedValue({
+      ...masterCv,
+      profilePhotoObjectKey: `users/${userId}/master-cv/profile-photo/11111111-1111-4111-8111-111111111111`,
+      profilePhotoPositionX: 25,
+      profilePhotoPositionY: 75,
+    } as never);
+    vi.mocked(snapshotMasterCvPhoto).mockResolvedValue(snapshotKey);
+    vi.mocked(generateOptimizedCvDraft).mockResolvedValue({
+      ...optimizedCv,
+      profilePhotoAssetId: "7e9c843b-5c3d-4e65-8514-7de898b2aca6",
+      profilePhotoPositionX: 25,
+      profilePhotoPositionY: 75,
     });
+
+    await expect(generateOptimizedCv(applicationId, userId)).resolves.toEqual({
+      ...optimizedCv,
+      profilePhotoAssetId: "7e9c843b-5c3d-4e65-8514-7de898b2aca6",
+      profilePhotoPositionX: 25,
+      profilePhotoPositionY: 75,
+    });
+    expect(snapshotMasterCvPhoto).toHaveBeenCalledWith(
+      userId,
+      applicationId,
+      `users/${userId}/master-cv/profile-photo/11111111-1111-4111-8111-111111111111`,
+      null,
+    );
+    expect(generateOptimizedCvDraft).toHaveBeenCalledWith(
+      expect.anything(),
+      "7e9c843b-5c3d-4e65-8514-7de898b2aca6",
+      25,
+      75,
+    );
   });
 
   it("maps missing Job Analysis errors to OptimizedCvError", async () => {
@@ -250,7 +329,63 @@ describe("saveOptimizedCv", () => {
     ).resolves.toEqual(optimizedCv);
 
     expect(getOwnedApplication).toHaveBeenCalledWith(applicationId, userId);
-    expect(upsertOptimizedCv).toHaveBeenCalledWith(applicationId, optimizedCv);
+    expect(upsertOptimizedCv).toHaveBeenCalledWith(
+      applicationId,
+      expect.objectContaining({
+        fullName: optimizedCv.fullName,
+        email: optimizedCv.email,
+      }),
+      null,
+      null,
+      null,
+    );
+    expect(snapshotMasterCvPhoto).not.toHaveBeenCalled();
+  });
+
+  it("persists the generation-time asset and position without reading Master CV", async () => {
+    const assetId = "7e9c843b-5c3d-4e65-8514-7de898b2aca6";
+    const objectKey = `users/${userId}/applications/${applicationId}/optimized-cv/profile-photo/${assetId}`;
+    const generated = {
+      ...optimizedCv,
+      profilePhotoAssetId: assetId,
+      profilePhotoPositionX: 20,
+      profilePhotoPositionY: 80,
+    };
+    vi.mocked(resolveOptimizedCvPhotoObjectKey).mockResolvedValue(objectKey);
+    vi.mocked(upsertOptimizedCv).mockResolvedValue({
+      ...persistedOptimizedCv,
+      profilePhotoObjectKey: objectKey,
+      profilePhotoPositionX: 20,
+      profilePhotoPositionY: 80,
+    } as never);
+
+    await expect(
+      saveOptimizedCv(applicationId, userId, generated),
+    ).resolves.toMatchObject({
+      profilePhotoAssetId: assetId,
+      profilePhotoPositionX: 20,
+      profilePhotoPositionY: 80,
+    });
+    expect(upsertOptimizedCv).toHaveBeenCalledWith(
+      applicationId,
+      expect.anything(),
+      objectKey,
+      20,
+      80,
+    );
+    expect(findMasterCvByUserId).not.toHaveBeenCalled();
+  });
+
+  it("rejects an asset snapshot without both position values", async () => {
+    await expect(
+      saveOptimizedCv(applicationId, userId, {
+        ...optimizedCv,
+        profilePhotoAssetId: "7e9c843b-5c3d-4e65-8514-7de898b2aca6",
+        profilePhotoPositionX: 20,
+        profilePhotoPositionY: undefined,
+      }),
+    ).rejects.toMatchObject({ statusCode: 400 });
+    expect(upsertOptimizedCv).not.toHaveBeenCalled();
   });
 
   it("rejects invalid Optimized CV payloads", async () => {

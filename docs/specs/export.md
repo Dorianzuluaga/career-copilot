@@ -87,7 +87,7 @@ The preview must:
 
 The preview is rendered directly from the saved application documents.
 
-The Optimized CV header rendered by Export follows `docs/specs/master-cv-personal-information.md`. Export still must not read Master CV Personal Information to fill the document body. Filename ownership of `professionalTitle` remains on the Master CV.
+The Optimized CV header rendered by Export follows `docs/specs/master-cv-personal-information.md` for identity content and `docs/specs/master-cv-profile-photo.md` for the optional photo sibling. Export still must not read Master CV Personal Information, including the Master CV photo, to fill the document body. Filename ownership of `professionalTitle` remains on the Master CV.
 
 The preview never renders or downloads PDF files.
 
@@ -242,8 +242,10 @@ PDF generation must:
 - Match the preview shown to the user.
 - Preserve document formatting.
 - Produce professional printable documents.
-- Render the Optimized CV header from the saved Optimized CV according to `docs/specs/master-cv-personal-information.md`.
-- Never read Master CV Personal Information to fill the Optimized CV or Cover Letter document body.
+- Render the Optimized CV header from the saved Optimized CV according to `docs/specs/master-cv-personal-information.md` for identity content and `docs/specs/master-cv-profile-photo.md` for the photo sibling.
+- Never read Master CV Personal Information, including the Master CV photo, to fill the Optimized CV or Cover Letter document body.
+- When the saved Optimized CV snapshot has no photo, omit the photo region completely. Do not reserve empty space.
+- Cover Letter PDFs must not render a profile photo.
 
 `professionalTitle` used in Optimized CV filenames remains owned by the Master CV.
 
@@ -315,6 +317,8 @@ This Epic does NOT include:
 - Sharing documents.
 - Custom templates.
 - User-defined filenames.
+- Reading the live Master CV photo for Optimized CV preview or PDF.
+- Cover Letter profile photo.
 
 ---
 
@@ -329,6 +333,10 @@ Users can choose which documents to download.
 Users can download one or both documents as independent PDF files.
 
 Generated PDFs exactly match the latest saved application documents.
+
+Optimized CV preview and PDF render the photo sibling from the saved Optimized CV snapshot according to `docs/specs/master-cv-profile-photo.md`. They must not read the live Master CV photo.
+
+Cover Letter preview and PDF must not render a profile photo.
 
 Export never modifies application documents.
 

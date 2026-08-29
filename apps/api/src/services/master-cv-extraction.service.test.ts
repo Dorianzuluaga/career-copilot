@@ -93,6 +93,18 @@ describe("master CV extraction schema", () => {
     ).toBe(false);
   });
 
+  it("rejects a photo field on personal information", () => {
+    expect(
+      isMasterCvExtraction({
+        ...validExtraction,
+        personalInformation: {
+          ...validExtraction.personalInformation,
+          photo: "https://example.com/avatar.png",
+        },
+      }),
+    ).toBe(false);
+  });
+
   it("leaves professionalTitle and website null when the source has no such values", async () => {
     createResponse.mockResolvedValue({
       output_text: JSON.stringify(validExtraction),
