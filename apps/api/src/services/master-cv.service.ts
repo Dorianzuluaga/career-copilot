@@ -5,6 +5,10 @@ import {
   isValidUrl,
 } from "../lib/field-validation.js";
 import {
+  parseMasterCvPhotoAssetId,
+  PROFILE_PHOTO_DEFAULT_POSITION,
+} from "../lib/profile-photo.js";
+import {
   createMasterCv,
   findMasterCvByUserId,
   updateMasterCv,
@@ -274,22 +278,67 @@ export function validateMasterCvInput(value: unknown): MasterCvInput {
   };
 }
 
+export function toPublicMasterCv<
+  T extends {
+    userId: string;
+    profilePhotoObjectKey: string | null;
+    profilePhotoPositionX?: number | null;
+    profilePhotoPositionY?: number | null;
+  },
+>(
+  masterCv: T,
+): Omit<
+  T,
+  "profilePhotoObjectKey" | "profilePhotoPositionX" | "profilePhotoPositionY"
+> & {
+  profilePhotoAssetId: string | null;
+  profilePhotoPositionX: number | null;
+  profilePhotoPositionY: number | null;
+} {
+  const {
+    profilePhotoObjectKey,
+    profilePhotoPositionX,
+    profilePhotoPositionY,
+    ...rest
+  } = masterCv;
+  const profilePhotoAssetId = parseMasterCvPhotoAssetId(
+    profilePhotoObjectKey,
+    masterCv.userId,
+  );
+  return {
+    ...rest,
+    profilePhotoAssetId,
+    profilePhotoPositionX:
+      profilePhotoAssetId === null
+        ? null
+        : (profilePhotoPositionX ?? PROFILE_PHOTO_DEFAULT_POSITION),
+    profilePhotoPositionY:
+      profilePhotoAssetId === null
+        ? null
+        : (profilePhotoPositionY ?? PROFILE_PHOTO_DEFAULT_POSITION),
+  };
+}
+
 export async function getMasterCv(userId: string) {
   const masterCv = await findMasterCvByUserId(userId);
   if (!masterCv) throw new MasterCvError("Master CV not found.", 404);
-  return masterCv;
+  return toPublicMasterCv(masterCv);
 }
 
 export async function addMasterCv(userId: string, value: unknown) {
   if (await findMasterCvByUserId(userId)) {
     throw new MasterCvError("A Master CV already exists.", 409);
   }
-  return createMasterCv(userId, validateMasterCvInput(value));
+  return toPublicMasterCv(
+    await createMasterCv(userId, validateMasterCvInput(value)),
+  );
 }
 
 export async function editMasterCv(userId: string, value: unknown) {
   if (!(await findMasterCvByUserId(userId))) {
     throw new MasterCvError("Master CV not found.", 404);
   }
-  return updateMasterCv(userId, validateMasterCvInput(value));
+  return toPublicMasterCv(
+    await updateMasterCv(userId, validateMasterCvInput(value)),
+  );
 }

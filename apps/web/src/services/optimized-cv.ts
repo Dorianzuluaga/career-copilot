@@ -48,4 +48,11 @@ export async function saveOptimizedCv(
   return result.optimizedCv;
 }
 
+export function optimizedCvPhotoUrl(
+  applicationId: string,
+  assetId: string,
+): string {
+  return `${apiUrl}/api/applications/${applicationId}/optimized-cv/photo?assetId=${encodeURIComponent(assetId)}`;
+}
+
 export { ApiError };

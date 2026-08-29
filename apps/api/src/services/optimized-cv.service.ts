@@ -1,14 +1,31 @@
 import {
+  isAssetId,
+  optimizedCvPhotoPrefix,
+  parseOptimizedCvPhotoAssetId,
+  PROFILE_PHOTO_DEFAULT_POSITION,
+  ProfilePhotoValidationError,
+  validateProfilePhotoPosition,
+} from "../lib/profile-photo.js";
+import { findMasterCvByUserId } from "../repositories/master-cv.repository.js";
+import {
   findOptimizedCvByApplicationId,
   upsertOptimizedCv,
 } from "../repositories/optimized-cv.repository.js";
+import type { MasterCvInput } from "../types/master-cv.js";
 import type { OptimizedCv } from "../types/optimized-cv.js";
 import {
   ApplicationError,
   getOwnedApplication,
 } from "./application.service.js";
 import { MasterCvError, validateMasterCvInput } from "./master-cv.service.js";
+import {
+  ProfilePhotoError,
+  getOptimizedCvPhoto,
+  resolveOptimizedCvPhotoObjectKey,
+  snapshotMasterCvPhoto,
+} from "./master-cv-photo.service.js";
 import { generateOptimizedCvDraft } from "./optimized-cv-ai.service.js";
+import { deleteUnreferencedProfilePhotoObjects } from "./profile-photo-storage.service.js";
 import {
   getProfileComparison,
   prepareProfileComparisonInput,
@@ -24,11 +41,121 @@ export class OptimizedCvError extends Error {
   }
 }
 
-function toOptimizedCvDocument(value: unknown): OptimizedCv {
+function validateOptimizedCvText(value: unknown): MasterCvInput {
   try {
     return validateMasterCvInput(value);
   } catch (error) {
     if (error instanceof MasterCvError) {
+      throw new OptimizedCvError(error.message, error.statusCode);
+    }
+    throw error;
+  }
+}
+
+function toPublicOptimizedCv(
+  record: unknown,
+  userId: string,
+  applicationId: string,
+): OptimizedCv {
+  const text = validateOptimizedCvText(record);
+  const objectKey =
+    record &&
+    typeof record === "object" &&
+    "profilePhotoObjectKey" in record &&
+    typeof (record as { profilePhotoObjectKey: unknown }).profilePhotoObjectKey ===
+      "string"
+      ? (record as { profilePhotoObjectKey: string }).profilePhotoObjectKey
+      : null;
+  const profilePhotoAssetId = parseOptimizedCvPhotoAssetId(
+    objectKey,
+    userId,
+    applicationId,
+  );
+  const storedPositionX =
+    record &&
+    typeof record === "object" &&
+    "profilePhotoPositionX" in record &&
+    typeof (record as { profilePhotoPositionX: unknown })
+      .profilePhotoPositionX === "number"
+      ? (record as { profilePhotoPositionX: number }).profilePhotoPositionX
+      : PROFILE_PHOTO_DEFAULT_POSITION;
+  const storedPositionY =
+    record &&
+    typeof record === "object" &&
+    "profilePhotoPositionY" in record &&
+    typeof (record as { profilePhotoPositionY: unknown })
+      .profilePhotoPositionY === "number"
+      ? (record as { profilePhotoPositionY: number }).profilePhotoPositionY
+      : PROFILE_PHOTO_DEFAULT_POSITION;
+  return {
+    ...text,
+    profilePhotoAssetId,
+    profilePhotoPositionX:
+      profilePhotoAssetId === null ? null : storedPositionX,
+    profilePhotoPositionY:
+      profilePhotoAssetId === null ? null : storedPositionY,
+  };
+}
+
+type ClientPhotoConfiguration = {
+  assetId: string | null;
+  positionX: number | null;
+  positionY: number | null;
+};
+
+function parseClientPhotoConfiguration(
+  value: unknown,
+): ClientPhotoConfiguration | undefined {
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    return undefined;
+  }
+  const hasAssetId = "profilePhotoAssetId" in value;
+  const hasPositionX = "profilePhotoPositionX" in value;
+  const hasPositionY = "profilePhotoPositionY" in value;
+  if (!hasAssetId && !hasPositionX && !hasPositionY) {
+    return undefined;
+  }
+  if (!hasAssetId) {
+    throw new OptimizedCvError(
+      "The profile photo configuration is invalid.",
+      400,
+    );
+  }
+  const assetId = (value as { profilePhotoAssetId: unknown }).profilePhotoAssetId;
+  if (assetId === null || assetId === "") {
+    const positionX = hasPositionX
+      ? (value as { profilePhotoPositionX: unknown }).profilePhotoPositionX
+      : null;
+    const positionY = hasPositionY
+      ? (value as { profilePhotoPositionY: unknown }).profilePhotoPositionY
+      : null;
+    if (positionX !== null || positionY !== null) {
+      throw new OptimizedCvError(
+        "The profile photo configuration is invalid.",
+        400,
+      );
+    }
+    return { assetId: null, positionX: null, positionY: null };
+  }
+  if (typeof assetId !== "string" || !isAssetId(assetId)) {
+    throw new OptimizedCvError("profilePhotoAssetId is invalid.", 400);
+  }
+  try {
+    const position = validateProfilePhotoPosition(
+      hasPositionX
+        ? (value as { profilePhotoPositionX: unknown }).profilePhotoPositionX
+        : undefined,
+      hasPositionY
+        ? (value as { profilePhotoPositionY: unknown }).profilePhotoPositionY
+        : undefined,
+    );
+    return {
+      assetId,
+      positionX: position.positionX,
+      positionY: position.positionY,
+    };
+  } catch (error) {
+    if (error instanceof ProfilePhotoValidationError) {
       throw new OptimizedCvError(error.message, error.statusCode);
     }
     throw error;
@@ -46,6 +173,13 @@ async function requireOwnedApplication(applicationId: string, userId: string) {
   }
 }
 
+function mapPhotoError(error: unknown): never {
+  if (error instanceof ProfilePhotoError) {
+    throw new OptimizedCvError(error.message, error.statusCode);
+  }
+  throw error;
+}
+
 export async function generateOptimizedCv(
   applicationId: string,
   userId: string,
@@ -53,13 +187,44 @@ export async function generateOptimizedCv(
   try {
     const input = await prepareProfileComparisonInput(applicationId, userId);
     const profileMatch = await getProfileComparison(applicationId, userId);
-    return generateOptimizedCvDraft({
-      masterCv: input.masterCv,
-      jobAnalysis: input.jobAnalysis,
-      profileMatch,
-    });
+    const masterCv = await findMasterCvByUserId(userId);
+    const saved = await findOptimizedCvByApplicationId(applicationId);
+    const snapshotKey = await snapshotMasterCvPhoto(
+      userId,
+      applicationId,
+      masterCv?.profilePhotoObjectKey ?? null,
+      saved?.profilePhotoObjectKey ?? null,
+    );
+    const profilePhotoAssetId = parseOptimizedCvPhotoAssetId(
+      snapshotKey,
+      userId,
+      applicationId,
+    );
+    const profilePhotoPositionX =
+      profilePhotoAssetId === null
+        ? null
+        : (masterCv?.profilePhotoPositionX ??
+          PROFILE_PHOTO_DEFAULT_POSITION);
+    const profilePhotoPositionY =
+      profilePhotoAssetId === null
+        ? null
+        : (masterCv?.profilePhotoPositionY ??
+          PROFILE_PHOTO_DEFAULT_POSITION);
+    return generateOptimizedCvDraft(
+      {
+        masterCv: input.masterCv,
+        jobAnalysis: input.jobAnalysis,
+        profileMatch,
+      },
+      profilePhotoAssetId,
+      profilePhotoPositionX,
+      profilePhotoPositionY,
+    );
   } catch (error) {
     if (error instanceof ProfileComparisonError) {
+      throw new OptimizedCvError(error.message, error.statusCode);
+    }
+    if (error instanceof ProfilePhotoError) {
       throw new OptimizedCvError(error.message, error.statusCode);
     }
     if (
@@ -82,7 +247,20 @@ export async function getOptimizedCv(
   if (!optimizedCv) {
     throw new OptimizedCvError("Optimized CV not found.", 404);
   }
-  return toOptimizedCvDocument(optimizedCv);
+  return toPublicOptimizedCv(optimizedCv, userId, applicationId);
+}
+
+export async function readOptimizedCvPhoto(
+  applicationId: string,
+  userId: string,
+  assetId: string | null,
+): Promise<{ bytes: Buffer; contentType: string }> {
+  await requireOwnedApplication(applicationId, userId);
+  try {
+    return await getOptimizedCvPhoto(userId, applicationId, assetId);
+  } catch (error) {
+    mapPhotoError(error);
+  }
 }
 
 export async function saveOptimizedCv(
@@ -91,7 +269,38 @@ export async function saveOptimizedCv(
   value: unknown,
 ): Promise<OptimizedCv> {
   await requireOwnedApplication(applicationId, userId);
-  const input = toOptimizedCvDocument(value);
-  const optimizedCv = await upsertOptimizedCv(applicationId, input);
-  return toOptimizedCvDocument(optimizedCv);
+  const input = validateOptimizedCvText(value);
+  const requestedPhoto = parseClientPhotoConfiguration(value);
+  const saved = await findOptimizedCvByApplicationId(applicationId);
+  let nextObjectKey: string | null;
+  try {
+    nextObjectKey = await resolveOptimizedCvPhotoObjectKey({
+      userId,
+      applicationId,
+      requestedAssetId: requestedPhoto?.assetId,
+      savedObjectKey: saved?.profilePhotoObjectKey ?? null,
+    });
+  } catch (error) {
+    mapPhotoError(error);
+  }
+  const optimizedCv = await upsertOptimizedCv(
+    applicationId,
+    input,
+    nextObjectKey,
+    nextObjectKey === null
+      ? null
+      : (requestedPhoto?.positionX ??
+        saved?.profilePhotoPositionX ??
+        PROFILE_PHOTO_DEFAULT_POSITION),
+    nextObjectKey === null
+      ? null
+      : (requestedPhoto?.positionY ??
+        saved?.profilePhotoPositionY ??
+        PROFILE_PHOTO_DEFAULT_POSITION),
+  );
+  await deleteUnreferencedProfilePhotoObjects(
+    optimizedCvPhotoPrefix(userId, applicationId),
+    [nextObjectKey],
+  );
+  return toPublicOptimizedCv(optimizedCv, userId, applicationId);
 }

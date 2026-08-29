@@ -10,7 +10,7 @@
 | Version | 1.0.0 |
 | Status | Draft |
 | Owner | Dorian Zuluaga |
-| Last Updated | 2026-07-18 |
+| Last Updated | 2026-08-28 |
 
 ---
 
@@ -101,8 +101,11 @@ Stores:
 - Generated documents
 - Notes
 - Application history
+- Object keys for private profile photos
 
 Only the backend can access this layer.
+
+PostgreSQL does not store profile photo bytes. Those objects live in private object storage.
 
 ---
 
@@ -123,12 +126,12 @@ Backend API
    │
 Business Logic
    │
- ┌───────┴────────┐
- ▼                ▼
-Database      OpenAI API
- │                │
- └───────┬────────┘
-         ▼
+ ┌─────────┴──────────┬──────────┐
+ ▼                    ▼          ▼
+Database       Object storage   OpenAI API
+ │                    │          │
+ └─────────┬──────────┴──────────┘
+           ▼
 Backend Response
          │
          ▼
@@ -212,6 +215,7 @@ Frontend:
 
 - Cannot access the database.
 - Cannot access AI providers directly.
+- Cannot access object storage directly.
 - Cannot expose API keys.
 
 Backend:

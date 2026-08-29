@@ -73,3 +73,13 @@ export interface MasterCvInput {
   certifications: CertificationItem[];
   personalProjects?: PersonalProjectItem[];
 }
+
+export interface PublicMasterCv extends MasterCvInput {
+  id: string;
+  userId: string;
+  profilePhotoAssetId: string | null;
+  profilePhotoPositionX: number | null;
+  profilePhotoPositionY: number | null;
+  createdAt: Date;
+  updatedAt: Date;
+}

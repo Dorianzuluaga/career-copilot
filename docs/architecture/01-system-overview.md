@@ -10,7 +10,7 @@
 | Version | 1.0.0 |
 | Status | Draft |
 | Owner | Dorian Zuluaga |
-| Last Updated | 2026-07-18 |
+| Last Updated | 2026-08-28 |
 
 ---
 
@@ -52,7 +52,7 @@ Responsible for:
 
 The frontend communicates exclusively with the backend API.
 
-It never accesses the database directly.
+It never accesses the database, AI providers, or object storage directly.
 
 ---
 
@@ -65,6 +65,7 @@ Responsible for:
 - Authorization
 - AI orchestration
 - File management
+- Private object storage access
 - PDF generation
 - Database communication
 
@@ -110,7 +111,7 @@ The AI layer is accessed only through the backend.
 The platform may integrate external providers such as:
 
 - Authentication providers
-- File storage
+- Private object storage
 - Email services
 - PDF generation
 - Future third-party APIs
@@ -140,6 +141,12 @@ Business Logic
 ↓
 
 Database
+
+and/or
+
+↓
+
+Object storage
 
 and/or
 

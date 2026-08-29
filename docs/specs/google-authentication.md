@@ -226,6 +226,8 @@ Optional fields
 
 - avatar
 
+`avatar` is the Google account picture. It is used as account chrome. It is not the Master CV profile photo. CV photo behavior is specified in `docs/specs/master-cv-profile-photo.md`. Firebase Admin is used to verify identity tokens. It is not used to store CV photos.
+
 Generated fields
 
 - createdAt
@@ -421,6 +423,7 @@ Not applicable.
 - Logout
 - Protected Routes
 - User Profile editing
+- Master CV profile photo. `User.avatar` is not the CV photo. CV photos are stored in a private Railway Bucket as specified in `docs/specs/master-cv-profile-photo.md`, not in Firebase Storage.
 - Session expiration
 - Refresh Tokens
 - Multi-factor authentication
@@ -437,6 +440,7 @@ Not applicable.
 - Security Overview
 - AI Engineering Guide
 - Project Rules
+- `docs/specs/master-cv-profile-photo.md`
 
 ---
 

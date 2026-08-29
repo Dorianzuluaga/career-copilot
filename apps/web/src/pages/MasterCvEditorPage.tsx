@@ -6,9 +6,27 @@ import { useLocale } from "../hooks/useLocale";
 import { ApiError, getMasterCv, updateMasterCv } from "../services/master-cv";
 import type { MasterCvInput } from "../types/master-cv";
 
+type MasterCvFormValue = MasterCvInput & {
+  profilePhotoAssetId?: string | null;
+  profilePhotoPositionX?: number | null;
+  profilePhotoPositionY?: number | null;
+};
+
+export function mergeImportedMasterCv(
+  current: MasterCvFormValue,
+  imported: MasterCvInput,
+): MasterCvFormValue {
+  return {
+    ...imported,
+    profilePhotoAssetId: current.profilePhotoAssetId ?? null,
+    profilePhotoPositionX: current.profilePhotoPositionX ?? null,
+    profilePhotoPositionY: current.profilePhotoPositionY ?? null,
+  };
+}
+
 export function MasterCvEditorPage() {
   const { t } = useLocale();
-  const [formValue, setFormValue] = useState<MasterCvInput | null>(null);
+  const [formValue, setFormValue] = useState<MasterCvFormValue | null>(null);
   const [formRevision, setFormRevision] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
   const [isMissing, setIsMissing] = useState(false);
@@ -61,7 +79,9 @@ export function MasterCvEditorPage() {
   }
 
   function handleImport(input: MasterCvInput) {
-    setFormValue(input);
+    setFormValue((current) =>
+      current ? mergeImportedMasterCv(current, input) : input,
+    );
     setFormRevision((revision) => revision + 1);
     setIsSaved(false);
     setErrorMessage(null);
@@ -104,6 +124,7 @@ export function MasterCvEditorPage() {
           submitLabel={t("masterCv.editor.save")}
           isSaving={isSaving}
           errorMessage={errorMessage}
+          photoPersistence="immediate"
           onSubmit={handleSave}
         />
       </div>

@@ -4,6 +4,7 @@ import {
   findApplicationByIdForUser,
   findApplicationsByUserId,
 } from "../repositories/application.repository.js";
+import { deleteApplicationProfilePhotos } from "./master-cv-photo.service.js";
 
 export class ApplicationError extends Error {
   constructor(
@@ -53,5 +54,10 @@ export async function removeApplication(
   const result = await deleteApplicationByIdForUser(applicationId, userId);
   if (result.count === 0) {
     throw new ApplicationError("Application not found.", 404);
+  }
+  try {
+    await deleteApplicationProfilePhotos(userId, applicationId);
+  } catch {
+    // Snapshot objects may remain as orphans if Storage cleanup fails.
   }
 }

@@ -10,7 +10,7 @@
 | Version | 1.0.0 |
 | Status | Draft |
 | Owner | Dorian Zuluaga |
-| Last Updated | 2026-07-18 |
+| Last Updated | 2026-08-28 |
 
 ---
 
@@ -30,7 +30,7 @@ The backend API acts as the single entry point to the Career Copilot platform.
 
 Every client request is validated, processed, and coordinated through the API before interacting with external services or persistent storage.
 
-The frontend never communicates directly with the database or AI providers.
+The frontend never communicates directly with the database, AI providers, or object storage.
 
 ---
 
@@ -42,6 +42,7 @@ The API is responsible for:
 - Authorization.
 - Business logic.
 - Database access.
+- Private object storage access.
 - AI orchestration.
 - PDF generation.
 - Data validation.
@@ -193,9 +194,9 @@ Authorization
      │
 Business Logic
      │
- ┌───────┴────────┐
- ▼                ▼
-Database      OpenAI API
+ ┌───────┴────────┬──────────┐
+ ▼                ▼          ▼
+Database    Object storage  OpenAI API
      │
      ▼
 Response
@@ -232,6 +233,7 @@ The API follows these principles:
 - Protect sensitive information.
 - Restrict access using authentication.
 - Keep API secrets on the server.
+- The frontend never accesses object storage.
 
 ---
 

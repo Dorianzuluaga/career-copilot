@@ -10,7 +10,7 @@
 | Version | 1.0.0 |
 | Status | Draft |
 | Owner | Dorian Zuluaga |
-| Last Updated | 2026-07-18 |
+| Last Updated | 2026-08-28 |
 
 ---
 
@@ -64,8 +64,11 @@ Stores:
 - Certifications
 - Languages
 - Projects
+- Optional profile photo object key
 
 Each user owns one Master CV.
+
+PostgreSQL stores the photo object key. It does not store image bytes. Photo objects are specified in `docs/specs/master-cv-profile-photo.md`.
 
 ---
 

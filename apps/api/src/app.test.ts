@@ -33,6 +33,22 @@ vi.mock("./services/master-cv.service.js", () => ({
   editMasterCv: vi.fn(),
 }));
 
+vi.mock("./services/master-cv-photo.service.js", () => ({
+  ProfilePhotoError: class ProfilePhotoError extends Error {
+    constructor(
+      message: string,
+      public readonly statusCode: number,
+    ) {
+      super(message);
+    }
+  },
+  replaceMasterCvPhoto: vi.fn(),
+  updateMasterCvPhotoPosition: vi.fn(),
+  removeMasterCvPhoto: vi.fn(),
+  getMasterCvPhoto: vi.fn(),
+  getOptimizedCvPhoto: vi.fn(),
+}));
+
 vi.mock("./services/master-cv-extraction.service.js", () => ({
   extractMasterCv: vi.fn(),
 }));
@@ -101,6 +117,7 @@ vi.mock("./services/optimized-cv.service.js", () => ({
   generateOptimizedCv: vi.fn(),
   getOptimizedCv: vi.fn(),
   saveOptimizedCv: vi.fn(),
+  readOptimizedCvPhoto: vi.fn(),
 }));
 
 vi.mock("./services/cover-letter.service.js", () => ({
@@ -165,11 +182,18 @@ import {
 } from "./services/job-analysis.service.js";
 import { addJobOffer, JobOfferError } from "./services/job-offer.service.js";
 import { extractMasterCv } from "./services/master-cv-extraction.service.js";
+import {
+  getMasterCvPhoto,
+  replaceMasterCvPhoto,
+  removeMasterCvPhoto,
+  updateMasterCvPhotoPosition,
+} from "./services/master-cv-photo.service.js";
 import { addMasterCv, getMasterCv } from "./services/master-cv.service.js";
 import {
   generateOptimizedCv,
   getOptimizedCv,
   OptimizedCvError,
+  readOptimizedCvPhoto,
   saveOptimizedCv,
 } from "./services/optimized-cv.service.js";
 import {
@@ -393,6 +417,96 @@ describe("Master CV API", () => {
 
     expect(response.status).toBe(200);
     expect(response.body).toEqual(extraction);
+    expect(JSON.stringify(response.body)).not.toContain("photo");
+  });
+
+  it("requires authentication for Master CV photo routes", async () => {
+    const responses = await Promise.all([
+      request(app).put("/api/master-cv/photo"),
+      request(app).patch("/api/master-cv/photo"),
+      request(app).delete("/api/master-cv/photo"),
+      request(app).get("/api/master-cv/photo"),
+    ]);
+
+    for (const response of responses) {
+      expect(response.status).toBe(401);
+      expect(response.body).toEqual({ message: "Authentication required." });
+    }
+    expect(replaceMasterCvPhoto).not.toHaveBeenCalled();
+    expect(removeMasterCvPhoto).not.toHaveBeenCalled();
+    expect(updateMasterCvPhotoPosition).not.toHaveBeenCalled();
+    expect(getMasterCvPhoto).not.toHaveBeenCalled();
+  });
+
+  it("uploads a profile photo for the session user", async () => {
+    vi.mocked(getAuthenticatedUser).mockResolvedValue(user);
+    vi.mocked(replaceMasterCvPhoto).mockResolvedValue({
+      profilePhotoAssetId: "7e9c843b-5c3d-4e65-8514-7de898b2aca6",
+      profilePhotoPositionX: 50,
+      profilePhotoPositionY: 50,
+    });
+
+    const response = await request(app)
+      .put("/api/master-cv/photo")
+      .set("Cookie", "career_copilot_session=opaque-session-id")
+      .attach("file", Buffer.from([0xff, 0xd8, 0xff, 0xe0]), {
+        filename: "photo.jpg",
+        contentType: "image/jpeg",
+      });
+
+    expect(response.status).toBe(200);
+    expect(response.body).toEqual({
+      profilePhotoAssetId: "7e9c843b-5c3d-4e65-8514-7de898b2aca6",
+      profilePhotoPositionX: 50,
+      profilePhotoPositionY: 50,
+    });
+    expect(JSON.stringify(response.body)).not.toContain("https://");
+    expect(replaceMasterCvPhoto).toHaveBeenCalledWith(
+      user.id,
+      "image/jpeg",
+      expect.any(Buffer),
+      undefined,
+      undefined,
+    );
+  });
+
+  it("updates a profile photo position for the session user", async () => {
+    vi.mocked(getAuthenticatedUser).mockResolvedValue(user);
+    vi.mocked(updateMasterCvPhotoPosition).mockResolvedValue({
+      profilePhotoAssetId: "7e9c843b-5c3d-4e65-8514-7de898b2aca6",
+      profilePhotoPositionX: 25,
+      profilePhotoPositionY: 75,
+    });
+
+    const response = await request(app)
+      .patch("/api/master-cv/photo")
+      .set("Cookie", "career_copilot_session=opaque-session-id")
+      .send({ positionX: 25, positionY: 75 });
+
+    expect(response.status).toBe(200);
+    expect(updateMasterCvPhotoPosition).toHaveBeenCalledWith(user.id, 25, 75);
+    expect(response.body).toMatchObject({
+      profilePhotoPositionX: 25,
+      profilePhotoPositionY: 75,
+    });
+  });
+
+  it("rejects a GIF profile photo", async () => {
+    vi.mocked(getAuthenticatedUser).mockResolvedValue(user);
+
+    const response = await request(app)
+      .put("/api/master-cv/photo")
+      .set("Cookie", "career_copilot_session=opaque-session-id")
+      .attach("file", Buffer.from("GIF89a"), {
+        filename: "photo.gif",
+        contentType: "image/gif",
+      });
+
+    expect(response.status).toBe(400);
+    expect(response.body).toEqual({
+      message: "Only JPEG, PNG, and WEBP images are supported.",
+    });
+    expect(replaceMasterCvPhoto).not.toHaveBeenCalled();
   });
 });
 
@@ -409,6 +523,7 @@ describe("Job Analysis API", () => {
       request(app).get("/api/applications/application-id/profile-comparison"),
       request(app).post("/api/applications/application-id/optimized-cv"),
       request(app).get("/api/applications/application-id/optimized-cv"),
+      request(app).get("/api/applications/application-id/optimized-cv/photo"),
       request(app).post("/api/applications/application-id/cover-letter"),
       request(app).get("/api/applications/application-id/cover-letter"),
     ]);
@@ -426,6 +541,7 @@ describe("Job Analysis API", () => {
     expect(compareProfiles).not.toHaveBeenCalled();
     expect(getProfileComparison).not.toHaveBeenCalled();
     expect(generateOptimizedCv).not.toHaveBeenCalled();
+    expect(readOptimizedCvPhoto).not.toHaveBeenCalled();
   });
 
   it("creates an application for the authenticated user", async () => {

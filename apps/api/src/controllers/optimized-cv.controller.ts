@@ -1,10 +1,20 @@
 import type { Request, Response } from "express";
+import { isAssetId } from "../lib/profile-photo.js";
 import {
   generateOptimizedCv,
   getOptimizedCv,
+  readOptimizedCvPhoto,
   saveOptimizedCv,
 } from "../services/optimized-cv.service.js";
 import { sendErrorResponse } from "./error-response.js";
+
+function photoAssetIdQuery(request: Request): string | null {
+  const value = request.query.assetId;
+  if (typeof value !== "string" || value === "") {
+    return null;
+  }
+  return isAssetId(value) ? value : null;
+}
 
 export async function createOptimizedCv(
   request: Request<{ id: string }>,
@@ -47,6 +57,24 @@ export async function replaceOptimizedCv(
       request.body,
     );
     response.status(200).json({ optimizedCv });
+  } catch (error) {
+    sendErrorResponse(error, response);
+  }
+}
+
+export async function showOptimizedCvPhoto(
+  request: Request<{ id: string }>,
+  response: Response,
+): Promise<void> {
+  try {
+    const photo = await readOptimizedCvPhoto(
+      request.params.id,
+      request.authenticatedUser!.id,
+      photoAssetIdQuery(request),
+    );
+    response.setHeader("Content-Type", photo.contentType);
+    response.setHeader("Cache-Control", "private, no-store");
+    response.status(200).send(photo.bytes);
   } catch (error) {
     sendErrorResponse(error, response);
   }

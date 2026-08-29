@@ -173,6 +173,7 @@ The Cover Letter section must:
 - Support a review-first workflow before editing.
 - Behave as a document editor rather than a form.
 - Clearly distinguish generated content from manual edits whenever applicable.
+- Keep the Cover Letter header without a profile photo. Photo behavior is specified in `docs/specs/master-cv-profile-photo.md` and applies only to the Master CV and Optimized CV.
 - Follow the responsibilities defined in:
   - docs/product/08-cover-letter.md
 
@@ -230,6 +231,7 @@ This Epic does NOT include:
 - Automatic saving.
 - Unsaved changes detection.
 - Optimized CV modifications.
+- Profile photo on the Cover Letter.
 - Backend changes unrelated to Cover Letter generation.
 
 ---

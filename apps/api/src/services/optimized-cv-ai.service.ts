@@ -292,6 +292,9 @@ function supportedPersonalProjects(
 export function enforceMasterCvIntegrity(
   masterCv: MasterCvInput,
   generated: MasterCvInput,
+  profilePhotoAssetId: string | null = null,
+  profilePhotoPositionX: number | null = null,
+  profilePhotoPositionY: number | null = null,
 ): OptimizedCv {
   return {
     fullName: masterCv.fullName,
@@ -345,11 +348,19 @@ export function enforceMasterCvIntegrity(
       generated.personalProjects,
       masterCv.personalProjects,
     ),
+    profilePhotoAssetId,
+    profilePhotoPositionX:
+      profilePhotoAssetId === null ? null : profilePhotoPositionX,
+    profilePhotoPositionY:
+      profilePhotoAssetId === null ? null : profilePhotoPositionY,
   };
 }
 
 export async function generateOptimizedCvDraft(
   input: OptimizedCvGenerationInput,
+  profilePhotoAssetId: string | null = null,
+  profilePhotoPositionX: number | null = null,
+  profilePhotoPositionY: number | null = null,
 ): Promise<OptimizedCv> {
   const apiKey = process.env.OPENAI_API_KEY;
   if (!apiKey) throw new Error("OpenAI is not configured.");
@@ -420,5 +431,11 @@ export async function generateOptimizedCvDraft(
     throw new Error("Invalid optimized CV response.");
   }
 
-  return enforceMasterCvIntegrity(input.masterCv, parsed);
+  return enforceMasterCvIntegrity(
+    input.masterCv,
+    parsed,
+    profilePhotoAssetId,
+    profilePhotoPositionX,
+    profilePhotoPositionY,
+  );
 }

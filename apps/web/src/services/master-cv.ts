@@ -68,3 +68,64 @@ export async function uploadMasterCv(file: File): Promise<MasterCvExtraction> {
   });
   return readResponse<MasterCvExtraction>(response);
 }
+
+export async function uploadMasterCvPhoto(
+  file: File,
+  positionX = 50,
+  positionY = 50,
+): Promise<{
+  profilePhotoAssetId: string;
+  profilePhotoPositionX: number;
+  profilePhotoPositionY: number;
+}> {
+  const formData = new FormData();
+  formData.append("file", file);
+  formData.append("positionX", String(positionX));
+  formData.append("positionY", String(positionY));
+  const response = await fetch(`${apiUrl}/api/master-cv/photo`, {
+    method: "PUT",
+    credentials: "include",
+    body: formData,
+  });
+  return readResponse<{
+    profilePhotoAssetId: string;
+    profilePhotoPositionX: number;
+    profilePhotoPositionY: number;
+  }>(response);
+}
+
+export async function updateMasterCvPhotoPosition(
+  positionX: number,
+  positionY: number,
+): Promise<{
+  profilePhotoAssetId: string;
+  profilePhotoPositionX: number;
+  profilePhotoPositionY: number;
+}> {
+  const response = await fetch(`${apiUrl}/api/master-cv/photo`, {
+    method: "PATCH",
+    credentials: "include",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ positionX, positionY }),
+  });
+  return readResponse<{
+    profilePhotoAssetId: string;
+    profilePhotoPositionX: number;
+    profilePhotoPositionY: number;
+  }>(response);
+}
+
+export async function deleteMasterCvPhoto(): Promise<void> {
+  const response = await fetch(`${apiUrl}/api/master-cv/photo`, {
+    method: "DELETE",
+    credentials: "include",
+  });
+  if (response.status === 204) {
+    return;
+  }
+  await readResponse(response);
+}
+
+export function masterCvPhotoUrl(assetId: string): string {
+  return `${apiUrl}/api/master-cv/photo?v=${encodeURIComponent(assetId)}`;
+}

@@ -27,6 +27,7 @@ import {
   optionalFieldValue,
 } from "./components/MasterCvForm";
 import { MasterCvImport } from "./components/MasterCvImport";
+import { mergeImportedMasterCv } from "./pages/MasterCvEditorPage";
 import { ValidationToast } from "./components/ValidationToast";
 import { AuthContext } from "./context/auth-context";
 import { LocaleProvider } from "./context/LocaleProvider";
@@ -1308,6 +1309,23 @@ describe("App", () => {
     );
     expect(allFieldsMarkup).not.toContain(" · ");
     expect(allFieldsMarkup).not.toContain("data-cv-header-photo");
+
+    const photoMarkup = renderWithLocale(
+      <ApplicationOptimizedCv
+        applicationId="8e9c843b-5c3d-4e65-8514-7de898b2aca6"
+        errorMessage={null}
+        isLoading={false}
+        onChange={() => undefined}
+        onGenerate={() => undefined}
+        optimizedCv={{
+          ...baseCv,
+          profilePhotoAssetId: "7e9c843b-5c3d-4e65-8514-7de898b2aca6",
+        }}
+      />,
+    );
+    expect(photoMarkup).not.toContain("data-cv-header-photo");
+    expect(photoMarkup).not.toContain('alt="Taylor Smith"');
+    expect(photoMarkup).not.toContain("https://example.com/avatar.png");
 
     const requiredOnlyMarkup = renderWithLocale(
       <ApplicationOptimizedCv
@@ -2925,6 +2943,9 @@ describe("App", () => {
     );
 
     expect(markup).toContain("Información personal");
+    expect(markup).toContain("Foto de perfil");
+    expect(markup).toContain("Opcional. JPEG, PNG o WEBP. Máximo 2 MB.");
+    expect(markup).toContain("Subir foto");
     expect(markup).toContain("Resumen profesional");
     expect(markup).toContain("Experiencia");
     expect(markup).toContain("Formación");
@@ -2943,6 +2964,9 @@ describe("App", () => {
     expect(markup).toContain("LinkedIn");
     expect(markup).not.toContain("Portafolio");
     expect(markup).not.toContain('data-field="portfolio"');
+    expect(markup.indexOf("Foto de perfil")).toBeLessThan(
+      markup.indexOf("Nombre completo"),
+    );
     expect(markup.indexOf("Título profesional")).toBeGreaterThan(
       markup.indexOf("Nombre completo"),
     );
@@ -2958,6 +2982,7 @@ describe("App", () => {
     {
       locale: "en" as const,
       personalInformation: "Personal information",
+      profilePhoto: "Profile photo",
       personalProjects: "Personal projects",
       professionalTitle: "Professional title",
       website: "Website or professional profile",
@@ -2966,6 +2991,7 @@ describe("App", () => {
     {
       locale: "fr" as const,
       personalInformation: "Informations personnelles",
+      profilePhoto: "Photo de profil",
       personalProjects: "Projets personnels",
       professionalTitle: "Titre professionnel",
       website: "Site web ou profil professionnel",
@@ -2976,6 +3002,7 @@ describe("App", () => {
     ({
       locale,
       personalInformation,
+      profilePhoto,
       personalProjects,
       professionalTitle,
       website,
@@ -3026,6 +3053,7 @@ describe("App", () => {
       );
 
       expect(formMarkup).toContain(personalInformation);
+      expect(formMarkup).toContain(profilePhoto);
       expect(formMarkup).toContain(personalProjects);
       expect(formMarkup).toContain(professionalTitle);
       expect(formMarkup).toContain(website);
@@ -3075,6 +3103,22 @@ describe("App", () => {
     expect(input.website).toBeNull();
     expect(input.skills).toEqual(["TypeScript"]);
     expect(input.personalProjects).toEqual([]);
+
+    const merged = mergeImportedMasterCv(
+      {
+        ...input,
+        profilePhotoAssetId: "7e9c843b-5c3d-4e65-8514-7de898b2aca6",
+        profilePhotoPositionX: 25,
+        profilePhotoPositionY: 75,
+      },
+      { ...input, fullName: "Imported Name" },
+    );
+    expect(merged).toMatchObject({
+      fullName: "Imported Name",
+      profilePhotoAssetId: "7e9c843b-5c3d-4e65-8514-7de898b2aca6",
+      profilePhotoPositionX: 25,
+      profilePhotoPositionY: 75,
+    });
   });
 
   it("renders personal project fields and independent collection ordering", () => {

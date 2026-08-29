@@ -1,4 +1,5 @@
 import { useState, type FormEvent } from "react";
+import { MasterCvProfilePhotoField } from "./MasterCvProfilePhotoField";
 import { ValidationToast } from "./ValidationToast";
 import type { LocaleContextValue } from "../context/locale-context";
 import { useLocale } from "../hooks/useLocale";
@@ -362,13 +363,24 @@ export function MasterCvForm({
   submitLabel,
   isSaving,
   errorMessage,
+  photoPersistence = "deferred",
   onSubmit,
 }: {
-  initialValue: MasterCvInput;
+  initialValue: MasterCvInput & {
+    profilePhotoAssetId?: string | null;
+    profilePhotoPositionX?: number | null;
+    profilePhotoPositionY?: number | null;
+  };
   submitLabel: string;
   isSaving: boolean;
   errorMessage: string | null;
-  onSubmit: (input: MasterCvInput) => Promise<void>;
+  photoPersistence?: "immediate" | "deferred";
+  onSubmit: (
+    input: MasterCvInput,
+    pendingPhoto: File | null,
+    pendingPhotoPositionX: number | null,
+    pendingPhotoPositionY: number | null,
+  ) => Promise<void>;
 }) {
   const { t } = useLocale();
   const [personal, setPersonal] = useState({
@@ -399,6 +411,16 @@ export function MasterCvForm({
   );
   const { fieldErrors, reportFieldErrors, clearFieldError } =
     useSaveValidationFeedback();
+  const [photoAssetId, setPhotoAssetId] = useState<string | null>(
+    initialValue.profilePhotoAssetId ?? null,
+  );
+  const [photoPositionX, setPhotoPositionX] = useState<number | null>(
+    initialValue.profilePhotoPositionX ?? null,
+  );
+  const [photoPositionY, setPhotoPositionY] = useState<number | null>(
+    initialValue.profilePhotoPositionY ?? null,
+  );
+  const [pendingPhoto, setPendingPhoto] = useState<File | null>(null);
 
   function buildInput(): MasterCvInput {
     return {
@@ -475,7 +497,12 @@ export function MasterCvForm({
       t,
     );
     if (reportFieldErrors(nextErrors)) return;
-    await onSubmit(input);
+    await onSubmit(
+      input,
+      pendingPhoto,
+      pendingPhoto ? photoPositionX : null,
+      pendingPhoto ? photoPositionY : null,
+    );
   }
 
   return (
@@ -488,6 +515,20 @@ export function MasterCvForm({
       <section className="cc-card p-6">
         <SectionHeader title={t("masterCv.form.personalInformation")} />
         <div className="mt-5 grid gap-4 sm:grid-cols-2">
+          <MasterCvProfilePhotoField
+            persistence={photoPersistence}
+            assetId={photoAssetId}
+            positionX={photoPositionX}
+            positionY={photoPositionY}
+            onPhotoChange={(assetId, positionX, positionY) => {
+              setPhotoAssetId(assetId);
+              setPhotoPositionX(positionX);
+              setPhotoPositionY(positionY);
+            }}
+            pendingFile={pendingPhoto}
+            onPendingFileChange={setPendingPhoto}
+            disabled={isSaving}
+          />
           <TextField
             id="full-name"
             fieldKey="fullName"

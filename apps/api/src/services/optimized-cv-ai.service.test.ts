@@ -219,6 +219,9 @@ describe("enforceMasterCvIntegrity", () => {
           url: "https://example.com/career-copilot",
         },
       ],
+      profilePhotoAssetId: null,
+      profilePhotoPositionX: null,
+      profilePhotoPositionY: null,
     });
   });
 
@@ -312,6 +315,35 @@ describe("enforceMasterCvIntegrity", () => {
       website: null,
     });
   });
+
+  it("attaches the snapshot photo identifier and ignores invented photo fields", () => {
+    const assetId = "8e9c843b-5c3d-4e65-8514-7de898b2aca6";
+    const generated = {
+      ...input.masterCv,
+      profilePhotoAssetId: "invented-id",
+      profilePhotoObjectKey: "users/other/master-cv/profile-photo/invented",
+    } as typeof input.masterCv & {
+      profilePhotoAssetId: string;
+      profilePhotoObjectKey: string;
+    };
+
+    expect(
+      enforceMasterCvIntegrity(input.masterCv, generated, assetId, 25, 75),
+    ).toEqual(
+      expect.objectContaining({
+        profilePhotoAssetId: assetId,
+        profilePhotoPositionX: 25,
+        profilePhotoPositionY: 75,
+      }),
+    );
+    expect(
+      enforceMasterCvIntegrity(input.masterCv, generated, null),
+    ).toEqual(
+      expect.objectContaining({
+        profilePhotoAssetId: null,
+      }),
+    );
+  });
 });
 
 describe("generateOptimizedCvDraft", () => {
@@ -369,6 +401,9 @@ describe("generateOptimizedCvDraft", () => {
           url: null,
         },
       ],
+      profilePhotoAssetId: null,
+      profilePhotoPositionX: null,
+      profilePhotoPositionY: null,
     });
     expect(createResponse).toHaveBeenCalledOnce();
     const prompt = createResponse.mock.calls[0][0].input[0].content[0]

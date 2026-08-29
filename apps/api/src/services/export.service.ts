@@ -18,6 +18,7 @@ import { getMasterCv, MasterCvError } from "./master-cv.service.js";
 import {
   getOptimizedCv,
   OptimizedCvError,
+  readOptimizedCvPhoto,
 } from "./optimized-cv.service.js";
 
 export type ExportDocumentType = "optimized-cv" | "cover-letter";
@@ -87,6 +88,18 @@ async function requireExportDocuments(
   }
 }
 
+async function loadOptimizedCvPhotoBytes(
+  applicationId: string,
+  userId: string,
+  assetId: string | null | undefined,
+): Promise<Buffer | null> {
+  if (!assetId) {
+    return null;
+  }
+  const photo = await readOptimizedCvPhoto(applicationId, userId, assetId);
+  return photo.bytes;
+}
+
 export async function exportApplicationDocument(
   applicationId: string,
   userId: string,
@@ -107,7 +120,15 @@ export async function exportApplicationDocument(
 
     const buffer = await renderDocument(
       documentType === "optimized-cv"
-        ? { type: "optimized-cv", data: optimizedCv }
+        ? {
+            type: "optimized-cv",
+            data: optimizedCv,
+            profilePhotoBytes: await loadOptimizedCvPhotoBytes(
+              applicationId,
+              userId,
+              optimizedCv.profilePhotoAssetId,
+            ),
+          }
         : { type: "cover-letter", data: coverLetter },
       "pdf",
     );

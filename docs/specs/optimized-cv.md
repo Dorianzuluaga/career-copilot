@@ -88,7 +88,7 @@ Profile Match
 
 The Master CV may contain:
 
-Personal Information, including optional `professionalTitle` and `website`
+Personal Information, including optional `professionalTitle`, `website`, and profile photo
 Professional Summary
 Experience
 Education
@@ -97,7 +97,7 @@ Languages
 Certifications
 Personal Projects
 
-Personal Information is protected Master CV data. Optional `professionalTitle` and `website` remain part of that protected information and are copied from the Master CV during Optimized CV generation.
+Personal Information is protected Master CV data. Optional `professionalTitle`, `website`, and profile photo remain part of that protected information and are copied from the Master CV during Optimized CV generation. Profile photo snapshot behavior is specified in `docs/specs/master-cv-profile-photo.md`.
 
 The AI must evaluate Personal Projects against the available application context and may include projects that are relevant to the target job opportunity.
 
@@ -224,7 +224,7 @@ Changes to these factual project identity fields must always be performed in the
 
 The following information remains read-only because it belongs to the Master CV:
 
-- Personal information, including optional `professionalTitle` and `website`
+- Personal information, including optional `professionalTitle`, `website`, and profile photo
 - Employment dates
 - Company names
 - Job titles
@@ -251,6 +251,8 @@ Users should explicitly decide when the current version becomes the saved versio
 The saved document becomes associated with the current Application Workspace.
 
 Saving must not modify the Master CV.
+
+Saving must not refresh the profile photo from the Master CV. The photo snapshot is copied at generation time as specified in `docs/specs/master-cv-profile-photo.md`.
 
 This Epic does not define unsaved changes behavior.
 
@@ -289,7 +291,7 @@ The Optimized CV section must:
 - Preserve the current Application context.
 - Present one editable Optimized CV document.
 - Clearly distinguish editable content from protected Master CV information.
-- Keep Master CV factual information read-only.
+- Keep Master CV factual information read-only, including the profile photo snapshot.
 - Organize information into logical document sections.
 - Support a review-first workflow before editing.
 - Clearly distinguish generated content from manual edits whenever applicable.
@@ -325,7 +327,7 @@ The AI must never:
 - Change employment dates.
 - Create fictitious projects.
 - Fabricate certifications.
-- Modify personal information.
+- Modify personal information, including the profile photo.
 - Invent project technologies.
 - Invent project URLs.
 - Invent project achievements or outcomes.
@@ -403,6 +405,7 @@ This Epic does NOT include:
 - Master CV modifications.
 - Personal Project creation or editing inside the Optimized CV.
 - Modification of Personal Project identity information from the Optimized CV.
+- Per-application profile photo selection or upload. Photo snapshot behavior is specified in `docs/specs/master-cv-profile-photo.md`.
 - AI-generated Personal Projects.
 - External project discovery.
 - LinkedIn project import.
@@ -418,7 +421,7 @@ Users can review the generated document.
 
 Users can manually edit the application-specific content of the generated Optimized CV.
 
-Protected Master CV information remains read-only.
+Protected Master CV information remains read-only, including the profile photo snapshot.
 
 Manual edits remain available while navigating inside the current Application Workspace session.
 

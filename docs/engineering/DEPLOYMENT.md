@@ -1,6 +1,6 @@
 # Production Deployment
 
-This guide prepares Career Copilot for production on Railway: Web, API, and PostgreSQL.
+This guide prepares Career Copilot for production on Railway: Web, API, PostgreSQL, and a private Bucket.
 
 Vercel is not part of the production deployment.
 
@@ -27,10 +27,15 @@ Do not commit real secrets. Do not put server secrets in `VITE_` variables.
 | `OPENAI_MODEL`                   | SERVER-ONLY (not a secret) | Backend           |
 | `GOOGLE_APPLICATION_CREDENTIALS` | SERVER-ONLY / SECRET       | Backend (local)   |
 | `FIREBASE_SERVICE_ACCOUNT`       | SERVER-ONLY / SECRET       | Backend (Railway) |
+| `BUCKET`                         | SERVER-ONLY (not a secret) | Backend           |
+| `ENDPOINT`                       | SERVER-ONLY (not a secret) | Backend           |
+| `REGION`                         | SERVER-ONLY (not a secret) | Backend           |
+| `ACCESS_KEY_ID`                  | SERVER-ONLY / SECRET       | Backend           |
+| `SECRET_ACCESS_KEY`              | SERVER-ONLY / SECRET       | Backend           |
 
-Frontend variables are bundled into the browser at build time. Never put OpenAI keys, database credentials, Firebase service accounts, session secrets, or provider tokens in `VITE_` variables.
+Frontend variables are bundled into the browser at build time. Never put OpenAI keys, database credentials, Firebase service accounts, Railway Bucket credentials, session secrets, or provider tokens in `VITE_` variables.
 
-Firebase web config values are public client identifiers. Restrict them in the Firebase console to the production domain. The Firebase Admin service account is a secret and must stay on the API.
+Firebase web config values are public client identifiers. Restrict them in the Firebase console to the production domain. The Firebase Admin service account is a secret and must stay on the API. Railway Bucket S3 credentials are secrets and must stay on the API. Do not add `FIREBASE_STORAGE_BUCKET`.
 
 ### Local development
 
@@ -44,7 +49,7 @@ cp apps/api/.env.example apps/api/.env
 Required locally:
 
 - Frontend: `VITE_API_URL`, `VITE_FIREBASE_API_KEY`, `VITE_FIREBASE_AUTH_DOMAIN`, `VITE_FIREBASE_PROJECT_ID`, `VITE_FIREBASE_APP_ID`
-- Backend: `DATABASE_URL`, `OPENAI_API_KEY`, `FRONTEND_ORIGIN` (defaults to `http://localhost:5173` if omitted), and either `GOOGLE_APPLICATION_CREDENTIALS` or `FIREBASE_SERVICE_ACCOUNT`
+- Backend: `DATABASE_URL`, `OPENAI_API_KEY`, `FRONTEND_ORIGIN` (defaults to `http://localhost:5173` if omitted), `BUCKET`, `ENDPOINT`, `REGION`, `ACCESS_KEY_ID`, `SECRET_ACCESS_KEY`, and either `GOOGLE_APPLICATION_CREDENTIALS` or `FIREBASE_SERVICE_ACCOUNT`
 
 Optional locally:
 
@@ -72,9 +77,16 @@ Set these on the Railway API service. Railway usually provides `PORT` and `NODE_
 - `FRONTEND_ORIGIN` — exact Railway Web origin, for example `https://your-web.up.railway.app` (no trailing path)
 - `OPENAI_API_KEY`
 - `FIREBASE_SERVICE_ACCOUNT` — full Firebase Admin service account JSON
+- `BUCKET` — Railway Bucket S3 bucket name (`BUCKET`, not `RAILWAY_BUCKET_NAME`). Server-only. Do not add `VITE_BUCKET`.
+- `ENDPOINT` — Railway Bucket S3 endpoint, for example `https://storage.railway.app`. Server-only.
+- `REGION` — Railway Bucket S3 region, for example `auto`. Server-only.
+- `ACCESS_KEY_ID` — Railway Bucket S3 access key. Server-only secret.
+- `SECRET_ACCESS_KEY` — Railway Bucket S3 secret key. Server-only secret.
 - `OPENAI_MODEL` — optional
 
 Use `FIREBASE_SERVICE_ACCOUNT` on Railway. `GOOGLE_APPLICATION_CREDENTIALS` expects a file path and is intended for local development.
+
+Inject Bucket credentials into the API service only, using Railway Variable References from the Bucket. Do not inject them into the Web service. Do not set `FIREBASE_STORAGE_BUCKET`.
 
 ---
 
@@ -128,6 +140,17 @@ That command serves `apps/web/dist` on `PORT` (default `4173`). It never uses `n
 2. Link it to the API service so `DATABASE_URL` is injected.
 3. Do not commit dumps, backups, or local database files.
 
+### Object storage
+
+1. Create a Bucket in the same Railway project. Choose a region close to the API. The region cannot be changed later.
+2. Use the globally unique `BUCKET` value as the S3 bucket name. Do not use `RAILWAY_BUCKET_NAME`.
+3. Inject `BUCKET`, `ENDPOINT`, `REGION`, `ACCESS_KEY_ID`, and `SECRET_ACCESS_KEY` into the API service with Variable References.
+4. Do not inject bucket credentials into the Web service.
+5. Do not configure bucket CORS for the frontend. The browser never talks to the bucket.
+6. Do not use Firebase Storage or `FIREBASE_STORAGE_BUCKET`.
+
+For local development, copy those five values from the Bucket Credentials tab into the ignored API `.env`. Use a non-production bucket instance. Do not point local development at the production bucket.
+
 ### Database migration procedure
 
 Migrations live in `apps/api/prisma/migrations`.
@@ -144,11 +167,12 @@ If a migration fails, the API process does not start. Fix the database or migrat
 
 ### Railway configuration
 
-This repository is a shared npm workspaces monorepo. Create three Railway services from the same GitHub repository:
+This repository is a shared npm workspaces monorepo. Create these Railway resources. Web and API come from the same GitHub repository:
 
 | Service    | Role                         |
 | ---------- | ---------------------------- |
 | PostgreSQL | Railway PostgreSQL plugin    |
+| Bucket     | Private S3-compatible photos |
 | API        | Express production server    |
 | Web        | Vite production static build |
 
@@ -195,6 +219,7 @@ If Railway's JavaScript monorepo importer sets a service Root Directory to `apps
 - Session cookies remain HTTP-only. The frontend never stores identity tokens.
 - In production the session cookie is `Secure` and `SameSite=None` so the Railway Web origin can call the Railway API with `credentials: "include"`. Local development keeps `SameSite=Lax` and a non-secure cookie.
 - Custom same-site domains (`https://app.example.com` and `https://api.example.com`) are the more durable cookie setup. Until those exist, `FRONTEND_ORIGIN` must match the Railway Web origin exactly.
+- Create one private Railway Bucket in the project. Public buckets are not supported. Inject `BUCKET`, `ENDPOINT`, `REGION`, `ACCESS_KEY_ID`, and `SECRET_ACCESS_KEY` into the API service only. The browser never reads or writes the bucket. Do not configure bucket CORS for the frontend. Do not use Firebase Storage or `FIREBASE_STORAGE_BUCKET`.
 
 ### CORS
 
@@ -205,13 +230,14 @@ The API allows credentialed requests only from `FRONTEND_ORIGIN`. It does not us
 ## Deployment order
 
 1. Create Railway PostgreSQL and link it to the API service.
-2. Set API environment variables, including a temporary `FRONTEND_ORIGIN` if the Web URL is not known yet.
-3. Deploy the API. Confirm `GET https://<api-host>/health` returns `{ "status": "ok" }`.
-4. Set Web environment variables, including `VITE_API_URL` pointing at the Railway API origin.
-5. Deploy the Web service.
-6. Set `FRONTEND_ORIGIN` to the exact Railway Web origin and redeploy the API if the value changed.
-7. Add the Railway Web domain to Firebase authorized domains.
-8. Run the smoke tests below.
+2. Create a private Railway Bucket in the same project. Inject its credentials into the API service.
+3. Set API environment variables, including a temporary `FRONTEND_ORIGIN` if the Web URL is not known yet.
+4. Deploy the API. Confirm `GET https://<api-host>/health` returns `{ "status": "ok" }`.
+5. Set Web environment variables, including `VITE_API_URL` pointing at the Railway API origin.
+6. Deploy the Web service.
+7. Set `FRONTEND_ORIGIN` to the exact Railway Web origin and redeploy the API if the value changed.
+8. Add the Railway Web domain to Firebase authorized domains.
+9. Run the smoke tests below.
 
 Frontend env vars are compile-time values. Changing `VITE_API_URL` or Firebase web config requires a new Web build.
 
@@ -242,7 +268,7 @@ Frontend env vars are compile-time values. Changing `VITE_API_URL` or Firebase w
 
 - Never commit `.env`, `.env.local`, `.env.production`, or other files with real secrets.
 - Never print secrets in logs, tickets, or pull requests.
-- Never expose OpenAI keys, `DATABASE_URL`, Firebase service accounts, or session identifiers in API responses.
+- Never expose OpenAI keys, `DATABASE_URL`, Firebase service accounts, Railway Bucket credentials, or session identifiers in API responses.
 - Never trust client-provided user IDs. Authorization uses the server session.
 - Do not enable development authentication bypasses.
 - Do not log cookies, identity tokens, or personal CV contents.
@@ -269,6 +295,10 @@ Frontend env vars are compile-time values. Changing `VITE_API_URL` or Firebase w
 - [ ] Session cookies are HTTP-only; production cookies are Secure
 - [ ] Firebase authorized domains include the Railway Web host
 - [ ] Firebase Admin credentials are provided as `FIREBASE_SERVICE_ACCOUNT`
+- [ ] A private Railway Bucket exists in the project
+- [ ] `BUCKET`, `ENDPOINT`, `REGION`, `ACCESS_KEY_ID`, and `SECRET_ACCESS_KEY` are set on the API only
+- [ ] Bucket credentials are not present on the Web service and no `VITE_` bucket variables exist
+- [ ] `FIREBASE_STORAGE_BUCKET` is not set
 - [ ] Google sign-in is the only authentication method
 - [ ] Production URLs are not hardcoded in source
 - [ ] Frontend production build succeeds with Railway Web env vars

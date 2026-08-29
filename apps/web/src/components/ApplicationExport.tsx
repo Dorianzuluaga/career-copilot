@@ -218,7 +218,10 @@ export function ApplicationExport({
           }
         >
           {activePreview === "optimized-cv" && optimizedCv ? (
-            <OptimizedCvDocument cv={optimizedCv} />
+            <OptimizedCvDocument
+              cv={optimizedCv}
+              applicationId={applicationId}
+            />
           ) : coverLetter ? (
             <CoverLetterDocument coverLetter={coverLetter} />
           ) : null}

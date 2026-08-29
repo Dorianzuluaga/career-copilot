@@ -1,4 +1,12 @@
-const requiredVariables = ["OPENAI_API_KEY", "DATABASE_URL"] as const;
+const requiredVariables = [
+  "OPENAI_API_KEY",
+  "DATABASE_URL",
+  "BUCKET",
+  "ENDPOINT",
+  "REGION",
+  "ACCESS_KEY_ID",
+  "SECRET_ACCESS_KEY",
+] as const;
 const defaultFrontendOrigin = "http://localhost:5173";
 
 function missingRequiredVariables(): string[] {
