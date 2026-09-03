@@ -873,30 +873,15 @@ export function MasterCvForm({
               key={index}
               className="rounded-lg border border-line bg-canvas p-4"
             >
-              <div className="grid gap-4 sm:grid-cols-2">
-                <TextField
-                  label={t("masterCv.form.projectName")}
-                  value={item.name}
-                  onChange={(value) =>
-                    updatePersonalProject(index, {
-                      name: optionalFieldValue(value),
-                    })
-                  }
-                />
-                <TextField
-                  label={t("masterCv.form.projectUrl")}
-                  id={`personal-project-${index}-url`}
-                  fieldKey={`personalProjects.${index}.url`}
-                  value={item.url}
-                  error={fieldErrors[`personalProjects.${index}.url`]}
-                  onChange={(value) => {
-                    clearFieldError(`personalProjects.${index}.url`);
-                    updatePersonalProject(index, {
-                      url: optionalFieldValue(value),
-                    });
-                  }}
-                />
-              </div>
+              <TextField
+                label={t("masterCv.form.projectName")}
+                value={item.name}
+                onChange={(value) =>
+                  updatePersonalProject(index, {
+                    name: optionalFieldValue(value),
+                  })
+                }
+              />
               <label className="mt-4 block text-sm font-medium text-ink">
                 {t("masterCv.form.briefDescription")}
                 <textarea
@@ -919,6 +904,21 @@ export function MasterCvForm({
                       technologies: optionalFieldValue(value),
                     })
                   }
+                />
+              </div>
+              <div className="mt-4">
+                <TextField
+                  label={t("masterCv.form.projectUrl")}
+                  id={`personal-project-${index}-url`}
+                  fieldKey={`personalProjects.${index}.url`}
+                  value={item.url}
+                  error={fieldErrors[`personalProjects.${index}.url`]}
+                  onChange={(value) => {
+                    clearFieldError(`personalProjects.${index}.url`);
+                    updatePersonalProject(index, {
+                      url: optionalFieldValue(value),
+                    });
+                  }}
                 />
               </div>
               <CollectionActions

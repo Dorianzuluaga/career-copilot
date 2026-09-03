@@ -1438,7 +1438,26 @@ describe("App", () => {
       "AI career assistant built with TypeScript.",
     );
     expect(reviewMarkup).toContain("TypeScript, React");
-    expect(reviewMarkup).toContain("https://example.com/career-copilot");
+    expect(reviewMarkup).not.toContain(">https://example.com/career-copilot<");
+    expect(reviewMarkup).toContain(">Abrir proyecto<");
+    expect(reviewMarkup).toContain('href="https://example.com/career-copilot"');
+    expect(reviewMarkup).toContain(
+      'aria-label="Abrir proyecto: Career Copilot"',
+    );
+    expect(reviewMarkup).toContain('aria-hidden="true"');
+    expect(reviewMarkup).toContain('focusable="false"');
+    expect(reviewMarkup).not.toContain(
+      "TypeScript, React · https://example.com/career-copilot",
+    );
+    expect(reviewMarkup.indexOf("Career Copilot")).toBeLessThan(
+      reviewMarkup.indexOf("AI career assistant built with TypeScript."),
+    );
+    expect(
+      reviewMarkup.indexOf("AI career assistant built with TypeScript."),
+    ).toBeLessThan(reviewMarkup.indexOf("TypeScript, React"));
+    expect(reviewMarkup.indexOf("TypeScript, React")).toBeLessThan(
+      reviewMarkup.indexOf("Abrir proyecto"),
+    );
     expect(reviewMarkup).not.toContain("Eliminar proyecto");
     expect(reviewMarkup).not.toContain(
       'aria-label="Descripción del proyecto personal 1"',
@@ -1463,13 +1482,73 @@ describe("App", () => {
       'aria-label="Descripción del proyecto personal 1"',
     );
     expect(editMarkup).toContain("Career Copilot");
+    expect(editMarkup).toContain("AI career assistant built with TypeScript.");
     expect(editMarkup).toContain("TypeScript, React");
-    expect(editMarkup).toContain("https://example.com/career-copilot");
+    expect(editMarkup).not.toContain(">https://example.com/career-copilot<");
+    expect(editMarkup).toContain(">Abrir proyecto<");
+    expect(editMarkup).toContain('href="https://example.com/career-copilot"');
+    expect(editMarkup).toContain('aria-label="Abrir proyecto: Career Copilot"');
+    expect(editMarkup).not.toContain(
+      "TypeScript, React · https://example.com/career-copilot",
+    );
+    expect(editMarkup.indexOf("Career Copilot")).toBeLessThan(
+      editMarkup.indexOf("AI career assistant built with TypeScript."),
+    );
+    expect(
+      editMarkup.indexOf("AI career assistant built with TypeScript."),
+    ).toBeLessThan(editMarkup.indexOf("TypeScript, React"));
+    expect(editMarkup.indexOf("TypeScript, React")).toBeLessThan(
+      editMarkup.indexOf("Abrir proyecto"),
+    );
     expect(editMarkup).toContain("Eliminar proyecto");
     expect(editMarkup).toContain(
       "nombres, tecnologías y URL de los proyectos personales permanecen de solo lectura.",
     );
     expect(editMarkup).not.toContain("Añadir proyecto");
+
+    const schemeLessMarkup = renderWithLocale(
+      <ApplicationOptimizedCv
+        errorMessage={null}
+        isLoading={false}
+        onChange={() => undefined}
+        onGenerate={() => undefined}
+        optimizedCv={{
+          ...sampleOptimizedCv,
+          personalProjects: [
+            {
+              ...sampleOptimizedCv.personalProjects[0],
+              url: "example.com/career-copilot",
+            },
+          ],
+        }}
+      />,
+    );
+    expect(schemeLessMarkup).toContain(
+      'href="https://example.com/career-copilot"',
+    );
+    expect(schemeLessMarkup).not.toContain(">example.com/career-copilot<");
+
+    const emptyUrlMarkup = renderWithLocale(
+      <ApplicationOptimizedCv
+        errorMessage={null}
+        isLoading={false}
+        onChange={() => undefined}
+        onGenerate={() => undefined}
+        optimizedCv={{
+          ...sampleOptimizedCv,
+          personalProjects: [
+            {
+              ...sampleOptimizedCv.personalProjects[0],
+              url: null,
+            },
+          ],
+        }}
+      />,
+    );
+    expect(emptyUrlMarkup).not.toContain("Abrir proyecto");
+    expect(emptyUrlMarkup).not.toContain(
+      'aria-label="Abrir proyecto: Career Copilot"',
+    );
   });
 
   it("lets users add a Master CV Personal Project that the AI omitted", () => {
@@ -1595,6 +1674,7 @@ describe("App", () => {
       languages: "Languages",
       certifications: "Certifications",
       personalProjects: "Personal projects",
+      openProject: "Open project",
       doneEditing: "Done editing",
       editable: "Editable",
       experienceDescriptionAria: "Experience description 1",
@@ -1626,6 +1706,7 @@ describe("App", () => {
       languages: "Langues",
       certifications: "Certifications",
       personalProjects: "Projets personnels",
+      openProject: "Ouvrir le projet",
       doneEditing: "Terminer la modification",
       editable: "Modifiable",
       experienceDescriptionAria: "Description de l&#x27;expérience 1",
@@ -1658,6 +1739,7 @@ describe("App", () => {
       languages,
       certifications,
       personalProjects,
+      openProject,
       doneEditing,
       editable,
       experienceDescriptionAria,
@@ -1808,6 +1890,25 @@ describe("App", () => {
       expect(reviewMarkup).toContain(certifications);
       expect(reviewMarkup).toContain(personalProjects);
       expect(reviewMarkup).toContain("Career Copilot");
+      expect(reviewMarkup).toContain(`>${openProject}<`);
+      expect(reviewMarkup).not.toContain(
+        ">https://example.com/career-copilot<",
+      );
+      expect(reviewMarkup).toContain(
+        `aria-label="${openProject}: Career Copilot"`,
+      );
+      expect(reviewMarkup).not.toContain(
+        "TypeScript, React · https://example.com/career-copilot",
+      );
+      expect(reviewMarkup.indexOf("Career Copilot")).toBeLessThan(
+        reviewMarkup.indexOf("AI career assistant built with TypeScript."),
+      );
+      expect(
+        reviewMarkup.indexOf("AI career assistant built with TypeScript."),
+      ).toBeLessThan(reviewMarkup.indexOf("TypeScript, React"));
+      expect(reviewMarkup.indexOf("TypeScript, React")).toBeLessThan(
+        reviewMarkup.indexOf(openProject),
+      );
       expect(reviewMarkup).not.toContain(doneEditing);
       expect(reviewMarkup).not.toContain(editable);
 
@@ -3199,8 +3300,18 @@ describe("App", () => {
     expect(markup).toContain("Proyectos personales");
     expect(markup).toContain("Nombre del proyecto");
     expect(markup).toContain("Breve descripción");
-    expect(markup).toContain("Tecnologías");
+    expect(markup).toContain("Stack técnico");
     expect(markup).toContain("URL del proyecto");
+    expect(markup.indexOf("Nombre del proyecto")).toBeLessThan(
+      markup.indexOf("Breve descripción"),
+    );
+    expect(markup.indexOf("Breve descripción")).toBeLessThan(
+      markup.indexOf("Stack técnico"),
+    );
+    expect(markup.indexOf("Stack técnico")).toBeLessThan(
+      markup.indexOf("URL del proyecto"),
+    );
+    expect(markup).not.toContain("Tecnologías");
     expect(markup).toContain("Career Copilot");
     expect(markup).toContain("BigTrail Magazine");
     expect(markup).toContain("AI Developer Copilot");

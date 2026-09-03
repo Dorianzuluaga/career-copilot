@@ -139,7 +139,7 @@ export const spanishMessages = {
       projectName: "Nombre del proyecto",
       projectUrl: "URL del proyecto",
       briefDescription: "Breve descripción",
-      technologies: "Tecnologías",
+      technologies: "Stack técnico",
       removeProject: "Eliminar proyecto",
       skills: "Competencias",
       skillsLabel: "Competencias, separadas por comas",
@@ -167,8 +167,7 @@ export const spanishMessages = {
       photoTooLarge: "El tamaño máximo del archivo es 2 MB.",
       photoUploadFailed: "No se pudo subir la foto.",
       photoRemoveFailed: "No se pudo quitar la foto.",
-      photoPositionSaveFailed:
-        "No se pudo guardar la posición de la foto.",
+      photoPositionSaveFailed: "No se pudo guardar la posición de la foto.",
     },
     toast: {
       single:
@@ -322,6 +321,7 @@ export const spanishMessages = {
     languages: "Idiomas",
     certifications: "Certificaciones",
     personalProjects: "Proyectos personales",
+    openProject: "Abrir proyecto",
     description: "Descripción",
     experienceDescriptionAria: "Descripción de la experiencia {position}",
     personalProjectDescriptionAria:
@@ -538,7 +538,7 @@ const englishMessages: Messages = {
       projectName: "Project name",
       projectUrl: "Project URL",
       briefDescription: "Brief description",
-      technologies: "Technologies",
+      technologies: "Technical Stack",
       removeProject: "Remove project",
       skills: "Skills",
       skillsLabel: "Skills, separated by commas",
@@ -717,6 +717,7 @@ const englishMessages: Messages = {
     languages: "Languages",
     certifications: "Certifications",
     personalProjects: "Personal projects",
+    openProject: "Open project",
     description: "Description",
     experienceDescriptionAria: "Experience description {position}",
     personalProjectDescriptionAria: "Personal project description {position}",
@@ -919,7 +920,7 @@ const frenchMessages: Messages = {
       projectName: "Nom du projet",
       projectUrl: "URL du projet",
       briefDescription: "Brève description",
-      technologies: "Technologies",
+      technologies: "Stack technique",
       removeProject: "Supprimer le projet",
       skills: "Compétences",
       skillsLabel: "Compétences, séparées par des virgules",
@@ -1103,6 +1104,7 @@ const frenchMessages: Messages = {
     languages: "Langues",
     certifications: "Certifications",
     personalProjects: "Projets personnels",
+    openProject: "Ouvrir le projet",
     description: "Description",
     experienceDescriptionAria: "Description de l'expérience {position}",
     personalProjectDescriptionAria:

@@ -47,6 +47,9 @@ interface ApplicationOptimizedCvProps {
 }
 
 const fieldClassName = "cc-field mt-1";
+const PROJECT_LINK_ICON_PATH =
+  "M7 17.59 15.59 9H9V7h10v10h-2v-6.59L8.41 19 7 17.59Z";
+const URL_SCHEME_PATTERN = /^[a-zA-Z][a-zA-Z0-9+.-]*:/;
 
 const MASTER_CV_VALIDATION_KEYS: Record<string, TranslationKey> = {
   "Full name is required.": "masterCv.validation.fullNameRequired",
@@ -164,6 +167,11 @@ function hasText(value: string | null | undefined): value is string {
   return typeof value === "string" && value.trim().length > 0;
 }
 
+function projectLinkHref(url: string): string {
+  const trimmed = url.trim();
+  return URL_SCHEME_PATTERN.test(trimmed) ? trimmed : `https://${trimmed}`;
+}
+
 function personalProjectKey(project: PersonalProjectItem): string | null {
   const name = project.name?.trim();
   return name ? name.toLocaleLowerCase() : null;
@@ -264,6 +272,37 @@ function HeaderContactIcon({ kind }: { kind: OptimizedCvHeaderContactKind }) {
         <path key={d} d={d} fill="currentColor" />
       ))}
     </svg>
+  );
+}
+
+function ProjectLink({
+  url,
+  projectName,
+}: {
+  url: string;
+  projectName: string | null;
+}) {
+  const { t } = useLocale();
+  const label = t("optimizedCv.openProject");
+
+  return (
+    <a
+      href={projectLinkHref(url)}
+      aria-label={projectName ? `${label}: ${projectName}` : label}
+      className="mt-1 inline-flex items-center gap-1 text-sm font-medium text-brand underline decoration-current underline-offset-2"
+    >
+      <svg
+        viewBox="0 0 24 24"
+        width="12"
+        height="12"
+        aria-hidden="true"
+        focusable="false"
+        className="shrink-0"
+      >
+        <path d={PROJECT_LINK_ICON_PATH} fill="currentColor" />
+      </svg>
+      <span>{label}</span>
+    </a>
   );
 }
 
@@ -654,24 +693,40 @@ function PersonalProjectEntries({
     <div className="space-y-5">
       {items.map((item, index) => {
         const title = hasText(item.name) ? item.name : null;
-        const metaParts = [item.technologies, item.url].filter(hasText);
-        const identity = (
+        const description = hasText(item.description) ? item.description : null;
+        const technologies = hasText(item.technologies)
+          ? item.technologies
+          : null;
+        const url = hasText(item.url) ? item.url : null;
+        const showDescriptionEditor = Boolean(isEditing && onDescriptionChange);
+
+        const titleBlock = title ? (
+          <h4 className="text-base font-semibold text-ink">{title}</h4>
+        ) : null;
+        const details = (
           <>
-            {title ? (
-              <h4 className="text-base font-semibold text-ink">{title}</h4>
-            ) : null}
-            {metaParts.length > 0 ? (
+            {technologies ? (
               <p
                 className={
-                  title ? "mt-1 text-sm text-muted" : "text-sm text-muted"
+                  title || description
+                    ? "mt-1 text-sm text-muted"
+                    : "text-sm text-muted"
                 }
               >
-                {metaParts.join(" · ")}
+                {technologies}
               </p>
             ) : null}
+            {url ? <ProjectLink url={url} projectName={title} /> : null}
           </>
         );
-        const hasIdentity = Boolean(title) || metaParts.length > 0;
+        const editingDetails = (
+          <>
+            {technologies ? (
+              <p className="text-sm text-muted">{technologies}</p>
+            ) : null}
+            {url ? <ProjectLink url={url} projectName={title} /> : null}
+          </>
+        );
 
         return (
           <article
@@ -679,15 +734,15 @@ function PersonalProjectEntries({
             data-field-group={`personalProjects.${index}`}
             tabIndex={-1}
           >
-            {hasIdentity ? (
+            {title ? (
               isEditing ? (
-                <ReadOnlyValue>{identity}</ReadOnlyValue>
+                <ReadOnlyValue>{titleBlock}</ReadOnlyValue>
               ) : (
-                identity
+                titleBlock
               )
             ) : null}
 
-            {isEditing && onDescriptionChange ? (
+            {showDescriptionEditor && onDescriptionChange ? (
               <label className="mt-3 block text-sm font-medium text-ink">
                 {t("optimizedCv.description")}
                 <textarea
@@ -702,10 +757,20 @@ function PersonalProjectEntries({
                   className={`${fieldClassName} min-h-24 resize-y`}
                 />
               </label>
-            ) : hasText(item.description) ? (
+            ) : description ? (
               <p className="mt-2 whitespace-pre-wrap text-left text-sm leading-6 text-ink">
-                {item.description}
+                {description}
               </p>
+            ) : null}
+
+            {technologies || url ? (
+              isEditing ? (
+                <div className="mt-3">
+                  <ReadOnlyValue>{editingDetails}</ReadOnlyValue>
+                </div>
+              ) : (
+                details
+              )
             ) : null}
 
             {isEditing && onRemove ? (
