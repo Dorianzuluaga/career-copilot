@@ -105,6 +105,12 @@ function extractPdfStreams(buffer: Buffer): string {
     .join("\n");
 }
 
+function extractPdfUris(buffer: Buffer): string[] {
+  return [...buffer.toString("latin1").matchAll(/\/URI\s*\(([^)]*)\)/g)].map(
+    (match) => match[1],
+  );
+}
+
 async function nonSquarePhoto(width: number, height: number): Promise<Buffer> {
   const vertical = width < height;
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}">
@@ -143,8 +149,47 @@ describe("document rendering service", () => {
     expect(text).toContain("PERSONAL PROJECTS");
     expect(text).toContain(selectedPersonalProject.name);
     expect(text).toContain(selectedPersonalProject.technologies);
-    expect(text).toContain(selectedPersonalProject.url);
     expect(text).toContain(selectedPersonalProject.description);
+    expect(text).toContain("Open project");
+    expect(text).not.toContain(selectedPersonalProject.url);
+    expect(extractPdfUris(buffer)).toContain(selectedPersonalProject.url);
+    expect(text).not.toContain(
+      `${selectedPersonalProject.technologies} · ${selectedPersonalProject.url}`,
+    );
+    const nameIndex = text.indexOf(selectedPersonalProject.name);
+    const descriptionIndex = text.indexOf(selectedPersonalProject.description);
+    const linkIndex = text.indexOf("Open project");
+    const stackIndex = text.indexOf(
+      selectedPersonalProject.technologies,
+      descriptionIndex,
+    );
+    expect(nameIndex).toBeLessThan(descriptionIndex);
+    expect(descriptionIndex).toBeLessThan(stackIndex);
+    expect(stackIndex).toBeLessThan(linkIndex);
+    expect(cv).toEqual(original);
+  });
+
+  it("prefixes scheme-less project hyperlink targets without changing the CV", async () => {
+    const cv: OptimizedCv = {
+      ...sampleOptimizedCv,
+      personalProjects: [
+        {
+          ...selectedPersonalProject,
+          url: "example.com/career-copilot",
+        },
+      ],
+    };
+    const original = structuredClone(cv);
+
+    const buffer = await renderDocument({
+      type: "optimized-cv",
+      data: cv,
+    });
+
+    expect(extractPdfText(buffer)).not.toContain("example.com/career-copilot");
+    expect(extractPdfUris(buffer)).toContain(
+      "https://example.com/career-copilot",
+    );
     expect(cv).toEqual(original);
   });
 

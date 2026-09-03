@@ -84,6 +84,13 @@ describe("translate", () => {
     expect(translate("fr", "masterCv.form.personalProjects")).toBe(
       "Projets personnels",
     );
+    expect(translate("es", "masterCv.form.technologies")).toBe("Stack técnico");
+    expect(translate("en", "masterCv.form.technologies")).toBe(
+      "Technical Stack",
+    );
+    expect(translate("fr", "masterCv.form.technologies")).toBe(
+      "Stack technique",
+    );
     expect(translate("es", "masterCv.import.action")).toBe(
       "Importar CV existente",
     );
@@ -174,6 +181,9 @@ describe("translate", () => {
     expect(translate("fr", "optimizedCv.personalProjects")).toBe(
       "Projets personnels",
     );
+    expect(translate("es", "optimizedCv.openProject")).toBe("Abrir proyecto");
+    expect(translate("en", "optimizedCv.openProject")).toBe("Open project");
+    expect(translate("fr", "optimizedCv.openProject")).toBe("Ouvrir le projet");
     expect(translate("es", "coverLetter.generate")).toBe(
       "Generar carta de presentación",
     );
@@ -514,6 +524,7 @@ describe("translate", () => {
       "optimizedCv.languages",
       "optimizedCv.certifications",
       "optimizedCv.personalProjects",
+      "optimizedCv.openProject",
       "optimizedCv.description",
       "optimizedCv.experienceDescriptionAria",
       "optimizedCv.personalProjectDescriptionAria",

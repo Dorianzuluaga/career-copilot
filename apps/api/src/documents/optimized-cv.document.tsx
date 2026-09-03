@@ -1,6 +1,7 @@
 import {
   Document,
   Image,
+  Link,
   Page,
   Path,
   StyleSheet,
@@ -19,6 +20,10 @@ import {
   type OptimizedCvHeaderContactKind,
   type OptimizedCvHeaderContactItem,
 } from "./optimized-cv-header.js";
+
+const PROJECT_LINK_ICON_PATH =
+  "M7 17.59 15.59 9H9V7h10v10h-2v-6.59L8.41 19 7 17.59Z";
+const URL_SCHEME_PATTERN = /^[a-zA-Z][a-zA-Z0-9+.-]*:/;
 
 const styles = StyleSheet.create({
   page: {
@@ -144,6 +149,20 @@ const styles = StyleSheet.create({
     fontSize: 9,
     color: "#64748b",
   },
+  projectLink: {
+    marginTop: 2,
+    flexDirection: "row",
+    alignItems: "center",
+    color: "#475569",
+    textDecoration: "underline",
+  },
+  projectLinkIcon: {
+    marginRight: 3,
+  },
+  projectLinkText: {
+    fontSize: 9,
+    color: "#475569",
+  },
   entryBody: {
     marginTop: 4,
     fontSize: 10,
@@ -190,6 +209,27 @@ function HeaderContactIcon({ kind }: { kind: OptimizedCvHeaderContactKind }) {
         <Path key={d} d={d} fill="#475569" />
       ))}
     </Svg>
+  );
+}
+
+function projectLinkTarget(url: string): string {
+  const trimmed = url.trim();
+  return URL_SCHEME_PATTERN.test(trimmed) ? trimmed : `https://${trimmed}`;
+}
+
+function ProjectLink({ url }: { url: string }) {
+  return (
+    <Link src={projectLinkTarget(url)} style={styles.projectLink}>
+      <Svg
+        viewBox="0 0 24 24"
+        width={9}
+        height={9}
+        style={styles.projectLinkIcon}
+      >
+        <Path d={PROJECT_LINK_ICON_PATH} fill="#475569" />
+      </Svg>
+      <Text style={styles.projectLinkText}>Open project</Text>
+    </Link>
   );
 }
 
@@ -450,11 +490,11 @@ export function OptimizedCvPdfDocument({
           <Section title="Personal projects" first={!showLeft && !showRight}>
             {personalProjects.map((item, index) => {
               const title = hasText(item.name) ? item.name : null;
-              const metaParts = [item.technologies, item.url].filter(hasText);
               if (
                 !title &&
-                metaParts.length === 0 &&
-                !hasText(item.description)
+                !hasText(item.description) &&
+                !hasText(item.technologies) &&
+                !hasText(item.url)
               ) {
                 return null;
               }
@@ -464,14 +504,13 @@ export function OptimizedCvPdfDocument({
                   {title ? (
                     <Text style={styles.entryTitle}>{title}</Text>
                   ) : null}
-                  {metaParts.length > 0 ? (
-                    <Text style={styles.entryMeta}>
-                      {metaParts.join(" · ")}
-                    </Text>
-                  ) : null}
                   {hasText(item.description) ? (
                     <Text style={styles.entryBody}>{item.description}</Text>
                   ) : null}
+                  {hasText(item.technologies) ? (
+                    <Text style={styles.entryMeta}>{item.technologies}</Text>
+                  ) : null}
+                  {hasText(item.url) ? <ProjectLink url={item.url} /> : null}
                 </View>
               );
             })}
