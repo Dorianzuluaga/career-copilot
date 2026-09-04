@@ -1,18 +1,27 @@
-import type { OptimizedCv } from "../types/optimized-cv";
+import type { Locale } from "../i18n/locales";
+import type {
+  GeneratedOptimizedCvDraft,
+  OptimizedCv,
+} from "../types/optimized-cv";
 import { apiUrl, ApiError, readResponse } from "./api";
 
 export async function generateOptimizedCv(
   applicationId: string,
-): Promise<OptimizedCv> {
+  locale: Locale,
+): Promise<GeneratedOptimizedCvDraft> {
   const response = await fetch(
     `${apiUrl}/api/applications/${applicationId}/optimized-cv`,
     {
       method: "POST",
       credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ locale }),
     },
   );
 
-  const result = await readResponse<{ optimizedCv: OptimizedCv }>(response);
+  const result = await readResponse<{
+    optimizedCv: GeneratedOptimizedCvDraft;
+  }>(response);
   return result.optimizedCv;
 }
 
@@ -34,13 +43,15 @@ export async function saveOptimizedCv(
   applicationId: string,
   optimizedCv: OptimizedCv,
 ): Promise<OptimizedCv> {
+  const persistableOptimizedCv = { ...optimizedCv };
+  delete persistableOptimizedCv.workingLanguage;
   const response = await fetch(
     `${apiUrl}/api/applications/${applicationId}/optimized-cv`,
     {
       method: "PUT",
       credentials: "include",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(optimizedCv),
+      body: JSON.stringify(persistableOptimizedCv),
     },
   );
 

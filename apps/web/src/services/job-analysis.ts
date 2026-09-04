@@ -3,6 +3,7 @@ import type {
   JobOffer,
   PersistedApplication,
 } from "../types/job-analysis";
+import type { Locale } from "../i18n/locales";
 import { apiUrl, readResponse } from "./api";
 
 export async function createApplication(): Promise<{ id: string }> {
@@ -53,12 +54,15 @@ export async function saveJobOffer(
 
 export async function analyzeJobOffer(
   applicationId: string,
+  locale: Locale,
 ): Promise<JobAnalysis> {
   const response = await fetch(
     `${apiUrl}/api/applications/${applicationId}/job-analysis`,
     {
       method: "POST",
       credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ locale }),
     },
   );
   const body = await readResponse<{ jobAnalysis: JobAnalysis }>(response);

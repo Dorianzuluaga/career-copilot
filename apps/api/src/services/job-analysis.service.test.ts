@@ -55,7 +55,7 @@ describe("analyzeJobOffer", () => {
       analysis as never,
     );
 
-    await expect(analyzeJobOffer(applicationId, userId)).resolves.toBe(
+    await expect(analyzeJobOffer(applicationId, userId, "en")).resolves.toBe(
       analysis,
     );
     expect(getOwnedApplication).toHaveBeenCalledWith(applicationId, userId);
@@ -71,10 +71,13 @@ describe("analyzeJobOffer", () => {
     vi.mocked(extractJobAnalysis).mockResolvedValue(analysis);
     vi.mocked(createJobAnalysis).mockResolvedValue(analysis as never);
 
-    await expect(analyzeJobOffer(applicationId, userId)).resolves.toBe(
+    await expect(analyzeJobOffer(applicationId, userId, "fr")).resolves.toBe(
       analysis,
     );
-    expect(extractJobAnalysis).toHaveBeenCalledWith("Original job description");
+    expect(extractJobAnalysis).toHaveBeenCalledWith(
+      "Original job description",
+      "fr",
+    );
     expect(createJobAnalysis).toHaveBeenCalledWith(applicationId, analysis);
   });
 
@@ -85,7 +88,7 @@ describe("analyzeJobOffer", () => {
     } as never);
     vi.mocked(extractJobAnalysis).mockRejectedValue(new Error("OpenAI failed"));
 
-    await expect(analyzeJobOffer(applicationId, userId)).rejects.toEqual(
+    await expect(analyzeJobOffer(applicationId, userId, "es")).rejects.toEqual(
       new JobAnalysisError("We couldn't analyze this job description.", 502),
     );
     expect(createJobAnalysis).not.toHaveBeenCalled();

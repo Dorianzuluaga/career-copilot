@@ -12,7 +12,11 @@ import {
   upsertOptimizedCv,
 } from "../repositories/optimized-cv.repository.js";
 import type { MasterCvInput } from "../types/master-cv.js";
-import type { OptimizedCv } from "../types/optimized-cv.js";
+import type {
+  GeneratedOptimizedCvDraft,
+  OptimizedCv,
+} from "../types/optimized-cv.js";
+import type { SupportedLocale } from "../types/supported-locale.js";
 import {
   ApplicationError,
   getOwnedApplication,
@@ -62,8 +66,8 @@ function toPublicOptimizedCv(
     record &&
     typeof record === "object" &&
     "profilePhotoObjectKey" in record &&
-    typeof (record as { profilePhotoObjectKey: unknown }).profilePhotoObjectKey ===
-      "string"
+    typeof (record as { profilePhotoObjectKey: unknown })
+      .profilePhotoObjectKey === "string"
       ? (record as { profilePhotoObjectKey: string }).profilePhotoObjectKey
       : null;
   const profilePhotoAssetId = parseOptimizedCvPhotoAssetId(
@@ -121,7 +125,8 @@ function parseClientPhotoConfiguration(
       400,
     );
   }
-  const assetId = (value as { profilePhotoAssetId: unknown }).profilePhotoAssetId;
+  const assetId = (value as { profilePhotoAssetId: unknown })
+    .profilePhotoAssetId;
   if (assetId === null || assetId === "") {
     const positionX = hasPositionX
       ? (value as { profilePhotoPositionX: unknown }).profilePhotoPositionX
@@ -183,7 +188,8 @@ function mapPhotoError(error: unknown): never {
 export async function generateOptimizedCv(
   applicationId: string,
   userId: string,
-): Promise<OptimizedCv> {
+  locale: SupportedLocale,
+): Promise<GeneratedOptimizedCvDraft> {
   try {
     const input = await prepareProfileComparisonInput(applicationId, userId);
     const profileMatch = await getProfileComparison(applicationId, userId);
@@ -203,19 +209,18 @@ export async function generateOptimizedCv(
     const profilePhotoPositionX =
       profilePhotoAssetId === null
         ? null
-        : (masterCv?.profilePhotoPositionX ??
-          PROFILE_PHOTO_DEFAULT_POSITION);
+        : (masterCv?.profilePhotoPositionX ?? PROFILE_PHOTO_DEFAULT_POSITION);
     const profilePhotoPositionY =
       profilePhotoAssetId === null
         ? null
-        : (masterCv?.profilePhotoPositionY ??
-          PROFILE_PHOTO_DEFAULT_POSITION);
+        : (masterCv?.profilePhotoPositionY ?? PROFILE_PHOTO_DEFAULT_POSITION);
     return generateOptimizedCvDraft(
       {
         masterCv: input.masterCv,
         jobAnalysis: input.jobAnalysis,
         profileMatch,
       },
+      locale,
       profilePhotoAssetId,
       profilePhotoPositionX,
       profilePhotoPositionY,
@@ -290,13 +295,13 @@ export async function saveOptimizedCv(
     nextObjectKey === null
       ? null
       : (requestedPhoto?.positionX ??
-        saved?.profilePhotoPositionX ??
-        PROFILE_PHOTO_DEFAULT_POSITION),
+          saved?.profilePhotoPositionX ??
+          PROFILE_PHOTO_DEFAULT_POSITION),
     nextObjectKey === null
       ? null
       : (requestedPhoto?.positionY ??
-        saved?.profilePhotoPositionY ??
-        PROFILE_PHOTO_DEFAULT_POSITION),
+          saved?.profilePhotoPositionY ??
+          PROFILE_PHOTO_DEFAULT_POSITION),
   );
   await deleteUnreferencedProfilePhotoObjects(
     optimizedCvPhotoPrefix(userId, applicationId),

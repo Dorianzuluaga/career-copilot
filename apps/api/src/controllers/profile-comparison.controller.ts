@@ -3,6 +3,7 @@ import {
   compareProfiles,
   getProfileComparison,
 } from "../services/profile-comparison.service.js";
+import { validateSupportedLocale } from "../types/supported-locale.js";
 import { sendErrorResponse } from "./error-response.js";
 
 export async function prepareProfileComparison(
@@ -10,9 +11,11 @@ export async function prepareProfileComparison(
   response: Response,
 ): Promise<void> {
   try {
+    const locale = validateSupportedLocale(request.body?.locale);
     const comparison = await compareProfiles(
       request.params.id,
       request.authenticatedUser!.id,
+      locale,
     );
     response.status(200).json(comparison);
   } catch (error) {

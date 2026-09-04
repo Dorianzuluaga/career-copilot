@@ -17,7 +17,7 @@ interface AnalysisAttempt {
 
 export function JobAnalysisPage() {
   const navigate = useNavigate();
-  const { t } = useLocale();
+  const { locale, t } = useLocale();
   const [description, setDescription] = useState("");
   const [attempt, setAttempt] = useState<AnalysisAttempt | null>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
@@ -51,7 +51,7 @@ export function JobAnalysisPage() {
         setAttempt(currentAttempt);
       }
 
-      await analyzeJobOffer(currentAttempt.applicationId);
+      await analyzeJobOffer(currentAttempt.applicationId, locale);
       navigate(`/applications/${currentAttempt.applicationId}`, {
         replace: true,
       });

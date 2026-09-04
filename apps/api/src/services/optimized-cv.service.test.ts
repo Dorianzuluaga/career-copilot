@@ -172,7 +172,10 @@ beforeEach(() => {
     jobAnalysis,
   });
   vi.mocked(getProfileComparison).mockResolvedValue(profileMatch);
-  vi.mocked(generateOptimizedCvDraft).mockResolvedValue(optimizedCv);
+  vi.mocked(generateOptimizedCvDraft).mockResolvedValue({
+    ...optimizedCv,
+    workingLanguage: "fr",
+  });
   vi.mocked(findMasterCvByUserId).mockResolvedValue({
     ...masterCv,
     profilePhotoObjectKey: null,
@@ -210,9 +213,12 @@ beforeEach(() => {
 
 describe("generateOptimizedCv", () => {
   it("generates an Optimized CV from Master CV, Job Analysis, and saved Profile Match", async () => {
-    await expect(generateOptimizedCv(applicationId, userId)).resolves.toEqual(
-      optimizedCv,
-    );
+    await expect(
+      generateOptimizedCv(applicationId, userId, "fr"),
+    ).resolves.toEqual({
+      ...optimizedCv,
+      workingLanguage: "fr",
+    });
 
     expect(prepareProfileComparisonInput).toHaveBeenCalledWith(
       applicationId,
@@ -225,6 +231,7 @@ describe("generateOptimizedCv", () => {
         jobAnalysis,
         profileMatch,
       },
+      "fr",
       null,
       null,
       null,
@@ -245,13 +252,17 @@ describe("generateOptimizedCv", () => {
       profilePhotoAssetId: "7e9c843b-5c3d-4e65-8514-7de898b2aca6",
       profilePhotoPositionX: 25,
       profilePhotoPositionY: 75,
+      workingLanguage: "fr",
     });
 
-    await expect(generateOptimizedCv(applicationId, userId)).resolves.toEqual({
+    await expect(
+      generateOptimizedCv(applicationId, userId, "fr"),
+    ).resolves.toEqual({
       ...optimizedCv,
       profilePhotoAssetId: "7e9c843b-5c3d-4e65-8514-7de898b2aca6",
       profilePhotoPositionX: 25,
       profilePhotoPositionY: 75,
+      workingLanguage: "fr",
     });
     expect(snapshotMasterCvPhoto).toHaveBeenCalledWith(
       userId,
@@ -261,6 +272,7 @@ describe("generateOptimizedCv", () => {
     );
     expect(generateOptimizedCvDraft).toHaveBeenCalledWith(
       expect.anything(),
+      "fr",
       "7e9c843b-5c3d-4e65-8514-7de898b2aca6",
       25,
       75,
@@ -272,9 +284,9 @@ describe("generateOptimizedCv", () => {
       new ProfileComparisonError("Job analysis not found.", 404),
     );
 
-    await expect(generateOptimizedCv(applicationId, userId)).rejects.toEqual(
-      new OptimizedCvError("Job analysis not found.", 404),
-    );
+    await expect(
+      generateOptimizedCv(applicationId, userId, "fr"),
+    ).rejects.toEqual(new OptimizedCvError("Job analysis not found.", 404));
     expect(getProfileComparison).not.toHaveBeenCalled();
     expect(generateOptimizedCvDraft).not.toHaveBeenCalled();
   });
@@ -284,9 +296,9 @@ describe("generateOptimizedCv", () => {
       new ProfileComparisonError("Profile Match not found.", 404),
     );
 
-    await expect(generateOptimizedCv(applicationId, userId)).rejects.toEqual(
-      new OptimizedCvError("Profile Match not found.", 404),
-    );
+    await expect(
+      generateOptimizedCv(applicationId, userId, "fr"),
+    ).rejects.toEqual(new OptimizedCvError("Profile Match not found.", 404));
     expect(generateOptimizedCvDraft).not.toHaveBeenCalled();
   });
 });

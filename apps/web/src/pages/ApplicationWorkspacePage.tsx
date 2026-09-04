@@ -47,7 +47,7 @@ export function ApplicationWorkspacePage() {
   const { applicationId } = useParams();
   const currentApplicationId = useRef(applicationId);
   currentApplicationId.current = applicationId;
-  const { t } = useLocale();
+  const { locale, t } = useLocale();
   const { requestNavigation } = useUnsavedChangesGuard();
   const [application, setApplication] = useState<PersistedApplication | null>(
     null,
@@ -187,7 +187,7 @@ export function ApplicationWorkspacePage() {
     setIsComparingProfile(true);
     setProfileComparisonError(null);
     try {
-      const comparison = await compareProfile(applicationId);
+      const comparison = await compareProfile(applicationId, locale);
       if (currentApplicationId.current === applicationId) {
         setProfileComparison(comparison);
       }
@@ -214,7 +214,7 @@ export function ApplicationWorkspacePage() {
     setOptimizedCvSaveError(null);
     setOptimizedCvSavedMessage(null);
     try {
-      const result = await generateOptimizedCv(applicationId);
+      const result = await generateOptimizedCv(applicationId, locale);
       if (currentApplicationId.current === applicationId) {
         setOptimizedCv(result);
       }
@@ -272,7 +272,7 @@ export function ApplicationWorkspacePage() {
     setCoverLetterSaveError(null);
     setCoverLetterSavedMessage(null);
     try {
-      const result = await generateCoverLetter(applicationId);
+      const result = await generateCoverLetter(applicationId, locale);
       if (currentApplicationId.current === applicationId) {
         setCoverLetter(result);
       }

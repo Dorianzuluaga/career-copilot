@@ -6,6 +6,7 @@ import {
   readOptimizedCvPhoto,
   saveOptimizedCv,
 } from "../services/optimized-cv.service.js";
+import { validateSupportedLocale } from "../types/supported-locale.js";
 import { sendErrorResponse } from "./error-response.js";
 
 function photoAssetIdQuery(request: Request): string | null {
@@ -21,9 +22,11 @@ export async function createOptimizedCv(
   response: Response,
 ): Promise<void> {
   try {
+    const locale = validateSupportedLocale(request.body?.locale);
     const optimizedCv = await generateOptimizedCv(
       request.params.id,
       request.authenticatedUser!.id,
+      locale,
     );
     response.status(200).json({ optimizedCv });
   } catch (error) {

@@ -7,8 +7,12 @@ import {
   findCoverLetterByApplicationId,
   upsertCoverLetter,
 } from "../repositories/cover-letter.repository.js";
-import type { CoverLetter } from "../types/cover-letter.js";
+import type {
+  CoverLetter,
+  GeneratedCoverLetterDraft,
+} from "../types/cover-letter.js";
 import type { OptimizedCv } from "../types/optimized-cv.js";
+import type { SupportedLocale } from "../types/supported-locale.js";
 import {
   ApplicationError,
   getOwnedApplication,
@@ -138,17 +142,21 @@ async function requireSavedOptimizedCv(
 export async function generateCoverLetter(
   applicationId: string,
   userId: string,
-): Promise<CoverLetter> {
+  locale: SupportedLocale,
+): Promise<GeneratedCoverLetterDraft> {
   try {
     const input = await prepareProfileComparisonInput(applicationId, userId);
     const optimizedCv = await requireSavedOptimizedCv(applicationId, userId);
     const profileMatch = await getProfileComparison(applicationId, userId);
-    return generateCoverLetterDraft({
-      masterCv: input.masterCv,
-      jobAnalysis: input.jobAnalysis,
-      profileMatch,
-      optimizedCv,
-    });
+    return generateCoverLetterDraft(
+      {
+        masterCv: input.masterCv,
+        jobAnalysis: input.jobAnalysis,
+        profileMatch,
+        optimizedCv,
+      },
+      locale,
+    );
   } catch (error) {
     if (error instanceof CoverLetterError) {
       throw error;

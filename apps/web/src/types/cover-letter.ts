@@ -1,3 +1,5 @@
+import type { Locale } from "../i18n/locales";
+
 export interface CoverLetter {
   candidateName: string;
   email: string;
@@ -10,4 +12,9 @@ export interface CoverLetter {
   motivation: string;
   closing: string;
   signature: string;
+  workingLanguage?: Locale;
 }
+
+export type GeneratedCoverLetterDraft = CoverLetter & {
+  workingLanguage: Locale;
+};

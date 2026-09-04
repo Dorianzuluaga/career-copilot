@@ -544,6 +544,55 @@ describe("Job Analysis API", () => {
     expect(readOptimizedCvPhoto).not.toHaveBeenCalled();
   });
 
+  it.each([
+    ["job-analysis", analyzeJobOffer],
+    ["profile-comparison", compareProfiles],
+    ["optimized-cv", generateOptimizedCv],
+    ["cover-letter", generateCoverLetter],
+  ] as const)(
+    "rejects invalid locales before calling %s generation",
+    async (endpoint, service) => {
+      vi.mocked(getAuthenticatedUser).mockResolvedValue(user);
+
+      for (const body of [{}, { locale: "de" }, { locale: 42 }]) {
+        const response = await request(app)
+          .post(`/api/applications/application-id/${endpoint}`)
+          .set("Cookie", "career_copilot_session=opaque-session-id")
+          .send(body);
+
+        expect(response.status).toBe(400);
+        expect(response.body).toEqual({
+          message: 'locale must be one of "es", "en", or "fr".',
+        });
+      }
+
+      expect(service).not.toHaveBeenCalled();
+    },
+  );
+
+  it.each([
+    ["job-analysis", analyzeJobOffer],
+    ["profile-comparison", compareProfiles],
+    ["optimized-cv", generateOptimizedCv],
+    ["cover-letter", generateCoverLetter],
+  ] as const)(
+    "accepts every supported locale for %s generation",
+    async (endpoint, service) => {
+      vi.mocked(getAuthenticatedUser).mockResolvedValue(user);
+      vi.mocked(service).mockResolvedValue(undefined as never);
+
+      for (const locale of ["es", "en", "fr"] as const) {
+        const response = await request(app)
+          .post(`/api/applications/application-id/${endpoint}`)
+          .set("Cookie", "career_copilot_session=opaque-session-id")
+          .send({ locale });
+
+        expect(response.status).toBe(200);
+        expect(service).toHaveBeenCalledWith("application-id", user.id, locale);
+      }
+    },
+  );
+
   it("creates an application for the authenticated user", async () => {
     const application = { id: "application-id", status: "NEW" };
     vi.mocked(getAuthenticatedUser).mockResolvedValue(user);
@@ -638,11 +687,16 @@ describe("Job Analysis API", () => {
 
     const response = await request(app)
       .post("/api/applications/application-id/job-analysis")
-      .set("Cookie", "career_copilot_session=opaque-session-id");
+      .set("Cookie", "career_copilot_session=opaque-session-id")
+      .send({ locale: "fr" });
 
     expect(response.status).toBe(200);
     expect(response.body).toEqual({ jobAnalysis });
-    expect(analyzeJobOffer).toHaveBeenCalledWith("application-id", user.id);
+    expect(analyzeJobOffer).toHaveBeenCalledWith(
+      "application-id",
+      user.id,
+      "fr",
+    );
   });
 
   it("returns the documented extraction error", async () => {
@@ -653,7 +707,8 @@ describe("Job Analysis API", () => {
 
     const response = await request(app)
       .post("/api/applications/application-id/job-analysis")
-      .set("Cookie", "career_copilot_session=opaque-session-id");
+      .set("Cookie", "career_copilot_session=opaque-session-id")
+      .send({ locale: "en" });
 
     expect(response.status).toBe(502);
     expect(response.body).toEqual({
@@ -681,7 +736,8 @@ describe("Job Analysis API", () => {
 
     const response = await request(app)
       .post("/api/applications/application-id/profile-comparison")
-      .set("Cookie", "career_copilot_session=opaque-session-id");
+      .set("Cookie", "career_copilot_session=opaque-session-id")
+      .send({ locale: "es" });
 
     expect(response.status).toBe(200);
     expect(response.body).toEqual({
@@ -699,7 +755,11 @@ describe("Job Analysis API", () => {
       recommendation:
         "Good opportunity. Improve your CV before applying so the supported experience is clear.",
     });
-    expect(compareProfiles).toHaveBeenCalledWith("application-id", user.id);
+    expect(compareProfiles).toHaveBeenCalledWith(
+      "application-id",
+      user.id,
+      "es",
+    );
   });
 
   it.each(["Master CV not found.", "Job analysis not found."])(
@@ -712,7 +772,8 @@ describe("Job Analysis API", () => {
 
       const response = await request(app)
         .post("/api/applications/application-id/profile-comparison")
-        .set("Cookie", "career_copilot_session=opaque-session-id");
+        .set("Cookie", "career_copilot_session=opaque-session-id")
+        .send({ locale: "en" });
 
       expect(response.status).toBe(404);
       expect(response.body).toEqual({ message });
@@ -802,17 +863,23 @@ describe("Job Analysis API", () => {
       skills: ["TypeScript"],
       languages: [],
       certifications: [],
+      workingLanguage: "fr" as const,
     };
     vi.mocked(getAuthenticatedUser).mockResolvedValue(user);
     vi.mocked(generateOptimizedCv).mockResolvedValue(optimizedCv);
 
     const response = await request(app)
       .post("/api/applications/application-id/optimized-cv")
-      .set("Cookie", "career_copilot_session=opaque-session-id");
+      .set("Cookie", "career_copilot_session=opaque-session-id")
+      .send({ locale: "fr" });
 
     expect(response.status).toBe(200);
     expect(response.body).toEqual({ optimizedCv });
-    expect(generateOptimizedCv).toHaveBeenCalledWith("application-id", user.id);
+    expect(generateOptimizedCv).toHaveBeenCalledWith(
+      "application-id",
+      user.id,
+      "fr",
+    );
   });
 
   it.each(["Master CV not found.", "Job analysis not found."])(
@@ -825,7 +892,8 @@ describe("Job Analysis API", () => {
 
       const response = await request(app)
         .post("/api/applications/application-id/optimized-cv")
-        .set("Cookie", "career_copilot_session=opaque-session-id");
+        .set("Cookie", "career_copilot_session=opaque-session-id")
+        .send({ locale: "en" });
 
       expect(response.status).toBe(404);
       expect(response.body).toEqual({ message });
@@ -959,17 +1027,23 @@ describe("Job Analysis API", () => {
       closing:
         "Thank you for your consideration. I am available for an interview.",
       signature: "Taylor Smith",
+      workingLanguage: "es" as const,
     };
     vi.mocked(getAuthenticatedUser).mockResolvedValue(user);
     vi.mocked(generateCoverLetter).mockResolvedValue(coverLetter);
 
     const response = await request(app)
       .post("/api/applications/application-id/cover-letter")
-      .set("Cookie", "career_copilot_session=opaque-session-id");
+      .set("Cookie", "career_copilot_session=opaque-session-id")
+      .send({ locale: "es" });
 
     expect(response.status).toBe(200);
     expect(response.body).toEqual({ coverLetter });
-    expect(generateCoverLetter).toHaveBeenCalledWith("application-id", user.id);
+    expect(generateCoverLetter).toHaveBeenCalledWith(
+      "application-id",
+      user.id,
+      "es",
+    );
   });
 
   it.each([
@@ -986,7 +1060,8 @@ describe("Job Analysis API", () => {
 
       const response = await request(app)
         .post("/api/applications/application-id/cover-letter")
-        .set("Cookie", "career_copilot_session=opaque-session-id");
+        .set("Cookie", "career_copilot_session=opaque-session-id")
+        .send({ locale: "en" });
 
       expect(response.status).toBe(404);
       expect(response.body).toEqual({ message });
