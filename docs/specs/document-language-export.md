@@ -2,7 +2,7 @@
 
 ## Feature information
 
-**Status:** Approved for phased implementation, subject to the unresolved product decision identified in this specification.
+**Status:** Implemented (Phases 1–6 complete). The unresolved product decision identified in this specification remains open.
 
 **Supported locales:** `es`, `en`, `fr`
 
@@ -271,7 +271,7 @@ Presentation Language must appear only in the Export step.
 - The UI must state that the selection applies to both Optimized CV and Cover Letter.
 - Both selected download requests must use the same value.
 - Changing the preview tab must not change Presentation Language.
-- Changing Presentation Language refreshes/invalidate the prepared preview for both documents.
+- Changing Presentation Language shows that language's preview, fetching on cache miss. It does not wipe other cached languages. Multiple `es`, `en`, and `fr` previews may coexist in the same Application Workspace.
 - The UI may default the selection to a validated browser-stored preference. If none exists, it may use the current UI locale as an initial convenience only; this default is not an inference and must remain visibly user-selectable.
 - UI chrome around Export follows UI locale. Document content and document chrome inside Export Preview follow Presentation Language.
 - While a presentation preview is being prepared, the UI must not show the saved working-language body under target-language chrome as if it were final.
@@ -333,11 +333,12 @@ Preview and PDF preparation must call the same application service and use the s
 - adaptation contract and validation;
 - deterministic document chrome resolver;
 - Cover Letter date formatter;
+- deterministic Language name and Proficiency label transform;
 - malformed-data validation.
 
-No preview result is persisted as a document version. The frontend may cache a successful preview in memory by application, document, saved-document `updatedAt`, and Presentation Language, and must invalidate it when any key changes.
+No preview result is persisted as a document version. Successful previews are cached in memory on the current Application Workspace. The cache key is `applicationId + document + presentationLanguage`. Failed previews are not cached. Leaving the workspace or reloading clears the cache. Saving Optimized CV or Cover Letter invalidates that document's entries for every cached Presentation Language. PDF download does not read cached preview bodies.
 
-AI output is not guaranteed to be byte-identical across separate preview and PDF requests. Both paths must nevertheless enforce the exact same field-level contract, source snapshot rules, language, protected fields, and deterministic chrome. Introducing a persistent export record solely to make the two requests identical is prohibited.
+AI output is not guaranteed to be byte-identical across separate preview and PDF requests. Both paths must nevertheless enforce the exact same field-level contract, source snapshot rules, language, protected fields, deterministic chrome, and Language + Proficiency presentation transform. Introducing a persistent export record solely to make the two requests identical is prohibited.
 
 ### Request validation
 
@@ -362,6 +363,7 @@ Validate request
   → merge validated narrative output into a deep copy of saved content
   → resolve deterministic document chrome
   → deterministically format Cover Letter date
+  → deterministically localize known Language + Proficiency labels
   → return preview view model OR render PDF
 ```
 
@@ -461,7 +463,9 @@ The following must be copied unchanged from the saved document:
 - `profilePhotoPositionY`
 - `workingLanguage`
 
-This intentionally means that verifiable terms such as job titles, degrees, skills, language names, and proficiency levels retain their saved spelling even when Presentation Language differs.
+This intentionally means that verifiable terms such as job titles, degrees, and skills retain their saved spelling even when Presentation Language differs.
+
+`languages[].name` and `languages[].proficiency` remain AI-protected: adaptation must not translate them, and stored values stay unchanged. After merge, presentation may remap known ES/EN/FR labels through the server document-localization catalog. Unknown values pass through unchanged.
 
 ### Cover Letter: adaptable fields
 
@@ -584,6 +588,17 @@ For newly generated Cover Letters, the service should retain an unambiguous ISO 
 
 Legacy date values may be normalized only when they can be parsed unambiguously under the existing English long-date format or ISO date format. An ambiguous or malformed date must fail preview/export; it must not be guessed or rewritten in persistence.
 
+### Language + Proficiency labels
+
+Language names and proficiency labels are a presentation-only transform in the same server document-localization module. They are not document chrome and must not be produced by AI.
+
+The catalog maps known values and their ES/EN/FR aliases onto Presentation Language:
+
+- Languages: Spanish / English / French
+- Proficiency: Native / Intermediate / Advanced / Basic
+
+Matching is after trim and case fold. Unknown values pass through unchanged. Order, count, and nulls are preserved. The source array is not mutated. Preview and PDF use the same transform.
+
 ### Visual invariants
 
 Localization must not change:
@@ -599,7 +614,7 @@ Localization must not change:
 - section inclusion rules;
 - filename rules defined by the existing Export specification.
 
-Only text localization and deterministic date presentation change.
+Only text localization, deterministic date presentation, and known Language + Proficiency label presentation change.
 
 ## Preview and PDF consistency
 
@@ -610,6 +625,7 @@ Preview and PDF must:
 - use the same adaptation schema and merge rules;
 - use the same server-owned document chrome;
 - use the same Cover Letter date formatter;
+- use the same Language + Proficiency presentation transform;
 - preserve the same structure and conditional sections;
 - preserve photo and project-link behavior.
 
@@ -662,8 +678,13 @@ Within one document request, adaptation is atomic:
 Across the two independent PDF requests:
 
 - the frontend must send the same Presentation Language;
-- if one request fails, it must report that the package is incomplete and identify the failed document;
+- downloads are sequential (Optimized CV, then Cover Letter when both are selected) and stop on the first failure;
+- later documents must not start after a failure;
+- if more than one document was selected, the UI must say the package is incomplete and name the failed document;
+- if only one document was selected, the UI must name that document only;
+- user-facing copy must be localized for `es`, `en`, and `fr`; the raw English API message must not be shown;
 - it must not retry using another language or unadapted content;
+- retry is user-initiated, uses the same Presentation Language, and reloads the latest saved documents;
 - a PDF already downloaded by the browser cannot be revoked, but the failed document remains retryable from its original saved source.
 
 ### Rendering failure
@@ -706,7 +727,7 @@ Across the two independent PDF requests:
 - Equal, non-null Working Language and Presentation Language skips adaptation AI.
 - Different languages adapt only the saved narrative fields in memory.
 - Unknown legacy Working Language follows the explicit legacy adaptation strategy.
-- Protected fields remain exactly equal to their saved values.
+- Protected fields remain exactly equal to their saved values, except known Language + Proficiency labels which may be remapped for presentation only.
 - Adapted data is never persisted.
 - Re-exporting another language starts again from the original saved document.
 - Failed export leaves all saved data unchanged.
@@ -716,8 +737,9 @@ Across the two independent PDF requests:
 - Export Preview uses Presentation Language independently from UI locale.
 - PDF and preview use the same server-owned localized document chrome.
 - All Optimized CV section labels, `Present`, and `Open project` match Presentation Language.
+- Known Language + Proficiency labels follow Presentation Language in Preview and PDF; stored document data is unchanged; unknown values pass through.
 - Cover Letter date is deterministically formatted for Presentation Language.
-- AI never translates static document chrome or date.
+- AI never translates static document chrome, dates, or Language + Proficiency labels.
 - Existing layout, typography, spacing, photo, link, and structure behavior remain unchanged.
 
 ## Test strategy
@@ -780,7 +802,7 @@ For Optimized CV, assert only:
 
 can differ from saved content.
 
-Assert all protected Optimized CV fields remain deeply equal and all arrays retain their lengths and order.
+Assert all protected Optimized CV fields remain deeply equal after adaptation and all arrays retain their lengths and order. These assertions apply to the adaptation merge. After merge, presentation may remap known Language + Proficiency labels without mutating stored data.
 
 For Cover Letter, assert only:
 
@@ -802,8 +824,17 @@ For every supported locale, prove:
 - project link label matches Presentation Language;
 - Cover Letter date matches the deterministic locale format;
 - original job text is unchanged;
-- protected names, skills, technologies, languages, proficiency values, URLs, and contact fields are unchanged;
+- protected names, skills, technologies, URLs, and contact fields are unchanged;
+- stored Language + Proficiency values are unchanged by adaptation; presentation may differ for known labels;
 - narrative fields are adapted when required.
+
+Add coverage for:
+
+- cache key, workspace lifetime, and save invalidation;
+- sequential package stop;
+- localized partial-failure copy;
+- retry keeps Presentation Language;
+- Export uses saved documents only.
 
 ### Preview/PDF integration tests
 
@@ -1029,7 +1060,7 @@ Adapt only saved narrative content when Presentation Language differs or Working
 
 **Objective**
 
-Make all generated document chrome and Cover Letter date formatting follow Presentation Language.
+Make all generated document chrome, Cover Letter date formatting, and known Language + Proficiency labels follow Presentation Language.
 
 **Scope**
 
@@ -1039,6 +1070,7 @@ Make all generated document chrome and Cover Letter date formatting follow Prese
 - Preview consumption of server-resolved chrome.
 - Deterministic Cover Letter date parsing/formatting.
 - Workspace date formatting from Working Language for new ISO date values.
+- Deterministic Language + Proficiency presentation localization for known ES/EN/FR values, shared by Preview and PDF.
 
 **Expected files/layers**
 
@@ -1056,8 +1088,9 @@ Make all generated document chrome and Cover Letter date formatting follow Prese
 **Acceptance criteria**
 
 - Every chrome string resolves for all locales.
-- AI is not used for chrome or dates.
+- AI is not used for chrome, dates, or Language + Proficiency labels.
 - Preview and PDF receive the same chrome.
+- Known Language + Proficiency labels are remapped for presentation only; stored values are unchanged; unknown values pass through.
 - Date examples match the approved output.
 - Layout, photo, links, and structure are unchanged.
 
@@ -1067,6 +1100,7 @@ Make all generated document chrome and Cover Letter date formatting follow Prese
 - PDF text extraction.
 - preview props.
 - date formatting/time-zone boundaries.
+- Language + Proficiency presentation mapping and pass-through.
 - visual regression where available.
 
 **Out of scope**
@@ -1084,12 +1118,14 @@ Complete the end-to-end package flow and verify consistency, failure isolation, 
 
 **Scope**
 
-- Full preview loading and invalidation.
+- Workspace-scoped in-memory preview cache keyed by `applicationId + document + presentationLanguage`.
+- Successful previews cached; failed previews not cached; save invalidates that document; leave/reload clears the cache.
 - Download integration for one or both documents.
-- Partial package failure UX.
+- Sequential package downloads that stop on first failure.
+- Localized partial-failure UX for `es`, `en`, and `fr`.
 - End-to-end language combinations.
 - Regression coverage for saved edits, photos, links, and filenames.
-- Assertions that no persistence or generation occurs during preview/export.
+- Assertions that Export uses latest saved documents only and that no persistence or generation occurs during preview/export.
 
 **Expected files/layers**
 
@@ -1109,14 +1145,17 @@ Complete the end-to-end package flow and verify consistency, failure isolation, 
 - User edits remain authoritative.
 - Re-export does not create translation chains.
 - Failed operations do not mutate data.
+- Retry uses the same Presentation Language and latest saved documents.
 - Existing visual and download behavior remains intact.
 
 **Tests**
 
 - All approved UI/Working/Presentation Language combinations.
-- Preview/PDF contract consistency.
-- partial failure.
+- Preview/PDF contract consistency, including Language + Proficiency presentation.
+- cache key, coexistence, save invalidation, and workspace lifetime.
+- sequential package stop and localized partial failure.
 - no generation/no persistence spies.
+- latest saved documents only; no unsaved editor state.
 - legacy records.
 - photo/project-link regressions.
 
@@ -1172,7 +1211,7 @@ This specification does not select among those behaviors. Phase 1 may propagate 
 - [x] Adapted exports are request-scoped and never persisted.
 - [x] Every target export starts from the saved working document.
 - [x] Exact adaptable and protected fields are defined.
-- [x] Static chrome and Cover Letter dates are deterministic.
+- [x] Static chrome, Cover Letter dates, and known Language + Proficiency labels are deterministic.
 - [x] Preview and PDF share one presentation preparation contract.
 - [x] Legacy records do not receive an assumed language.
 - [x] Error behavior fails safely without document mutation.
