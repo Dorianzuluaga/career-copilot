@@ -22,6 +22,8 @@ vi.mock("./optimized-cv.service.js", () => ({
     }
   },
   getOptimizedCv: vi.fn(),
+  generateOptimizedCv: vi.fn(),
+  saveOptimizedCv: vi.fn(),
   readOptimizedCvPhoto: vi.fn(),
 }));
 
@@ -35,6 +37,8 @@ vi.mock("./cover-letter.service.js", () => ({
     }
   },
   getCoverLetter: vi.fn(),
+  generateCoverLetter: vi.fn(),
+  saveCoverLetter: vi.fn(),
 }));
 
 vi.mock("./master-cv.service.js", () => ({
@@ -62,15 +66,28 @@ vi.mock("./document-rendering.service.js", () => ({
 }));
 
 import { getOwnedApplication } from "./application.service.js";
-import { getCoverLetter, CoverLetterError } from "./cover-letter.service.js";
+import {
+  getCoverLetter,
+  generateCoverLetter,
+  saveCoverLetter,
+  CoverLetterError,
+} from "./cover-letter.service.js";
 import { renderDocument } from "./document-rendering.service.js";
 import {
   exportApplicationDocument,
   ExportError,
+  previewExportDocument,
   validateExportDocumentType,
+  validatePresentationLanguage,
 } from "./export.service.js";
 import { getMasterCv } from "./master-cv.service.js";
-import { getOptimizedCv, OptimizedCvError, readOptimizedCvPhoto } from "./optimized-cv.service.js";
+import {
+  getOptimizedCv,
+  generateOptimizedCv,
+  saveOptimizedCv,
+  OptimizedCvError,
+  readOptimizedCvPhoto,
+} from "./optimized-cv.service.js";
 
 const applicationId = "8e9c843b-5c3d-4e65-8514-7de898b2aca6";
 const userId = "4e9c843b-5c3d-4e65-8514-7de898b2aca6";
@@ -89,7 +106,7 @@ const optimizedCv = {
   skills: ["TypeScript"],
   languages: [],
   certifications: [],
-  workingLanguage: null,
+  workingLanguage: "es" as const,
 };
 
 const coverLetter = {
@@ -104,8 +121,15 @@ const coverLetter = {
   motivation: "Motivation",
   closing: "Closing",
   signature: "Taylor Smith",
-  workingLanguage: null,
+  workingLanguage: "en" as const,
 };
+
+function expectNoGenerationOrPersistence() {
+  expect(generateOptimizedCv).not.toHaveBeenCalled();
+  expect(generateCoverLetter).not.toHaveBeenCalled();
+  expect(saveOptimizedCv).not.toHaveBeenCalled();
+  expect(saveCoverLetter).not.toHaveBeenCalled();
+}
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -121,18 +145,64 @@ beforeEach(() => {
   vi.mocked(renderDocument).mockResolvedValue(Buffer.from("%PDF-1.4"));
 });
 
-describe("exportApplicationDocument", () => {
+describe("export request contract", () => {
   it("validates the requested document type", () => {
     expect(validateExportDocumentType("optimized-cv")).toBe("optimized-cv");
     expect(validateExportDocumentType("cover-letter")).toBe("cover-letter");
     expect(() => validateExportDocumentType("zip")).toThrow(ExportError);
   });
 
+  it.each(["es", "en", "fr"] as const)(
+    "accepts presentationLanguage %s",
+    (locale) => {
+      expect(validatePresentationLanguage(locale)).toBe(locale);
+    },
+  );
+
+  it.each([undefined, null, "", "de", 42])(
+    "rejects invalid presentationLanguage %s before loading documents",
+    async (value) => {
+      await expect(
+        exportApplicationDocument(applicationId, userId, "optimized-cv", value),
+      ).rejects.toMatchObject({
+        message: 'presentationLanguage must be one of "es", "en", or "fr".',
+        statusCode: 400,
+      });
+      await expect(
+        previewExportDocument(applicationId, userId, "cover-letter", value),
+      ).rejects.toMatchObject({
+        message: 'presentationLanguage must be one of "es", "en", or "fr".',
+        statusCode: 400,
+      });
+      expect(getOwnedApplication).not.toHaveBeenCalled();
+      expect(getOptimizedCv).not.toHaveBeenCalled();
+      expect(getCoverLetter).not.toHaveBeenCalled();
+      expect(getMasterCv).not.toHaveBeenCalled();
+      expect(renderDocument).not.toHaveBeenCalled();
+      expectNoGenerationOrPersistence();
+    },
+  );
+
+  it("rejects an invalid document type before loading documents", async () => {
+    await expect(
+      exportApplicationDocument(applicationId, userId, "zip", "fr"),
+    ).rejects.toMatchObject({
+      message: 'document must be "optimized-cv" or "cover-letter".',
+      statusCode: 400,
+    });
+    expect(getOwnedApplication).not.toHaveBeenCalled();
+    expect(renderDocument).not.toHaveBeenCalled();
+    expectNoGenerationOrPersistence();
+  });
+});
+
+describe("exportApplicationDocument", () => {
   it("renders an optimized CV PDF from the latest saved documents", async () => {
     const result = await exportApplicationDocument(
       applicationId,
       userId,
       "optimized-cv",
+      "fr",
     );
 
     expect(getOptimizedCv).toHaveBeenCalledWith(applicationId, userId);
@@ -150,6 +220,7 @@ describe("exportApplicationDocument", () => {
       filename: "juan-perez_cv.pdf",
       contentType: "application/pdf",
     });
+    expectNoGenerationOrPersistence();
   });
 
   it("includes the professional title when Master CV provides one", async () => {
@@ -162,6 +233,7 @@ describe("exportApplicationDocument", () => {
       applicationId,
       userId,
       "optimized-cv",
+      "en",
     );
 
     expect(result.filename).toBe("juan-perez_full-stack-developer_cv.pdf");
@@ -187,7 +259,12 @@ describe("exportApplicationDocument", () => {
       contentType: "image/jpeg",
     });
 
-    await exportApplicationDocument(applicationId, userId, "optimized-cv");
+    await exportApplicationDocument(
+      applicationId,
+      userId,
+      "optimized-cv",
+      "es",
+    );
 
     expect(readOptimizedCvPhoto).toHaveBeenCalledWith(
       applicationId,
@@ -212,6 +289,7 @@ describe("exportApplicationDocument", () => {
       applicationId,
       userId,
       "cover-letter",
+      "es",
     );
 
     expect(renderDocument).toHaveBeenCalledWith(
@@ -219,6 +297,53 @@ describe("exportApplicationDocument", () => {
       "pdf",
     );
     expect(result.filename).toBe("juan-perez_cover-letter.pdf");
+    expectNoGenerationOrPersistence();
+  });
+
+  it("uses the latest saved documents even when Presentation Language differs from Working Language", async () => {
+    const editedCv = {
+      ...optimizedCv,
+      professionalSummary: "Edited summary",
+      workingLanguage: "es" as const,
+    };
+    const editedCoverLetter = {
+      ...coverLetter,
+      introduction: "Edited introduction",
+      workingLanguage: "en" as const,
+    };
+    vi.mocked(getOptimizedCv).mockResolvedValue(editedCv);
+    vi.mocked(getCoverLetter).mockResolvedValue(editedCoverLetter);
+
+    await exportApplicationDocument(
+      applicationId,
+      userId,
+      "optimized-cv",
+      "fr",
+    );
+    await exportApplicationDocument(
+      applicationId,
+      userId,
+      "cover-letter",
+      "fr",
+    );
+
+    expect(renderDocument).toHaveBeenNthCalledWith(
+      1,
+      {
+        type: "optimized-cv",
+        data: editedCv,
+        profilePhotoBytes: null,
+      },
+      "pdf",
+    );
+    expect(renderDocument).toHaveBeenNthCalledWith(
+      2,
+      { type: "cover-letter", data: editedCoverLetter },
+      "pdf",
+    );
+    expect(editedCv.workingLanguage).toBe("es");
+    expect(editedCoverLetter.workingLanguage).toBe("en");
+    expectNoGenerationOrPersistence();
   });
 
   it("rejects export when a required saved document is missing", async () => {
@@ -227,13 +352,14 @@ describe("exportApplicationDocument", () => {
     );
 
     await expect(
-      exportApplicationDocument(applicationId, userId, "optimized-cv"),
+      exportApplicationDocument(applicationId, userId, "optimized-cv", "es"),
     ).rejects.toMatchObject({
       message:
         "A saved Optimized CV and Cover Letter are required before export.",
       statusCode: 400,
     });
     expect(renderDocument).not.toHaveBeenCalled();
+    expectNoGenerationOrPersistence();
   });
 
   it("rejects export when the optimized CV is missing", async () => {
@@ -242,12 +368,79 @@ describe("exportApplicationDocument", () => {
     );
 
     await expect(
-      exportApplicationDocument(applicationId, userId, "cover-letter"),
+      exportApplicationDocument(applicationId, userId, "cover-letter", "en"),
     ).rejects.toMatchObject({
       message:
         "A saved Optimized CV and Cover Letter are required before export.",
       statusCode: 400,
     });
     expect(renderDocument).not.toHaveBeenCalled();
+  });
+});
+
+describe("previewExportDocument", () => {
+  it("returns the latest saved Optimized CV with the selected Presentation Language", async () => {
+    const preview = await previewExportDocument(
+      applicationId,
+      userId,
+      "optimized-cv",
+      "fr",
+    );
+
+    expect(preview).toEqual({
+      document: "optimized-cv",
+      presentationLanguage: "fr",
+      data: optimizedCv,
+    });
+    expect(getOptimizedCv).toHaveBeenCalledWith(applicationId, userId);
+    expect(getCoverLetter).toHaveBeenCalledWith(applicationId, userId);
+    expect(renderDocument).not.toHaveBeenCalled();
+    expect(getMasterCv).not.toHaveBeenCalled();
+    expectNoGenerationOrPersistence();
+  });
+
+  it("returns the latest saved Cover Letter with the same Presentation Language", async () => {
+    const preview = await previewExportDocument(
+      applicationId,
+      userId,
+      "cover-letter",
+      "fr",
+    );
+
+    expect(preview).toEqual({
+      document: "cover-letter",
+      presentationLanguage: "fr",
+      data: coverLetter,
+    });
+    expect(preview.data.workingLanguage).toBe("en");
+    expectNoGenerationOrPersistence();
+  });
+
+  it("keeps Presentation Language independent from UI locale and Working Language", async () => {
+    const preview = await previewExportDocument(
+      applicationId,
+      userId,
+      "optimized-cv",
+      "en",
+    );
+
+    expect(preview.presentationLanguage).toBe("en");
+    expect(preview.data.workingLanguage).toBe("es");
+    expect(preview.data).toEqual(optimizedCv);
+  });
+
+  it("rejects preview when a required saved document is missing", async () => {
+    vi.mocked(getOptimizedCv).mockRejectedValue(
+      new OptimizedCvError("Optimized CV not found.", 404),
+    );
+
+    await expect(
+      previewExportDocument(applicationId, userId, "cover-letter", "es"),
+    ).rejects.toMatchObject({
+      message:
+        "A saved Optimized CV and Cover Letter are required before export.",
+      statusCode: 400,
+    });
+    expectNoGenerationOrPersistence();
   });
 });

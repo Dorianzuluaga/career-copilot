@@ -153,7 +153,18 @@ vi.mock("./services/export.service.js", () => ({
     error.statusCode = 400;
     throw error;
   }),
+  validatePresentationLanguage: vi.fn((value: unknown) => {
+    if (value === "es" || value === "en" || value === "fr") {
+      return value;
+    }
+    const error = new Error(
+      'presentationLanguage must be one of "es", "en", or "fr".',
+    ) as Error & { statusCode: number };
+    error.statusCode = 400;
+    throw error;
+  }),
   exportApplicationDocument: vi.fn(),
+  previewExportDocument: vi.fn(),
 }));
 
 import { app } from "./app.js";
@@ -204,6 +215,7 @@ import {
 import {
   exportApplicationDocument,
   ExportError,
+  previewExportDocument,
 } from "./services/export.service.js";
 
 const user = {
@@ -526,6 +538,8 @@ describe("Job Analysis API", () => {
       request(app).get("/api/applications/application-id/optimized-cv/photo"),
       request(app).post("/api/applications/application-id/cover-letter"),
       request(app).get("/api/applications/application-id/cover-letter"),
+      request(app).post("/api/applications/application-id/export"),
+      request(app).post("/api/applications/application-id/export/preview"),
     ]);
 
     for (const response of responses) {
@@ -542,6 +556,8 @@ describe("Job Analysis API", () => {
     expect(getProfileComparison).not.toHaveBeenCalled();
     expect(generateOptimizedCv).not.toHaveBeenCalled();
     expect(readOptimizedCvPhoto).not.toHaveBeenCalled();
+    expect(exportApplicationDocument).not.toHaveBeenCalled();
+    expect(previewExportDocument).not.toHaveBeenCalled();
   });
 
   it.each([
@@ -1195,7 +1211,7 @@ describe("Job Analysis API", () => {
     const response = await request(app)
       .post("/api/applications/application-id/export")
       .set("Cookie", "career_copilot_session=opaque-session-id")
-      .send({ document: "optimized-cv" });
+      .send({ document: "optimized-cv", presentationLanguage: "es" });
 
     expect(response.status).toBe(200);
     expect(response.headers["content-type"]).toContain("application/pdf");
@@ -1207,8 +1223,86 @@ describe("Job Analysis API", () => {
       "application-id",
       user.id,
       "optimized-cv",
+      "es",
     );
+    expect(generateOptimizedCv).not.toHaveBeenCalled();
+    expect(generateCoverLetter).not.toHaveBeenCalled();
   });
+
+  it.each(["es", "en", "fr"] as const)(
+    "accepts presentationLanguage %s for PDF export",
+    async (presentationLanguage) => {
+      vi.mocked(getAuthenticatedUser).mockResolvedValue(user);
+      vi.mocked(exportApplicationDocument).mockResolvedValue({
+        buffer: Buffer.from("%PDF-1.4 export"),
+        filename: "juan-perez_cv.pdf",
+        contentType: "application/pdf",
+      });
+
+      const response = await request(app)
+        .post("/api/applications/application-id/export")
+        .set("Cookie", "career_copilot_session=opaque-session-id")
+        .send({ document: "cover-letter", presentationLanguage });
+
+      expect(response.status).toBe(200);
+      expect(exportApplicationDocument).toHaveBeenCalledWith(
+        "application-id",
+        user.id,
+        "cover-letter",
+        presentationLanguage,
+      );
+    },
+  );
+
+  it("uses one Presentation Language for both package documents", async () => {
+    vi.mocked(getAuthenticatedUser).mockResolvedValue(user);
+    vi.mocked(exportApplicationDocument).mockResolvedValue({
+      buffer: Buffer.from("%PDF-1.4 export"),
+      filename: "juan-perez_cv.pdf",
+      contentType: "application/pdf",
+    });
+
+    for (const document of ["optimized-cv", "cover-letter"] as const) {
+      const response = await request(app)
+        .post("/api/applications/application-id/export")
+        .set("Cookie", "career_copilot_session=opaque-session-id")
+        .send({ document, presentationLanguage: "fr" });
+
+      expect(response.status).toBe(200);
+    }
+
+    expect(
+      vi
+        .mocked(exportApplicationDocument)
+        .mock.calls.map((call) => [call[2], call[3]]),
+    ).toEqual([
+      ["optimized-cv", "fr"],
+      ["cover-letter", "fr"],
+    ]);
+  });
+
+  it.each([
+    { document: "optimized-cv" },
+    { document: "optimized-cv", presentationLanguage: "de" },
+    { document: "optimized-cv", presentationLanguage: 42 },
+  ])(
+    "rejects invalid export presentationLanguage before preparing documents %j",
+    async (body) => {
+      vi.mocked(getAuthenticatedUser).mockResolvedValue(user);
+
+      const response = await request(app)
+        .post("/api/applications/application-id/export")
+        .set("Cookie", "career_copilot_session=opaque-session-id")
+        .send(body);
+
+      expect(response.status).toBe(400);
+      expect(response.body).toEqual({
+        message: 'presentationLanguage must be one of "es", "en", or "fr".',
+      });
+      expect(exportApplicationDocument).not.toHaveBeenCalled();
+      expect(previewExportDocument).not.toHaveBeenCalled();
+    },
+  );
 
   it("returns 400 when export prerequisites are missing", async () => {
     vi.mocked(getAuthenticatedUser).mockResolvedValue(user);
@@ -1222,7 +1316,7 @@ describe("Job Analysis API", () => {
     const response = await request(app)
       .post("/api/applications/application-id/export")
       .set("Cookie", "career_copilot_session=opaque-session-id")
-      .send({ document: "cover-letter" });
+      .send({ document: "cover-letter", presentationLanguage: "en" });
 
     expect(response.status).toBe(400);
     expect(response.body).toEqual({
@@ -1230,6 +1324,65 @@ describe("Job Analysis API", () => {
         "A saved Optimized CV and Cover Letter are required before export.",
     });
   });
+
+  it("returns a presentation preview shell for the selected language", async () => {
+    vi.mocked(getAuthenticatedUser).mockResolvedValue(user);
+    vi.mocked(previewExportDocument).mockResolvedValue({
+      document: "optimized-cv",
+      presentationLanguage: "fr",
+      data: {
+        fullName: "Taylor Smith",
+        professionalSummary: "Saved summary",
+        workingLanguage: "es",
+      } as never,
+    });
+
+    const response = await request(app)
+      .post("/api/applications/application-id/export/preview")
+      .set("Cookie", "career_copilot_session=opaque-session-id")
+      .send({ document: "optimized-cv", presentationLanguage: "fr" });
+
+    expect(response.status).toBe(200);
+    expect(response.body).toEqual({
+      document: "optimized-cv",
+      presentationLanguage: "fr",
+      data: {
+        fullName: "Taylor Smith",
+        professionalSummary: "Saved summary",
+        workingLanguage: "es",
+      },
+    });
+    expect(previewExportDocument).toHaveBeenCalledWith(
+      "application-id",
+      user.id,
+      "optimized-cv",
+      "fr",
+    );
+    expect(exportApplicationDocument).not.toHaveBeenCalled();
+    expect(generateOptimizedCv).not.toHaveBeenCalled();
+    expect(generateCoverLetter).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    { document: "cover-letter" },
+    { document: "cover-letter", presentationLanguage: "de" },
+  ])(
+    "rejects invalid preview presentationLanguage before preparing documents %j",
+    async (body) => {
+      vi.mocked(getAuthenticatedUser).mockResolvedValue(user);
+
+      const response = await request(app)
+        .post("/api/applications/application-id/export/preview")
+        .set("Cookie", "career_copilot_session=opaque-session-id")
+        .send(body);
+
+      expect(response.status).toBe(400);
+      expect(response.body).toEqual({
+        message: 'presentationLanguage must be one of "es", "en", or "fr".',
+      });
+      expect(previewExportDocument).not.toHaveBeenCalled();
+    },
+  );
 });
 
 describe("production HTTP configuration", () => {

@@ -214,8 +214,23 @@ describe("translate", () => {
     expect(translate("en", "export.documentsToDownload")).toBe(
       "Documents to download",
     );
-    expect(translate("fr", "export.documentsToDownload")).toBe(
-      "Documents à télécharger",
+    expect(translate("es", "export.presentationLanguage")).toBe(
+      "Idioma de presentación",
+    );
+    expect(translate("en", "export.presentationLanguage")).toBe(
+      "Presentation Language",
+    );
+    expect(translate("fr", "export.presentationLanguage")).toBe(
+      "Langue de présentation",
+    );
+    expect(translate("es", "export.presentationLanguageHelp")).toBe(
+      "Este idioma se aplica tanto al CV optimizado como a la carta de presentación.",
+    );
+    expect(translate("en", "export.presentationLanguageHelp")).toBe(
+      "This language applies to both the Optimized CV and the Cover Letter.",
+    );
+    expect(translate("fr", "export.presentationLanguageHelp")).toBe(
+      "Cette langue s'applique à la fois au CV optimisé et à la lettre de motivation.",
     );
   });
 
@@ -577,6 +592,10 @@ describe("translate", () => {
       "export.downloadFailed",
       "export.previewAria",
       "export.requiresDocuments",
+      "export.presentationLanguage",
+      "export.presentationLanguageHelp",
+      "export.previewLoading",
+      "export.previewFailed",
     ];
 
     for (const requiredKey of requiredKeys) {

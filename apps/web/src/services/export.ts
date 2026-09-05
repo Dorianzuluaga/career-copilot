@@ -1,6 +1,11 @@
-import { apiUrl, ApiError } from "./api";
+import { apiUrl, ApiError, readResponse } from "./api";
+import type {
+  ExportDocumentType,
+  ExportPreviewResponse,
+  PresentationLanguage,
+} from "../types/export";
 
-export type ExportDocumentType = "optimized-cv" | "cover-letter";
+export type { ExportDocumentType, ExportPreviewResponse, PresentationLanguage };
 
 export interface ExportedDocumentFile {
   blob: Blob;
@@ -21,9 +26,17 @@ function readFilename(contentDisposition: string | null): string | null {
   return basicMatch?.[1] ?? null;
 }
 
+function exportRequestBody(
+  document: ExportDocumentType,
+  presentationLanguage: PresentationLanguage,
+) {
+  return JSON.stringify({ document, presentationLanguage });
+}
+
 export async function exportApplicationDocument(
   applicationId: string,
   document: ExportDocumentType,
+  presentationLanguage: PresentationLanguage,
 ): Promise<ExportedDocumentFile> {
   const response = await fetch(
     `${apiUrl}/api/applications/${applicationId}/export`,
@@ -31,7 +44,7 @@ export async function exportApplicationDocument(
       method: "POST",
       credentials: "include",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ document }),
+      body: exportRequestBody(document, presentationLanguage),
     },
   );
 
@@ -48,6 +61,24 @@ export async function exportApplicationDocument(
     (document === "optimized-cv" ? "cv.pdf" : "cover-letter.pdf");
 
   return { blob, filename };
+}
+
+export async function previewExportDocument(
+  applicationId: string,
+  document: ExportDocumentType,
+  presentationLanguage: PresentationLanguage,
+): Promise<ExportPreviewResponse> {
+  const response = await fetch(
+    `${apiUrl}/api/applications/${applicationId}/export/preview`,
+    {
+      method: "POST",
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      body: exportRequestBody(document, presentationLanguage),
+    },
+  );
+
+  return readResponse<ExportPreviewResponse>(response);
 }
 
 export function triggerBrowserDownload(file: ExportedDocumentFile): void {

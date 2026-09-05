@@ -17,9 +17,12 @@ export class SupportedLocaleValidationError extends Error {
   }
 }
 
-export function validateSupportedLocale(value: unknown): SupportedLocale {
+export function validateSupportedLocale(
+  value: unknown,
+  field = "locale",
+): SupportedLocale {
   if (!isSupportedLocale(value)) {
-    throw new SupportedLocaleValidationError();
+    throw new SupportedLocaleValidationError(field);
   }
   return value;
 }

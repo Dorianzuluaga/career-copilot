@@ -32,4 +32,22 @@ describe("supported locale contract", () => {
       'workingLanguage must be one of "es", "en", or "fr".',
     );
   });
+
+  it.each(["es", "en", "fr"] as const)(
+    "accepts presentationLanguage %s with the shared locale guard",
+    (locale) => {
+      expect(validateSupportedLocale(locale, "presentationLanguage")).toBe(
+        locale,
+      );
+    },
+  );
+
+  it.each([undefined, null, "", "de", 42])(
+    "rejects unsupported presentationLanguage %s",
+    (value) => {
+      expect(() =>
+        validateSupportedLocale(value, "presentationLanguage"),
+      ).toThrow('presentationLanguage must be one of "es", "en", or "fr".');
+    },
+  );
 });
