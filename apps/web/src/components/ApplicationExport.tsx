@@ -85,6 +85,52 @@ export function exportRequestsForSelection(
   }));
 }
 
+export type ExportDownloadFailureKind = "adaptation" | "generic";
+
+export function exportDownloadFailureKind(
+  error: unknown,
+): ExportDownloadFailureKind {
+  return error instanceof ApiError && error.status === 502
+    ? "adaptation"
+    : "generic";
+}
+
+export function exportDownloadFailureMessageKeys(
+  failedDocument: ExportDocumentType,
+  selectedCount: number,
+  kind: ExportDownloadFailureKind,
+): TranslationKey[] {
+  const documentKey =
+    failedDocument === "optimized-cv"
+      ? kind === "adaptation"
+        ? "export.adaptationFailedOptimizedCv"
+        : "export.downloadFailedOptimizedCv"
+      : kind === "adaptation"
+        ? "export.adaptationFailedCoverLetter"
+        : "export.downloadFailedCoverLetter";
+
+  if (selectedCount > 1) {
+    return ["export.packageIncomplete", documentKey];
+  }
+
+  return [documentKey];
+}
+
+export function formatExportDownloadFailure(
+  t: (key: TranslationKey) => string,
+  failedDocument: ExportDocumentType,
+  selectedCount: number,
+  error: unknown,
+): string {
+  return exportDownloadFailureMessageKeys(
+    failedDocument,
+    selectedCount,
+    exportDownloadFailureKind(error),
+  )
+    .map((key) => t(key))
+    .join(" ");
+}
+
 type ExportPreviewCacheKey = {
   applicationId: string;
   document: ExportDocumentType;
@@ -293,7 +339,9 @@ export function ApplicationExport({
           return;
         }
         setPreviewError(
-          error instanceof ApiError ? error.message : t("export.previewFailed"),
+          exportDownloadFailureKind(error) === "adaptation"
+            ? formatExportDownloadFailure(t, activePreview, 1, error)
+            : t("export.previewFailed"),
         );
         setIsPreviewLoading(false);
       });
@@ -332,17 +380,25 @@ export function ApplicationExport({
 
     try {
       for (const request of requests) {
-        const file = await exportApplicationDocument(
-          applicationId,
-          request.document,
-          request.presentationLanguage,
-        );
-        triggerBrowserDownload(file);
+        try {
+          const file = await exportApplicationDocument(
+            applicationId,
+            request.document,
+            request.presentationLanguage,
+          );
+          triggerBrowserDownload(file);
+        } catch (error) {
+          setDownloadError(
+            formatExportDownloadFailure(
+              t,
+              request.document,
+              requests.length,
+              error,
+            ),
+          );
+          return;
+        }
       }
-    } catch (error) {
-      setDownloadError(
-        error instanceof ApiError ? error.message : t("export.downloadFailed"),
-      );
     } finally {
       setIsDownloading(false);
     }

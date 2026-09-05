@@ -232,6 +232,30 @@ describe("translate", () => {
     expect(translate("fr", "export.presentationLanguageHelp")).toBe(
       "Cette langue s'applique à la fois au CV optimisé et à la lettre de motivation.",
     );
+    expect(translate("es", "export.packageIncomplete")).toBe(
+      "El paquete está incompleto.",
+    );
+    expect(translate("en", "export.packageIncomplete")).toBe(
+      "The package is incomplete.",
+    );
+    expect(translate("fr", "export.packageIncomplete")).toBe(
+      "L'exportation est incomplète.",
+    );
+    expect(translate("es", "export.adaptationFailedOptimizedCv")).toBe(
+      "No se ha podido preparar el CV optimizado en el idioma de presentación seleccionado.",
+    );
+    expect(translate("en", "export.adaptationFailedOptimizedCv")).toBe(
+      "The Optimized CV could not be prepared in the selected presentation language.",
+    );
+    expect(translate("es", "export.adaptationFailedCoverLetter")).toBe(
+      "No se ha podido preparar la carta de presentación en el idioma de presentación seleccionado.",
+    );
+    expect(translate("en", "export.adaptationFailedCoverLetter")).toBe(
+      "The Cover Letter could not be prepared in the selected presentation language.",
+    );
+    expect(translate("fr", "export.adaptationFailedCoverLetter")).toBe(
+      "La lettre de motivation n'a pas pu être préparée dans la langue de présentation sélectionnée.",
+    );
   });
 
   it("interpolates values in interface strings", () => {
@@ -590,6 +614,11 @@ describe("translate", () => {
       "export.download",
       "export.downloading",
       "export.downloadFailed",
+      "export.packageIncomplete",
+      "export.downloadFailedOptimizedCv",
+      "export.downloadFailedCoverLetter",
+      "export.adaptationFailedOptimizedCv",
+      "export.adaptationFailedCoverLetter",
       "export.previewAria",
       "export.requiresDocuments",
       "export.presentationLanguage",

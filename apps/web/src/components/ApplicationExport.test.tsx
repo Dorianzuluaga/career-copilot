@@ -1,8 +1,11 @@
 import { renderToStaticMarkup } from "react-dom/server";
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { LocaleProvider } from "../context/LocaleProvider";
 import type { Locale } from "../i18n/locales";
 import { writeStoredLocale } from "../i18n/storage";
+import { translate } from "../i18n/translate";
+import { ApiError } from "../services/api";
+import { writeStoredPresentationLanguage } from "../services/presentation-language";
 import type { CoverLetter } from "../types/cover-letter";
 import type {
   ExportDocumentType,
@@ -18,13 +21,15 @@ import {
   ApplicationExport,
   createExportPreviewCache,
   ExportPreviewPanel,
+  exportDownloadFailureKind,
+  exportDownloadFailureMessageKeys,
   exportRequestsForSelection,
+  formatExportDownloadFailure,
   readCachedExportPreview,
   shouldInvalidateExportPreviewCache,
   type ExportPreviewCache,
 } from "./ApplicationExport";
 import { ApplicationOptimizedCv } from "./ApplicationOptimizedCv";
-import { writeStoredPresentationLanguage } from "../services/presentation-language";
 
 const optimizedCv: OptimizedCv = {
   fullName: "Taylor Smith",
@@ -752,5 +757,293 @@ describe("export preview cache", () => {
       { document: "cover-letter", presentationLanguage: "fr" },
     ]);
     expect(cache.get(applicationId, "optimized-cv", "fr")).toEqual(cvPreview);
+  });
+});
+
+describe("export package download failure UX", () => {
+  const englishApiAdaptationMessage =
+    "We couldn't prepare this document in the selected presentation language.";
+
+  it("stops the package and identifies Optimized CV when the first document fails", () => {
+    const requests = exportRequestsForSelection(
+      { optimizedCv: true, coverLetter: true },
+      "fr",
+    );
+    const error = new ApiError(englishApiAdaptationMessage, 502);
+
+    expect(requests[0]).toEqual({
+      document: "optimized-cv",
+      presentationLanguage: "fr",
+    });
+    expect(exportDownloadFailureKind(error)).toBe("adaptation");
+    expect(
+      exportDownloadFailureMessageKeys(
+        "optimized-cv",
+        requests.length,
+        "adaptation",
+      ),
+    ).toEqual([
+      "export.packageIncomplete",
+      "export.adaptationFailedOptimizedCv",
+    ]);
+    expect(
+      formatExportDownloadFailure(
+        (key) => translate("en", key),
+        "optimized-cv",
+        requests.length,
+        error,
+      ),
+    ).toBe(
+      "The package is incomplete. The Optimized CV could not be prepared in the selected presentation language.",
+    );
+    expect(
+      formatExportDownloadFailure(
+        (key) => translate("en", key),
+        "optimized-cv",
+        requests.length,
+        error,
+      ),
+    ).not.toContain("Cover Letter");
+    expect(
+      formatExportDownloadFailure(
+        (key) => translate("en", key),
+        "optimized-cv",
+        requests.length,
+        error,
+      ),
+    ).not.toContain(englishApiAdaptationMessage);
+  });
+
+  it("keeps the downloaded CV and identifies Cover Letter when the second document fails", () => {
+    const requests = exportRequestsForSelection(
+      { optimizedCv: true, coverLetter: true },
+      "es",
+    );
+    const error = new ApiError(englishApiAdaptationMessage, 502);
+
+    expect(requests.map((request) => request.document)).toEqual([
+      "optimized-cv",
+      "cover-letter",
+    ]);
+    expect(
+      formatExportDownloadFailure(
+        (key) => translate("en", key),
+        "cover-letter",
+        requests.length,
+        error,
+      ),
+    ).toBe(
+      "The package is incomplete. The Cover Letter could not be prepared in the selected presentation language.",
+    );
+    expect(
+      formatExportDownloadFailure(
+        (key) => translate("en", key),
+        "cover-letter",
+        requests.length,
+        error,
+      ),
+    ).not.toContain("Optimized CV");
+  });
+
+  it("identifies a single selected document without describing the other document", () => {
+    const requests = exportRequestsForSelection(
+      { optimizedCv: true, coverLetter: false },
+      "en",
+    );
+    const error = new ApiError("Request failed.", 500);
+
+    expect(requests).toEqual([
+      { document: "optimized-cv", presentationLanguage: "en" },
+    ]);
+    expect(exportDownloadFailureKind(error)).toBe("generic");
+    expect(
+      exportDownloadFailureMessageKeys(
+        "optimized-cv",
+        requests.length,
+        "generic",
+      ),
+    ).toEqual(["export.downloadFailedOptimizedCv"]);
+    expect(
+      formatExportDownloadFailure(
+        (key) => translate("en", key),
+        "optimized-cv",
+        requests.length,
+        error,
+      ),
+    ).toBe("The Optimized CV could not be downloaded.");
+    expect(
+      formatExportDownloadFailure(
+        (key) => translate("en", key),
+        "optimized-cv",
+        requests.length,
+        error,
+      ),
+    ).not.toContain("The package is incomplete.");
+    expect(
+      formatExportDownloadFailure(
+        (key) => translate("en", key),
+        "optimized-cv",
+        requests.length,
+        error,
+      ),
+    ).not.toContain("Cover Letter");
+  });
+
+  it.each(["es", "en", "fr"] as const)(
+    "localizes a 502 adaptation failure for %s without exposing the API English message",
+    (locale) => {
+      const error = new ApiError(englishApiAdaptationMessage, 502);
+      const message = formatExportDownloadFailure(
+        (key) => translate(locale, key),
+        "cover-letter",
+        2,
+        error,
+      );
+
+      expect(message).toBe(
+        `${translate(locale, "export.packageIncomplete")} ${translate(locale, "export.adaptationFailedCoverLetter")}`,
+      );
+      expect(message).not.toContain(englishApiAdaptationMessage);
+      expect(message).not.toContain("We couldn't prepare");
+    },
+  );
+
+  it("retries the same Presentation Language and saved-document selection", () => {
+    const selection = { optimizedCv: true, coverLetter: true } as const;
+    const first = exportRequestsForSelection(selection, "fr");
+    const retry = exportRequestsForSelection(selection, "fr");
+
+    expect(retry).toEqual(first);
+    expect(retry).toEqual([
+      { document: "optimized-cv", presentationLanguage: "fr" },
+      { document: "cover-letter", presentationLanguage: "fr" },
+    ]);
+  });
+});
+
+describe("export UI/Working/Presentation Language matrix", () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  const spanishOptimizedCvChrome: OptimizedCvDocumentChrome = {
+    professionalSummary: "Resumen profesional",
+    experience: "Experiencia",
+    education: "Formación",
+    skills: "Competencias",
+    languages: "Idiomas",
+    certifications: "Certificaciones",
+    personalProjects: "Proyectos personales",
+    present: "Actualidad",
+    openProject: "Abrir proyecto",
+  };
+
+  it.each([
+    {
+      ui: "es" as const,
+      working: "es" as const,
+      presentation: "es" as const,
+      chrome: spanishOptimizedCvChrome,
+      expectedChrome: "Resumen profesional",
+      unexpectedChrome: "Professional summary",
+    },
+    {
+      ui: "es" as const,
+      working: "es" as const,
+      presentation: "en" as const,
+      chrome: englishOptimizedCvChrome,
+      expectedChrome: "Professional summary",
+      unexpectedChrome: "Resumen profesional",
+    },
+    {
+      ui: "es" as const,
+      working: "es" as const,
+      presentation: "fr" as const,
+      chrome: frenchOptimizedCvChrome,
+      expectedChrome: "Résumé professionnel",
+      unexpectedChrome: "Resumen profesional",
+    },
+    {
+      ui: "en" as const,
+      working: "en" as const,
+      presentation: "es" as const,
+      chrome: spanishOptimizedCvChrome,
+      expectedChrome: "Resumen profesional",
+      unexpectedChrome: "Professional summary",
+    },
+    {
+      ui: "fr" as const,
+      working: "fr" as const,
+      presentation: "en" as const,
+      chrome: englishOptimizedCvChrome,
+      expectedChrome: "Professional summary",
+      unexpectedChrome: "Résumé professionnel",
+    },
+  ])(
+    "keeps UI $ui chrome out of Preview when Working is $working and Presentation is $presentation",
+    ({
+      ui,
+      working,
+      presentation,
+      chrome,
+      expectedChrome,
+      unexpectedChrome,
+    }) => {
+      const storage = createMemoryStorage();
+      vi.stubGlobal("localStorage", storage);
+      writeStoredLocale(ui);
+
+      const markup = renderToStaticMarkup(
+        <LocaleProvider>
+          <ExportPreviewPanel
+            applicationId="application-id"
+            preview={{
+              document: "optimized-cv",
+              presentationLanguage: presentation,
+              data: {
+                ...optimizedCv,
+                workingLanguage: working,
+                personalProjects: [
+                  {
+                    name: "Career Copilot",
+                    description: "Saved project description.",
+                    technologies: "TypeScript",
+                    url: "https://example.com/career-copilot",
+                  },
+                ],
+              },
+              chrome,
+            }}
+          />
+        </LocaleProvider>,
+      );
+
+      expect(markup).toContain(`data-presentation-language="${presentation}"`);
+      expect(markup).toContain(expectedChrome);
+      expect(markup).toContain("TypeScript engineer building APIs.");
+      expect(markup).toContain("https://example.com/career-copilot");
+      expect(markup).toContain(chrome.openProject);
+      expect(markup).not.toContain(unexpectedChrome);
+      expect(markup).not.toContain(">Edit<");
+      expect(markup).not.toContain(">Editar<");
+    },
+  );
+
+  it("uses the saved documents passed into Export, not unsaved editor state", () => {
+    const savedOnlyMarkup = renderExport(
+      <ApplicationExport
+        applicationId="application-id"
+        coverLetter={null}
+        optimizedCv={optimizedCv}
+        previewCache={createExportPreviewCache()}
+      />,
+    );
+
+    expect(savedOnlyMarkup).toContain(
+      "Se necesita un CV optimizado y una carta de presentación guardados antes de previsualizar los documentos.",
+    );
+    expect(savedOnlyMarkup).not.toContain("TypeScript engineer building APIs.");
+    expect(savedOnlyMarkup).not.toContain(">Descargar</button>");
+    expect(savedOnlyMarkup).not.toContain("<textarea");
   });
 });

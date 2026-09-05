@@ -657,6 +657,33 @@ describe("previewExportDocument", () => {
     expectNoGenerationOrPersistence();
   });
 
+  it("gives Preview and PDF the same localized presentation data", async () => {
+    const preview = await previewExportDocument(
+      applicationId,
+      userId,
+      "cover-letter",
+      "es",
+    );
+    await exportApplicationDocument(
+      applicationId,
+      userId,
+      "cover-letter",
+      "es",
+    );
+
+    expect(preview.chrome).toEqual(
+      resolveCoverLetterDocumentChrome(coverLetter.date, "es"),
+    );
+    expect(renderDocument).toHaveBeenCalledWith(
+      {
+        type: "cover-letter",
+        data: preview.data,
+        chrome: preview.chrome,
+      },
+      "pdf",
+    );
+  });
+
   it("returns 502 when preview adaptation fails without persisting", async () => {
     vi.mocked(adaptCoverLetterNarrative).mockRejectedValue(
       new DocumentAdaptationError(),
@@ -684,6 +711,293 @@ describe("previewExportDocument", () => {
       statusCode: 400,
     });
     expect(adaptCoverLetterNarrative).not.toHaveBeenCalled();
+    expectNoGenerationOrPersistence();
+  });
+});
+
+describe("export Phase 6 preview/PDF integration", () => {
+  const savedProject = {
+    name: "Career Copilot",
+    description: "Job-specific CV workspace.",
+    technologies: "TypeScript",
+    url: "https://example.com/career-copilot",
+  };
+
+  it.each([
+    {
+      ui: "es",
+      working: "es" as const,
+      presentation: "es" as const,
+      adapts: false,
+    },
+    {
+      ui: "es",
+      working: "es" as const,
+      presentation: "en" as const,
+      adapts: true,
+    },
+    {
+      ui: "es",
+      working: "es" as const,
+      presentation: "fr" as const,
+      adapts: true,
+    },
+    {
+      ui: "en",
+      working: "en" as const,
+      presentation: "es" as const,
+      adapts: true,
+    },
+    {
+      ui: "fr",
+      working: "fr" as const,
+      presentation: "en" as const,
+      adapts: true,
+    },
+  ])(
+    "UI $ui + Working $working + Presentation $presentation keeps Preview/PDF chrome and date aligned",
+    async ({ working, presentation, adapts }) => {
+      const savedCv = {
+        ...optimizedCv,
+        workingLanguage: working,
+        personalProjects: [savedProject],
+      };
+      const savedLetter = {
+        ...coverLetter,
+        date: "2026-08-07",
+        workingLanguage: working,
+      };
+      vi.mocked(getOptimizedCv).mockResolvedValue(savedCv);
+      vi.mocked(getCoverLetter).mockResolvedValue(savedLetter);
+
+      const cvPreview = await previewExportDocument(
+        applicationId,
+        userId,
+        "optimized-cv",
+        presentation,
+      );
+      await exportApplicationDocument(
+        applicationId,
+        userId,
+        "optimized-cv",
+        presentation,
+      );
+      const letterPreview = await previewExportDocument(
+        applicationId,
+        userId,
+        "cover-letter",
+        presentation,
+      );
+      await exportApplicationDocument(
+        applicationId,
+        userId,
+        "cover-letter",
+        presentation,
+      );
+
+      expect(cvPreview).toMatchObject({
+        document: "optimized-cv",
+        presentationLanguage: presentation,
+        chrome: resolveOptimizedCvDocumentChrome(presentation),
+        data: {
+          personalProjects: [{ url: "https://example.com/career-copilot" }],
+        },
+      });
+      expect(letterPreview).toMatchObject({
+        document: "cover-letter",
+        presentationLanguage: presentation,
+        chrome: resolveCoverLetterDocumentChrome(
+          savedLetter.date,
+          presentation,
+        ),
+      });
+      expect(cvPreview.document).toBe("optimized-cv");
+      expect(letterPreview.document).toBe("cover-letter");
+      if (
+        cvPreview.document !== "optimized-cv" ||
+        letterPreview.document !== "cover-letter"
+      ) {
+        throw new Error("Unexpected preview document type.");
+      }
+      expect(cvPreview.chrome.openProject).toBe(
+        resolveOptimizedCvDocumentChrome(presentation).openProject,
+      );
+      expect(renderDocument).toHaveBeenNthCalledWith(
+        1,
+        {
+          type: "optimized-cv",
+          data: cvPreview.data,
+          chrome: cvPreview.chrome,
+          profilePhotoBytes: null,
+        },
+        "pdf",
+      );
+      expect(renderDocument).toHaveBeenNthCalledWith(
+        2,
+        {
+          type: "cover-letter",
+          data: letterPreview.data,
+          chrome: letterPreview.chrome,
+        },
+        "pdf",
+      );
+      expect(adaptOptimizedCvNarrative).toHaveBeenCalledTimes(adapts ? 2 : 0);
+      expect(adaptCoverLetterNarrative).toHaveBeenCalledTimes(adapts ? 2 : 0);
+      if (adapts) {
+        expect(adaptOptimizedCvNarrative).toHaveBeenCalledWith(
+          savedCv,
+          presentation,
+        );
+        expect(adaptCoverLetterNarrative).toHaveBeenCalledWith(
+          savedLetter,
+          presentation,
+        );
+      }
+      expect(savedCv.professionalSummary).toBe("Summary");
+      expect(savedLetter.introduction).toBe("Intro");
+      expectNoGenerationOrPersistence();
+    },
+  );
+
+  it("uses the latest saved documents rather than unsaved editor state", async () => {
+    const savedCv = {
+      ...optimizedCv,
+      professionalSummary: "Latest saved summary",
+    };
+    const savedLetter = {
+      ...coverLetter,
+      introduction: "Latest saved introduction",
+    };
+    vi.mocked(getOptimizedCv).mockResolvedValue(savedCv);
+    vi.mocked(getCoverLetter).mockResolvedValue(savedLetter);
+
+    const preview = await previewExportDocument(
+      applicationId,
+      userId,
+      "optimized-cv",
+      "fr",
+    );
+    await exportApplicationDocument(
+      applicationId,
+      userId,
+      "optimized-cv",
+      "fr",
+    );
+
+    expect(getOptimizedCv).toHaveBeenCalledWith(applicationId, userId);
+    expect(getCoverLetter).toHaveBeenCalledWith(applicationId, userId);
+    expect(adaptOptimizedCvNarrative).toHaveBeenCalledWith(savedCv, "fr");
+    expect(preview).toMatchObject({
+      document: "optimized-cv",
+      data: { professionalSummary: "Latest saved summary [fr]" },
+    });
+    expect(savedCv.professionalSummary).toBe("Latest saved summary");
+    expectNoGenerationOrPersistence();
+  });
+
+  it("preserves photo snapshot bytes and omits the photo when none is saved", async () => {
+    const photoBytes = Buffer.from("saved-photo");
+    const savedWithPhoto = {
+      ...optimizedCv,
+      profilePhotoAssetId: "7e9c843b-5c3d-4e65-8514-7de898b2aca6",
+      profilePhotoPositionX: 0.4,
+      profilePhotoPositionY: 0.6,
+      personalProjects: [savedProject],
+    };
+    vi.mocked(getOptimizedCv).mockResolvedValue(savedWithPhoto);
+    vi.mocked(readOptimizedCvPhoto).mockResolvedValue({
+      bytes: photoBytes,
+      contentType: "image/jpeg",
+    });
+
+    const preview = await previewExportDocument(
+      applicationId,
+      userId,
+      "optimized-cv",
+      "fr",
+    );
+    await exportApplicationDocument(
+      applicationId,
+      userId,
+      "optimized-cv",
+      "fr",
+    );
+
+    expect(preview).toMatchObject({
+      document: "optimized-cv",
+      data: {
+        profilePhotoAssetId: "7e9c843b-5c3d-4e65-8514-7de898b2aca6",
+        profilePhotoPositionX: 0.4,
+        profilePhotoPositionY: 0.6,
+        personalProjects: [{ url: savedProject.url }],
+      },
+    });
+    expect(readOptimizedCvPhoto).toHaveBeenCalledWith(
+      applicationId,
+      userId,
+      "7e9c843b-5c3d-4e65-8514-7de898b2aca6",
+    );
+    expect(renderDocument).toHaveBeenCalledWith(
+      {
+        type: "optimized-cv",
+        data: preview.data,
+        chrome: preview.chrome,
+        profilePhotoBytes: photoBytes,
+      },
+      "pdf",
+    );
+
+    vi.mocked(getOptimizedCv).mockResolvedValue({
+      ...optimizedCv,
+      profilePhotoAssetId: null,
+    });
+    vi.mocked(readOptimizedCvPhoto).mockClear();
+    vi.mocked(renderDocument).mockClear();
+
+    await exportApplicationDocument(
+      applicationId,
+      userId,
+      "optimized-cv",
+      "es",
+    );
+
+    expect(readOptimizedCvPhoto).not.toHaveBeenCalled();
+    expect(renderDocument).toHaveBeenCalledWith(
+      {
+        type: "optimized-cv",
+        data: expect.objectContaining({ profilePhotoAssetId: null }),
+        chrome: resolveOptimizedCvDocumentChrome("es"),
+        profilePhotoBytes: null,
+      },
+      "pdf",
+    );
+    expectNoGenerationOrPersistence();
+  });
+
+  it("keeps filenames unchanged across Presentation Languages", async () => {
+    const filenames = [];
+    for (const locale of ["es", "en", "fr"] as const) {
+      const result = await exportApplicationDocument(
+        applicationId,
+        userId,
+        "optimized-cv",
+        locale,
+      );
+      filenames.push(result.filename);
+    }
+    const coverLetterExport = await exportApplicationDocument(
+      applicationId,
+      userId,
+      "cover-letter",
+      "fr",
+    );
+
+    expect(filenames).toEqual([
+      "juan-perez_cv.pdf",
+      "juan-perez_cv.pdf",
+      "juan-perez_cv.pdf",
+    ]);
+    expect(coverLetterExport.filename).toBe("juan-perez_cover-letter.pdf");
     expectNoGenerationOrPersistence();
   });
 });

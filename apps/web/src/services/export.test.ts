@@ -166,4 +166,32 @@ describe("export request contract", () => {
     ).toBe(false);
   });
 
+  it("preserves HTTP 502 so download UX can localize adaptation failures", async () => {
+    fetchMock.mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          message:
+            "We couldn't prepare this document in the selected presentation language.",
+        }),
+        { status: 502, headers: { "Content-Type": "application/json" } },
+      ),
+    );
+
+    await expect(
+      exportApplicationDocument("application-id", "cover-letter", "fr"),
+    ).rejects.toMatchObject({
+      status: 502,
+      message:
+        "We couldn't prepare this document in the selected presentation language.",
+    });
+    expect(fetchMock).toHaveBeenCalledWith(
+      "http://localhost:3001/api/applications/application-id/export",
+      expect.objectContaining({
+        body: JSON.stringify({
+          document: "cover-letter",
+          presentationLanguage: "fr",
+        }),
+      }),
+    );
+  });
 });
