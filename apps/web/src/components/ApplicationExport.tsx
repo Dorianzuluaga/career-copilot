@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useLocale } from "../hooks/useLocale";
 import type { TranslationKey } from "../i18n/messages";
 import {
@@ -85,6 +85,90 @@ export function exportRequestsForSelection(
   }));
 }
 
+type ExportPreviewCacheKey = {
+  applicationId: string;
+  document: ExportDocumentType;
+  presentationLanguage: Locale;
+};
+
+type ExportPreviewCacheScope = {
+  applicationId: string;
+  presentationLanguage: Locale;
+};
+
+export type ExportPreviewCache = {
+  get(
+    applicationId: string,
+    document: ExportDocumentType,
+    presentationLanguage: Locale,
+  ): ExportPreviewResponse | null;
+  set(
+    applicationId: string,
+    document: ExportDocumentType,
+    presentationLanguage: Locale,
+    preview: ExportPreviewResponse,
+  ): void;
+  invalidateDocument(applicationId: string, document: ExportDocumentType): void;
+  clear(): void;
+};
+
+export function createExportPreviewCache(): ExportPreviewCache {
+  const entries = new Map<string, ExportPreviewResponse>();
+
+  function key({
+    applicationId,
+    document,
+    presentationLanguage,
+  }: ExportPreviewCacheKey): string {
+    return `${applicationId}:${document}:${presentationLanguage}`;
+  }
+
+  return {
+    get(applicationId, document, presentationLanguage) {
+      return (
+        entries.get(key({ applicationId, document, presentationLanguage })) ??
+        null
+      );
+    },
+    set(applicationId, document, presentationLanguage, preview) {
+      entries.set(
+        key({ applicationId, document, presentationLanguage }),
+        preview,
+      );
+    },
+    invalidateDocument(applicationId, document) {
+      const prefix = `${applicationId}:${document}:`;
+      for (const entryKey of entries.keys()) {
+        if (entryKey.startsWith(prefix)) {
+          entries.delete(entryKey);
+        }
+      }
+    },
+    clear() {
+      entries.clear();
+    },
+  };
+}
+
+export function shouldInvalidateExportPreviewCache(
+  previous: ExportPreviewCacheScope | null,
+  next: ExportPreviewCacheScope,
+): boolean {
+  return previous !== null && previous.applicationId !== next.applicationId;
+}
+
+export function readCachedExportPreview(
+  cache: ExportPreviewCache,
+  previousScope: ExportPreviewCacheScope | null,
+  scope: ExportPreviewCacheScope,
+  document: ExportDocumentType,
+): ExportPreviewResponse | null {
+  if (shouldInvalidateExportPreviewCache(previousScope, scope)) {
+    cache.clear();
+  }
+  return cache.get(scope.applicationId, document, scope.presentationLanguage);
+}
+
 interface ExportPreviewPanelProps {
   applicationId: string;
   preview: ExportPreviewResponse;
@@ -107,9 +191,16 @@ export function ExportPreviewPanel({
       }
     >
       {preview.document === "optimized-cv" ? (
-        <OptimizedCvDocument cv={preview.data} applicationId={applicationId} />
+        <OptimizedCvDocument
+          cv={preview.data}
+          applicationId={applicationId}
+          chrome={preview.chrome}
+        />
       ) : (
-        <CoverLetterDocument coverLetter={preview.data} />
+        <CoverLetterDocument
+          coverLetter={preview.data}
+          chrome={preview.chrome}
+        />
       )}
     </div>
   );
@@ -119,12 +210,14 @@ interface ApplicationExportProps {
   applicationId: string;
   coverLetter: CoverLetter | null;
   optimizedCv: OptimizedCv | null;
+  previewCache: ExportPreviewCache;
 }
 
 export function ApplicationExport({
   applicationId,
   coverLetter,
   optimizedCv,
+  previewCache,
 }: ApplicationExportProps) {
   const { locale, t } = useLocale();
   const [activePreview, setActivePreview] =
@@ -140,6 +233,7 @@ export function ApplicationExport({
   const [isPreviewLoading, setIsPreviewLoading] = useState(hasPreviewDocuments);
   const [isDownloading, setIsDownloading] = useState(false);
   const [downloadError, setDownloadError] = useState<string | null>(null);
+  const previewCacheScopeRef = useRef<ExportPreviewCacheScope | null>(null);
 
   const isOptimizedCvSelectionLocked =
     selectedDocuments.optimizedCv && !selectedDocuments.coverLetter;
@@ -148,7 +242,24 @@ export function ApplicationExport({
 
   useEffect(() => {
     if (!hasPreviewDocuments) {
+      previewCacheScopeRef.current = null;
       setPreview(null);
+      setPreviewError(null);
+      setIsPreviewLoading(false);
+      return;
+    }
+
+    const scope = { applicationId, presentationLanguage };
+    const cachedPreview = readCachedExportPreview(
+      previewCache,
+      previewCacheScopeRef.current,
+      scope,
+      activePreview,
+    );
+    previewCacheScopeRef.current = scope;
+
+    if (cachedPreview) {
+      setPreview(cachedPreview);
       setPreviewError(null);
       setIsPreviewLoading(false);
       return;
@@ -165,6 +276,12 @@ export function ApplicationExport({
       presentationLanguage,
     )
       .then((result) => {
+        previewCache.set(
+          applicationId,
+          activePreview,
+          presentationLanguage,
+          result,
+        );
         if (cancelled) {
           return;
         }
@@ -189,6 +306,7 @@ export function ApplicationExport({
     applicationId,
     hasPreviewDocuments,
     presentationLanguage,
+    previewCache,
     t,
   ]);
 

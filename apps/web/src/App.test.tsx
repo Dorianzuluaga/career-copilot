@@ -7,6 +7,7 @@ import { ApplicationCard } from "./components/ApplicationCard";
 import { ApplicationCoverLetter } from "./components/ApplicationCoverLetter";
 import {
   ApplicationExport,
+  createExportPreviewCache,
   ExportPreviewPanel,
   updateDocumentSelection,
 } from "./components/ApplicationExport";
@@ -2574,6 +2575,7 @@ describe("App", () => {
           applicationId="application-id"
           coverLetter={sampleCoverLetter}
           optimizedCv={sampleOptimizedCv}
+          previewCache={createExportPreviewCache()}
         />
       </ApplicationWorkspace>,
     );
@@ -2630,6 +2632,17 @@ describe("App", () => {
           document: "optimized-cv",
           presentationLanguage: "fr",
           data: sampleOptimizedCv,
+          chrome: {
+            professionalSummary: "Résumé professionnel",
+            experience: "Expérience",
+            education: "Formation",
+            skills: "Compétences",
+            languages: "Langues",
+            certifications: "Certifications",
+            personalProjects: "Projets personnels",
+            present: "Aujourd'hui",
+            openProject: "Ouvrir le projet",
+          },
         }}
       />,
     );
@@ -2644,11 +2657,14 @@ describe("App", () => {
     expect(previewMarkup).toContain("text-justify");
     expect(previewMarkup).toContain("Built REST APIs with TypeScript.");
     expect(previewMarkup).toContain("TypeScript · Node.js");
-    expect(previewMarkup).toContain("Proyectos personales");
-    expect(previewMarkup.indexOf("Proyectos personales")).toBeGreaterThan(
+    expect(previewMarkup).toContain("Projets personnels");
+    expect(previewMarkup.indexOf("Projets personnels")).toBeGreaterThan(
       previewMarkup.indexOf("</aside>"),
     );
     expect(previewMarkup).toContain("Career Copilot");
+    expect(previewMarkup).toContain("Ouvrir le projet");
+    expect(previewMarkup).toContain("Aujourd&#x27;hui");
+    expect(previewMarkup).not.toContain("Proyectos personales");
     expect(previewMarkup).not.toContain("Personal information");
     expect(previewMarkup).not.toContain("Información personal");
     expect(previewMarkup).not.toContain('aria-label="Carta de presentación"');
@@ -2661,6 +2677,7 @@ describe("App", () => {
         applicationId="application-id"
         coverLetter={null}
         optimizedCv={null}
+        previewCache={createExportPreviewCache()}
       />,
     );
 
@@ -2820,6 +2837,7 @@ describe("App", () => {
           applicationId="application-id"
           coverLetter={null}
           optimizedCv={null}
+          previewCache={createExportPreviewCache()}
         />,
       );
       expect(emptyMarkup).toContain(title);
@@ -2834,6 +2852,7 @@ describe("App", () => {
           applicationId="application-id"
           coverLetter={sampleCoverLetter}
           optimizedCv={sampleOptimizedCv}
+          previewCache={createExportPreviewCache()}
         />,
       );
       expect(previewMarkup).toContain(title);
