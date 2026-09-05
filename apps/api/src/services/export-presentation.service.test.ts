@@ -259,4 +259,55 @@ describe("preparePresentationDocument", () => {
       statusCode: 502,
     });
   });
+
+  it("localizes language names and proficiency without calling AI when languages match", async () => {
+    const savedLanguages = [
+      { name: "Español", proficiency: "Nativo" },
+      { name: "English", proficiency: "Intermedio" },
+    ];
+    const savedCv = { ...optimizedCv, languages: savedLanguages };
+
+    const preview = await preparePresentationDocument("optimized-cv", "es", {
+      optimizedCv: savedCv,
+      coverLetter,
+    });
+
+    expect(adaptOptimizedCvNarrative).not.toHaveBeenCalled();
+    expect(preview.data).toMatchObject({
+      languages: [
+        { name: "Español", proficiency: "Nativo" },
+        { name: "Inglés", proficiency: "Intermedio" },
+      ],
+    });
+    expect(savedCv.languages).toEqual(savedLanguages);
+  });
+
+  it("localizes language entries after narrative adaptation for Preview and PDF", async () => {
+    const savedLanguages = [
+      { name: "Español", proficiency: "Nativo" },
+      { name: "English", proficiency: "Intermedio" },
+      { name: "Klingon", proficiency: "Fluent" },
+    ];
+    const savedCv = { ...optimizedCv, languages: savedLanguages };
+
+    const preview = await preparePresentationDocument("optimized-cv", "fr", {
+      optimizedCv: savedCv,
+      coverLetter,
+    });
+
+    expect(adaptOptimizedCvNarrative).toHaveBeenCalledWith(savedCv, "fr");
+    expect(preview.data).toMatchObject({
+      professionalSummary: "Saved Spanish summary [fr]",
+      languages: [
+        { name: "Espagnol", proficiency: "Natif" },
+        { name: "Anglais", proficiency: "Intermédiaire" },
+        { name: "Klingon", proficiency: "Fluent" },
+      ],
+    });
+    expect(savedCv.languages).toEqual(savedLanguages);
+    expect(savedCv.languages[0]).toEqual({
+      name: "Español",
+      proficiency: "Nativo",
+    });
+  });
 });

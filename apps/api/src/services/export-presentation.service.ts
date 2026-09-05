@@ -1,3 +1,4 @@
+import { localizeLanguageEntries } from "../documents/document-localization.js";
 import type { CoverLetter } from "../types/cover-letter.js";
 import type {
   ExportDocumentType,
@@ -73,10 +74,20 @@ async function prepareOptimizedCvPresentation(
   saved: OptimizedCv,
   presentationLanguage: SupportedLocale,
 ): Promise<OptimizedCv> {
-  if (!shouldAdaptDocument(saved.workingLanguage, presentationLanguage)) {
-    return structuredClone(saved);
-  }
-  return adaptOptimizedCvNarrative(saved, presentationLanguage);
+  const prepared = shouldAdaptDocument(
+    saved.workingLanguage,
+    presentationLanguage,
+  )
+    ? await adaptOptimizedCvNarrative(saved, presentationLanguage)
+    : structuredClone(saved);
+
+  return {
+    ...prepared,
+    languages: localizeLanguageEntries(
+      prepared.languages,
+      presentationLanguage,
+    ),
+  };
 }
 
 async function prepareCoverLetterPresentation(

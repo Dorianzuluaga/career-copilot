@@ -601,6 +601,44 @@ describe("previewExportDocument", () => {
     expect(optimizedCv.professionalSummary).toBe("Summary");
   });
 
+  it("gives Preview and PDF the same localized language entries", async () => {
+    const savedLanguages = [
+      { name: "Español", proficiency: "Nativo" },
+      { name: "English", proficiency: "Intermedio" },
+    ];
+    const savedCv = { ...optimizedCv, languages: savedLanguages };
+    vi.mocked(getOptimizedCv).mockResolvedValue(savedCv);
+
+    const preview = await previewExportDocument(
+      applicationId,
+      userId,
+      "optimized-cv",
+      "fr",
+    );
+    await exportApplicationDocument(
+      applicationId,
+      userId,
+      "optimized-cv",
+      "fr",
+    );
+
+    const localizedLanguages = [
+      { name: "Espagnol", proficiency: "Natif" },
+      { name: "Anglais", proficiency: "Intermédiaire" },
+    ];
+    expect(preview.data).toMatchObject({ languages: localizedLanguages });
+    expect(renderDocument).toHaveBeenCalledWith(
+      {
+        type: "optimized-cv",
+        data: preview.data,
+        profilePhotoBytes: null,
+      },
+      "pdf",
+    );
+    expect(savedCv.languages).toEqual(savedLanguages);
+    expectNoGenerationOrPersistence();
+  });
+
   it("returns 502 when preview adaptation fails without persisting", async () => {
     vi.mocked(adaptCoverLetterNarrative).mockRejectedValue(
       new DocumentAdaptationError(),
