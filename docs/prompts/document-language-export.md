@@ -147,3 +147,94 @@ At the end report:
 3. Tests and validation results
 4. Any deviations or decisions
 5. Confirmation that only Phase 3 was implemented
+
+# Phase 4 — Targeted in-memory adaptation
+
+Implement ONLY Phase 4 from:
+
+docs/specs/document-language-export.md
+
+First read and audit the specification and current implementation. Then implement exactly the Phase 4 scope.
+
+Respect the specification as the source of truth. Do not reinterpret or expand the scope.
+
+After implementation:
+
+- run relevant tests
+- typecheck
+- lint
+- build
+- inspect the final diff
+
+Do NOT commit or push.
+
+Phase 4 must implement targeted, in-memory export adaptation:
+
+- compare the saved document's workingLanguage with the requested presentationLanguage
+- if they are the same, skip AI adaptation entirely
+- if they differ, adapt the latest saved Optimized CV and/or Cover Letter in memory
+- never regenerate documents from Master CV
+- never mutate or persist the adapted result
+- always start from the original saved working document so repeated exports never create translation chains
+- apply one Presentation Language to both documents
+
+Adapt ONLY the narrative fields defined by the specification.
+Keep all protected/verifiable fields unchanged:
+
+- identity/contact information
+- names and company/institution names
+- job titles
+- dates
+- skills/technologies
+- languages/proficiency
+- certifications
+- project names/technologies/URLs
+- photo fields
+- other protected fields explicitly listed in the spec
+
+For Cover Letter:
+
+- adapt only the allowed narrative fields
+- keep protected identity/company/signature fields unchanged
+- do not let AI translate or generate the date
+
+AI adaptation must be strictly translation/localization:
+
+- preserve facts, meaning, tone, seniority, and level of detail
+- do not add, remove, optimize, rewrite, or invent claims
+- preserve array lengths, ordering, null semantics, and schema shape
+- validate the AI response strictly before using it
+
+Error handling:
+
+- malformed saved document → fail before AI adaptation
+- adaptation failure → HTTP 502
+- never fall back to the wrong-language saved content
+- adaptation must be atomic: do not partially adapt one document if the package adaptation fails
+- adapted content remains request-scoped/in-memory only
+
+Security:
+
+- send the minimum required narrative content to the AI
+- do not send protected fields when they are not needed for adaptation
+
+Update tests for:
+
+- same-language export skips AI
+- different-language export adapts both documents
+- only allowed narrative fields change
+- protected fields remain unchanged
+- repeated exports always start from the saved working document
+- adapted results are not persisted
+- AI failure returns 502 with no partial adaptation
+- malformed data is rejected before AI
+- one presentationLanguage applies to both documents
+
+At the end report:
+
+1. Files changed
+2. What was implemented
+3. Tests and validation results
+4. Any deviations or decisions
+5. Confirmation that only Phase 4 was implemented
+

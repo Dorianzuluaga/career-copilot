@@ -12,6 +12,21 @@ export interface ExportRequest {
 export type OptimizedCvPresentationDocument = OptimizedCv;
 export type CoverLetterPresentationDocument = CoverLetter;
 
+export interface OptimizedCvNarrativeAdaptation {
+  professionalSummary: string;
+  experienceDescriptions: Array<string | null>;
+  educationDescriptions: Array<string | null>;
+  personalProjectDescriptions: Array<string | null>;
+}
+
+export interface CoverLetterNarrativeAdaptation {
+  greeting: string;
+  introduction: string;
+  professionalValue: string;
+  motivation: string;
+  closing: string;
+}
+
 export type ExportPreviewResponse =
   | {
       document: "optimized-cv";

@@ -14,11 +14,16 @@ import {
   DocumentRenderingError,
   renderDocument,
 } from "./document-rendering.service.js";
+import { DocumentAdaptationError } from "./export-adaptation.service.js";
 import {
   buildCoverLetterFilename,
   buildOptimizedCvFilename,
   readOptionalProfessionalTitle,
 } from "./export-filename.js";
+import {
+  preparePresentationDocument,
+  PresentationPreparationError,
+} from "./export-presentation.service.js";
 import { getMasterCv, MasterCvError } from "./master-cv.service.js";
 import {
   getOptimizedCv,
@@ -50,6 +55,8 @@ function toExportError(error: unknown): never {
     error instanceof CoverLetterError ||
     error instanceof MasterCvError ||
     error instanceof DocumentRenderingError ||
+    error instanceof DocumentAdaptationError ||
+    error instanceof PresentationPreparationError ||
     error instanceof ExportError
   ) {
     throw new ExportError(error.message, error.statusCode);
@@ -146,19 +153,14 @@ export async function previewExportDocument(
       presentationLanguage,
     );
 
-    if (context.documentType === "optimized-cv") {
-      return {
-        document: "optimized-cv",
-        presentationLanguage: context.presentationLanguage,
-        data: context.optimizedCv,
-      };
-    }
-
-    return {
-      document: "cover-letter",
-      presentationLanguage: context.presentationLanguage,
-      data: context.coverLetter,
-    };
+    return preparePresentationDocument(
+      context.documentType,
+      context.presentationLanguage,
+      {
+        optimizedCv: context.optimizedCv,
+        coverLetter: context.coverLetter,
+      },
+    );
   } catch (error) {
     toExportError(error);
   }
@@ -177,25 +179,33 @@ export async function exportApplicationDocument(
       documentType,
       presentationLanguage,
     );
+    const presentation = await preparePresentationDocument(
+      context.documentType,
+      context.presentationLanguage,
+      {
+        optimizedCv: context.optimizedCv,
+        coverLetter: context.coverLetter,
+      },
+    );
     const masterCv = await getMasterCv(userId);
     const professionalTitle = readOptionalProfessionalTitle(masterCv);
     const filename =
-      context.documentType === "optimized-cv"
+      presentation.document === "optimized-cv"
         ? buildOptimizedCvFilename(masterCv.fullName, professionalTitle)
         : buildCoverLetterFilename(masterCv.fullName);
 
     const buffer = await renderDocument(
-      context.documentType === "optimized-cv"
+      presentation.document === "optimized-cv"
         ? {
             type: "optimized-cv",
-            data: context.optimizedCv,
+            data: presentation.data,
             profilePhotoBytes: await loadOptimizedCvPhotoBytes(
               applicationId,
               userId,
-              context.optimizedCv.profilePhotoAssetId,
+              presentation.data.profilePhotoAssetId,
             ),
           }
-        : { type: "cover-letter", data: context.coverLetter },
+        : { type: "cover-letter", data: presentation.data },
       "pdf",
     );
 

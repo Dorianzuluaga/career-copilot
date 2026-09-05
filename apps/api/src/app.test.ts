@@ -1383,6 +1383,51 @@ describe("Job Analysis API", () => {
       expect(previewExportDocument).not.toHaveBeenCalled();
     },
   );
+
+  it("returns 502 when export adaptation fails", async () => {
+    vi.mocked(getAuthenticatedUser).mockResolvedValue(user);
+    vi.mocked(exportApplicationDocument).mockRejectedValue(
+      new ExportError(
+        "We couldn't prepare this document in the selected presentation language.",
+        502,
+      ),
+    );
+
+    const response = await request(app)
+      .post("/api/applications/application-id/export")
+      .set("Cookie", "career_copilot_session=opaque-session-id")
+      .send({ document: "optimized-cv", presentationLanguage: "fr" });
+
+    expect(response.status).toBe(502);
+    expect(response.body).toEqual({
+      message:
+        "We couldn't prepare this document in the selected presentation language.",
+    });
+    expect(generateOptimizedCv).not.toHaveBeenCalled();
+    expect(generateCoverLetter).not.toHaveBeenCalled();
+  });
+
+  it("returns 502 when preview adaptation fails", async () => {
+    vi.mocked(getAuthenticatedUser).mockResolvedValue(user);
+    vi.mocked(previewExportDocument).mockRejectedValue(
+      new ExportError(
+        "We couldn't prepare this document in the selected presentation language.",
+        502,
+      ),
+    );
+
+    const response = await request(app)
+      .post("/api/applications/application-id/export/preview")
+      .set("Cookie", "career_copilot_session=opaque-session-id")
+      .send({ document: "cover-letter", presentationLanguage: "es" });
+
+    expect(response.status).toBe(502);
+    expect(response.body).toEqual({
+      message:
+        "We couldn't prepare this document in the selected presentation language.",
+    });
+    expect(exportApplicationDocument).not.toHaveBeenCalled();
+  });
 });
 
 describe("production HTTP configuration", () => {
