@@ -12,6 +12,22 @@ export interface ExportRequest {
 export type OptimizedCvPresentationDocument = OptimizedCv;
 export type CoverLetterPresentationDocument = CoverLetter;
 
+export interface OptimizedCvDocumentChrome {
+  professionalSummary: string;
+  experience: string;
+  education: string;
+  skills: string;
+  languages: string;
+  certifications: string;
+  personalProjects: string;
+  present: string;
+  openProject: string;
+}
+
+export interface CoverLetterDocumentChrome {
+  formattedDate: string;
+}
+
 export interface OptimizedCvNarrativeAdaptation {
   professionalSummary: string;
   experienceDescriptions: Array<string | null>;
@@ -32,9 +48,11 @@ export type ExportPreviewResponse =
       document: "optimized-cv";
       presentationLanguage: SupportedLocale;
       data: OptimizedCvPresentationDocument;
+      chrome: OptimizedCvDocumentChrome;
     }
   | {
       document: "cover-letter";
       presentationLanguage: SupportedLocale;
       data: CoverLetterPresentationDocument;
+      chrome: CoverLetterDocumentChrome;
     };

@@ -1,5 +1,6 @@
 import { Document, Page, StyleSheet, Text, View } from "@react-pdf/renderer";
 import type { CoverLetter } from "../types/cover-letter.js";
+import type { CoverLetterDocumentChrome } from "../types/export.js";
 import { hasText } from "./document-helpers.js";
 
 const styles = StyleSheet.create({
@@ -50,8 +51,10 @@ const styles = StyleSheet.create({
 
 export function CoverLetterPdfDocument({
   coverLetter,
+  chrome,
 }: {
   coverLetter: CoverLetter;
+  chrome: CoverLetterDocumentChrome;
 }) {
   const contactDetails = [coverLetter.email, coverLetter.phone].filter(hasText);
 
@@ -63,7 +66,7 @@ export function CoverLetterPdfDocument({
           {contactDetails.length > 0 ? (
             <Text style={styles.contact}>{contactDetails.join(" · ")}</Text>
           ) : null}
-          <Text style={styles.meta}>{coverLetter.date}</Text>
+          <Text style={styles.meta}>{chrome.formattedDate}</Text>
           {hasText(coverLetter.companyName) ? (
             <Text style={styles.company}>{coverLetter.companyName}</Text>
           ) : null}

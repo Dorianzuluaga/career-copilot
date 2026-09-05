@@ -1,4 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import {
+  resolveCoverLetterDocumentChrome,
+  resolveOptimizedCvDocumentChrome,
+} from "../documents/document-localization.js";
 import type { CoverLetter } from "../types/cover-letter.js";
 import type { OptimizedCv } from "../types/optimized-cv.js";
 
@@ -108,6 +112,7 @@ describe("preparePresentationDocument", () => {
       document: "optimized-cv",
       presentationLanguage: "es",
       data: optimizedCv,
+      chrome: resolveOptimizedCvDocumentChrome("es"),
     });
     expect(preview.data).not.toBe(optimizedCv);
   });
@@ -127,6 +132,7 @@ describe("preparePresentationDocument", () => {
         professionalSummary: "Saved Spanish summary [fr]",
         workingLanguage: "es",
       },
+      chrome: resolveOptimizedCvDocumentChrome("fr"),
     });
   });
 
@@ -145,6 +151,7 @@ describe("preparePresentationDocument", () => {
         ...coverLetter,
         introduction: "Saved English introduction [fr]",
       },
+      chrome: resolveCoverLetterDocumentChrome(coverLetter.date, "fr"),
     });
   });
 
@@ -241,6 +248,59 @@ describe("preparePresentationDocument", () => {
       statusCode: 400,
     });
     expect(adaptOptimizedCvNarrative).not.toHaveBeenCalled();
+    expect(adaptCoverLetterNarrative).not.toHaveBeenCalled();
+  });
+
+  it("resolves Presentation Language chrome without calling AI", async () => {
+    const preview = await preparePresentationDocument("optimized-cv", "fr", {
+      optimizedCv,
+      coverLetter,
+    });
+
+    expect(adaptOptimizedCvNarrative).toHaveBeenCalledTimes(1);
+    expect(preview.chrome).toEqual(resolveOptimizedCvDocumentChrome("fr"));
+    expect(preview.chrome).not.toEqual(resolveOptimizedCvDocumentChrome("es"));
+  });
+
+  it("formats the Cover Letter date for Presentation Language and preserves the saved date", async () => {
+    const preview = await preparePresentationDocument("cover-letter", "es", {
+      optimizedCv,
+      coverLetter,
+    });
+
+    expect(preview).toMatchObject({
+      document: "cover-letter",
+      data: { date: "August 8, 2026" },
+      chrome: { formattedDate: "8 de agosto de 2026" },
+    });
+    expect(coverLetter.date).toBe("August 8, 2026");
+  });
+
+  it("formats ISO Cover Letter dates without calling AI when languages match", async () => {
+    const isoCoverLetter = { ...coverLetter, date: "2026-08-07" };
+    const preview = await preparePresentationDocument("cover-letter", "en", {
+      optimizedCv,
+      coverLetter: isoCoverLetter,
+    });
+
+    expect(adaptCoverLetterNarrative).not.toHaveBeenCalled();
+    expect(preview).toMatchObject({
+      document: "cover-letter",
+      data: { date: "2026-08-07" },
+      chrome: { formattedDate: "August 7, 2026" },
+    });
+  });
+
+  it("rejects an ambiguous Cover Letter date before AI adaptation", async () => {
+    await expect(
+      preparePresentationDocument("cover-letter", "fr", {
+        optimizedCv,
+        coverLetter: { ...coverLetter, date: "2026-08" },
+      }),
+    ).rejects.toMatchObject({
+      message: "The saved Cover Letter is invalid.",
+      statusCode: 400,
+    });
     expect(adaptCoverLetterNarrative).not.toHaveBeenCalled();
   });
 

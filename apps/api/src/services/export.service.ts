@@ -199,13 +199,18 @@ export async function exportApplicationDocument(
         ? {
             type: "optimized-cv",
             data: presentation.data,
+            chrome: presentation.chrome,
             profilePhotoBytes: await loadOptimizedCvPhotoBytes(
               applicationId,
               userId,
               presentation.data.profilePhotoAssetId,
             ),
           }
-        : { type: "cover-letter", data: presentation.data },
+        : {
+            type: "cover-letter",
+            data: presentation.data,
+            chrome: presentation.chrome,
+          },
       "pdf",
     );
 

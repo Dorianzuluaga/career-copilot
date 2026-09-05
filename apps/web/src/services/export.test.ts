@@ -52,6 +52,7 @@ describe("export request contract", () => {
           document: "cover-letter",
           presentationLanguage: "en",
           data: { greeting: "Hello,", workingLanguage: "es" },
+          chrome: { formattedDate: "August 7, 2026" },
         }),
         {
           status: 200,
@@ -82,6 +83,7 @@ describe("export request contract", () => {
       document: "cover-letter",
       presentationLanguage: "en",
       data: { greeting: "Hello,", workingLanguage: "es" },
+      chrome: { formattedDate: "August 7, 2026" },
     });
   });
 
@@ -115,6 +117,17 @@ describe("export request contract", () => {
           document: "optimized-cv",
           presentationLanguage: "fr",
           data: { professionalSummary: "Saved" },
+          chrome: {
+            professionalSummary: "Résumé professionnel",
+            experience: "Expérience",
+            education: "Formation",
+            skills: "Compétences",
+            languages: "Langues",
+            certifications: "Certifications",
+            personalProjects: "Projets personnels",
+            present: "Aujourd'hui",
+            openProject: "Ouvrir le projet",
+          },
         }),
         {
           status: 200,
@@ -152,4 +165,5 @@ describe("export request contract", () => {
       ),
     ).toBe(false);
   });
+
 });

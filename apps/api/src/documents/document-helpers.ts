@@ -6,9 +6,10 @@ export function formatDateRange(
   startDate: string | null,
   endDate: string | null,
   current: boolean | null,
+  presentLabel: string,
 ): string | null {
   const start = hasText(startDate) ? startDate.trim() : null;
-  const end = current ? "Present" : hasText(endDate) ? endDate.trim() : null;
+  const end = current ? presentLabel : hasText(endDate) ? endDate.trim() : null;
 
   if (start && end) {
     return `${start} – ${end}`;

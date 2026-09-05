@@ -1335,6 +1335,17 @@ describe("Job Analysis API", () => {
         professionalSummary: "Saved summary",
         workingLanguage: "es",
       } as never,
+      chrome: {
+        professionalSummary: "Résumé professionnel",
+        experience: "Expérience",
+        education: "Formation",
+        skills: "Compétences",
+        languages: "Langues",
+        certifications: "Certifications",
+        personalProjects: "Projets personnels",
+        present: "Aujourd'hui",
+        openProject: "Ouvrir le projet",
+      },
     });
 
     const response = await request(app)
@@ -1350,6 +1361,17 @@ describe("Job Analysis API", () => {
         fullName: "Taylor Smith",
         professionalSummary: "Saved summary",
         workingLanguage: "es",
+      },
+      chrome: {
+        professionalSummary: "Résumé professionnel",
+        experience: "Expérience",
+        education: "Formation",
+        skills: "Compétences",
+        languages: "Langues",
+        certifications: "Certifications",
+        personalProjects: "Projets personnels",
+        present: "Aujourd'hui",
+        openProject: "Ouvrir le projet",
       },
     });
     expect(previewExportDocument).toHaveBeenCalledWith(

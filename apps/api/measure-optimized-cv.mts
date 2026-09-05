@@ -1,5 +1,6 @@
 import "dotenv/config";
 import { prisma } from "./src/lib/prisma.ts";
+import { resolveOptimizedCvDocumentChrome } from "./src/documents/document-localization.ts";
 import { renderDocument } from "./src/services/document-rendering.service.ts";
 
 const A4_WIDTH = 595.28;
@@ -15,7 +16,12 @@ function pageCount(buffer: Buffer): number {
   return (text.match(/\/Type\s*\/Page(?!s)/g) ?? []).length;
 }
 
-function estimateLines(text: string, fontSize: number, lineHeight: number, width = CONTENT_WIDTH) {
+function estimateLines(
+  text: string,
+  fontSize: number,
+  lineHeight: number,
+  width = CONTENT_WIDTH,
+) {
   const avgCharWidth = fontSize * 0.5;
   const charsPerLine = Math.max(1, Math.floor(width / avgCharWidth));
   const paragraphs = text.replace(/\r\n/g, "\n").split("\n");
@@ -66,7 +72,9 @@ function stats(cv: {
     };
   });
 
-  const certUrls = cv.certifications.filter((item) => item.credentialUrl?.trim());
+  const certUrls = cv.certifications.filter((item) =>
+    item.credentialUrl?.trim(),
+  );
   const contactParts = [
     "email",
     cv.phone,
@@ -95,12 +103,7 @@ function stats(cv: {
   const skillsText = cv.skills.filter(Boolean).join(" · ");
   const skills = estimateLines(skillsText || " ", 10, 1.5);
 
-  const personal =
-    9 +
-    8 +
-    20 +
-    (contactParts.length > 0 ? 6 + 9 : 0) +
-    16;
+  const personal = 9 + 8 + 20 + (contactParts.length > 0 ? 6 + 9 : 0) + 16;
   const nonFirstSections = Math.max(0, sectionCount - 1);
   const sectionChrome = nonFirstSections * (12 + 1 + 9 + 8 + 16);
 
@@ -139,7 +142,8 @@ function stats(cv: {
     experienceBullets: experience.map((item) => item.bullets),
     experienceChars: experience.map((item) => item.chars),
     educationCount: cv.education.length,
-    educationWithDescription: education.filter((item) => item.hasDescription).length,
+    educationWithDescription: education.filter((item) => item.hasDescription)
+      .length,
     skillsCount: cv.skills.filter(Boolean).length,
     languagesCount: cv.languages.length,
     certificationsCount: cv.certifications.length,
@@ -158,7 +162,12 @@ const records = await prisma.optimizedCv.findMany({
 console.log(
   JSON.stringify(
     {
-      a4: { width: A4_WIDTH, height: A4_HEIGHT, contentHeight: CONTENT_HEIGHT, contentWidth: CONTENT_WIDTH },
+      a4: {
+        width: A4_WIDTH,
+        height: A4_HEIGHT,
+        contentHeight: CONTENT_HEIGHT,
+        contentWidth: CONTENT_WIDTH,
+      },
       savedCount: records.length,
       documents: await Promise.all(
         records.map(async (record, index) => {
@@ -176,7 +185,11 @@ console.log(
             languages: record.languages as never,
             certifications: record.certifications as never,
           };
-          const buffer = await renderDocument({ type: "optimized-cv", data: cv });
+          const buffer = await renderDocument({
+            type: "optimized-cv",
+            data: cv,
+            chrome: resolveOptimizedCvDocumentChrome("en"),
+          });
           return {
             index,
             updatedAt: record.updatedAt,

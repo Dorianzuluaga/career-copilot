@@ -1,4 +1,9 @@
-import { localizeLanguageEntries } from "../documents/document-localization.js";
+import {
+  CoverLetterDateError,
+  localizeLanguageEntries,
+  resolveCoverLetterDocumentChrome,
+  resolveOptimizedCvDocumentChrome,
+} from "../documents/document-localization.js";
 import type { CoverLetter } from "../types/cover-letter.js";
 import type {
   ExportDocumentType,
@@ -109,6 +114,7 @@ export async function preparePresentationDocument(
   assertStoredCoverLetter(documents.coverLetter);
 
   if (documentType === "optimized-cv") {
+    const chrome = resolveOptimizedCvDocumentChrome(presentationLanguage);
     return {
       document: "optimized-cv",
       presentationLanguage,
@@ -116,7 +122,21 @@ export async function preparePresentationDocument(
         documents.optimizedCv,
         presentationLanguage,
       ),
+      chrome,
     };
+  }
+
+  let chrome;
+  try {
+    chrome = resolveCoverLetterDocumentChrome(
+      documents.coverLetter.date,
+      presentationLanguage,
+    );
+  } catch (error) {
+    if (error instanceof CoverLetterDateError) {
+      throw new PresentationPreparationError(error.message, error.statusCode);
+    }
+    throw error;
   }
 
   return {
@@ -126,5 +146,6 @@ export async function preparePresentationDocument(
       documents.coverLetter,
       presentationLanguage,
     ),
+    chrome,
   };
 }

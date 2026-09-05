@@ -13,6 +13,10 @@ import {
 import { OptimizedCvPdfDocument } from "../documents/optimized-cv.document.js";
 import { detectProfilePhotoMime } from "../lib/profile-photo.js";
 import type { CoverLetter } from "../types/cover-letter.js";
+import type {
+  CoverLetterDocumentChrome,
+  OptimizedCvDocumentChrome,
+} from "../types/export.js";
 import type { OptimizedCv } from "../types/optimized-cv.js";
 
 export type DocumentFormat = "pdf";
@@ -21,9 +25,14 @@ export type RenderableDocument =
   | {
       type: "optimized-cv";
       data: OptimizedCv;
+      chrome: OptimizedCvDocumentChrome;
       profilePhotoBytes?: Buffer | null;
     }
-  | { type: "cover-letter"; data: CoverLetter };
+  | {
+      type: "cover-letter";
+      data: CoverLetter;
+      chrome: CoverLetterDocumentChrome;
+    };
 
 export class DocumentRenderingError extends Error {
   constructor(
@@ -115,10 +124,12 @@ export async function renderDocument(
     document.type === "optimized-cv"
       ? createElement(OptimizedCvPdfDocument, {
           cv: document.data,
+          chrome: document.chrome,
           profilePhotoSrc,
         })
       : createElement(CoverLetterPdfDocument, {
           coverLetter: document.data,
+          chrome: document.chrome,
         })
   ) as ReactElement<DocumentProps>;
 

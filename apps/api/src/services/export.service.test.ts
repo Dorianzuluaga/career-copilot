@@ -85,6 +85,10 @@ import {
   saveCoverLetter,
   CoverLetterError,
 } from "./cover-letter.service.js";
+import {
+  resolveCoverLetterDocumentChrome,
+  resolveOptimizedCvDocumentChrome,
+} from "../documents/document-localization.js";
 import { renderDocument } from "./document-rendering.service.js";
 import {
   adaptCoverLetterNarrative,
@@ -269,6 +273,7 @@ describe("exportApplicationDocument", () => {
       {
         type: "optimized-cv",
         data: optimizedCv,
+        chrome: resolveOptimizedCvDocumentChrome("es"),
         profilePhotoBytes: null,
       },
       "pdf",
@@ -297,6 +302,7 @@ describe("exportApplicationDocument", () => {
       {
         type: "optimized-cv",
         data: adaptedOptimizedCv("fr"),
+        chrome: resolveOptimizedCvDocumentChrome("fr"),
         profilePhotoBytes: null,
       },
       "pdf",
@@ -324,6 +330,7 @@ describe("exportApplicationDocument", () => {
       {
         type: "optimized-cv",
         data: adaptedOptimizedCv("en"),
+        chrome: resolveOptimizedCvDocumentChrome("en"),
         profilePhotoBytes: null,
       },
       "pdf",
@@ -360,6 +367,7 @@ describe("exportApplicationDocument", () => {
       {
         type: "optimized-cv",
         data: savedWithPhoto,
+        chrome: resolveOptimizedCvDocumentChrome("es"),
         profilePhotoBytes: photoBytes,
       },
       "pdf",
@@ -377,7 +385,11 @@ describe("exportApplicationDocument", () => {
     expect(adaptCoverLetterNarrative).toHaveBeenCalledWith(coverLetter, "es");
     expect(adaptOptimizedCvNarrative).not.toHaveBeenCalled();
     expect(renderDocument).toHaveBeenCalledWith(
-      { type: "cover-letter", data: adaptedCoverLetter("es") },
+      {
+        type: "cover-letter",
+        data: adaptedCoverLetter("es"),
+        chrome: resolveCoverLetterDocumentChrome(coverLetter.date, "es"),
+      },
       "pdf",
     );
     expect(result.filename).toBe("juan-perez_cover-letter.pdf");
@@ -424,6 +436,7 @@ describe("exportApplicationDocument", () => {
           ...editedCv,
           professionalSummary: "Edited summary [fr]",
         },
+        chrome: resolveOptimizedCvDocumentChrome("fr"),
         profilePhotoBytes: null,
       },
       "pdf",
@@ -436,6 +449,7 @@ describe("exportApplicationDocument", () => {
           ...editedCoverLetter,
           introduction: "Edited introduction [fr]",
         },
+        chrome: resolveCoverLetterDocumentChrome(editedCoverLetter.date, "fr"),
       },
       "pdf",
     );
@@ -555,6 +569,7 @@ describe("previewExportDocument", () => {
       document: "optimized-cv",
       presentationLanguage: "es",
       data: optimizedCv,
+      chrome: resolveOptimizedCvDocumentChrome("es"),
     });
     expect(adaptOptimizedCvNarrative).not.toHaveBeenCalled();
     expect(getOptimizedCv).toHaveBeenCalledWith(applicationId, userId);
@@ -576,6 +591,7 @@ describe("previewExportDocument", () => {
       document: "cover-letter",
       presentationLanguage: "fr",
       data: adaptedCoverLetter("fr"),
+      chrome: resolveCoverLetterDocumentChrome(coverLetter.date, "fr"),
     });
     expect(preview.data.workingLanguage).toBe("en");
     expect(coverLetter.introduction).toBe("Intro");
@@ -597,6 +613,7 @@ describe("previewExportDocument", () => {
         professionalSummary: "Summary [en]",
         workingLanguage: "es",
       },
+      chrome: resolveOptimizedCvDocumentChrome("en"),
     });
     expect(optimizedCv.professionalSummary).toBe("Summary");
   });
@@ -631,6 +648,7 @@ describe("previewExportDocument", () => {
       {
         type: "optimized-cv",
         data: preview.data,
+        chrome: preview.chrome,
         profilePhotoBytes: null,
       },
       "pdf",
