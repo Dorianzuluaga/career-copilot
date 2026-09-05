@@ -30,6 +30,7 @@ const cv: OptimizedCv = {
   profilePhotoAssetId: "7e9c843b-5c3d-4e65-8514-7de898b2aca6",
   profilePhotoPositionX: 25,
   profilePhotoPositionY: 75,
+  workingLanguage: null,
 };
 
 describe("Optimized CV preview photo presentation", () => {

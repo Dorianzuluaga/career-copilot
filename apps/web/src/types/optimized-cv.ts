@@ -5,7 +5,7 @@ export type OptimizedCv = MasterCvInput & {
   profilePhotoAssetId?: string | null;
   profilePhotoPositionX?: number | null;
   profilePhotoPositionY?: number | null;
-  workingLanguage?: Locale;
+  workingLanguage: Locale | null;
 };
 
 export type GeneratedOptimizedCvDraft = OptimizedCv & {

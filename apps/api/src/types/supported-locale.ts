@@ -12,14 +12,27 @@ export function isSupportedLocale(value: unknown): value is SupportedLocale {
 export class SupportedLocaleValidationError extends Error {
   readonly statusCode = 400;
 
-  constructor() {
-    super('locale must be one of "es", "en", or "fr".');
+  constructor(field = "locale") {
+    super(`${field} must be one of "es", "en", or "fr".`);
   }
 }
 
 export function validateSupportedLocale(value: unknown): SupportedLocale {
   if (!isSupportedLocale(value)) {
     throw new SupportedLocaleValidationError();
+  }
+  return value;
+}
+
+export function parseNullableSupportedLocale(
+  value: unknown,
+  field = "locale",
+): SupportedLocale | null {
+  if (value === undefined || value === null) {
+    return null;
+  }
+  if (!isSupportedLocale(value)) {
+    throw new SupportedLocaleValidationError(field);
   }
   return value;
 }

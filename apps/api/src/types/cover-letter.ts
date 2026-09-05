@@ -16,6 +16,7 @@ export interface CoverLetter {
   motivation: string;
   closing: string;
   signature: string;
+  workingLanguage: SupportedLocale | null;
 }
 
 export type GeneratedCoverLetterDraft = CoverLetter & {

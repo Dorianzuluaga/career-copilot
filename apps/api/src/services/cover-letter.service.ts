@@ -12,7 +12,11 @@ import type {
   GeneratedCoverLetterDraft,
 } from "../types/cover-letter.js";
 import type { OptimizedCv } from "../types/optimized-cv.js";
-import type { SupportedLocale } from "../types/supported-locale.js";
+import {
+  parseNullableSupportedLocale,
+  SupportedLocaleValidationError,
+  type SupportedLocale,
+} from "../types/supported-locale.js";
 import {
   ApplicationError,
   getOwnedApplication,
@@ -78,6 +82,17 @@ function requiredDate(input: Record<string, unknown>, field: string): string {
   return value;
 }
 
+function parseWorkingLanguage(value: unknown): SupportedLocale | null {
+  try {
+    return parseNullableSupportedLocale(value, "workingLanguage");
+  } catch (error) {
+    if (error instanceof SupportedLocaleValidationError) {
+      throw new CoverLetterError(error.message, error.statusCode);
+    }
+    throw error;
+  }
+}
+
 function optionalPhone(
   input: Record<string, unknown>,
   field: string,
@@ -107,6 +122,7 @@ export function validateCoverLetterInput(value: unknown): CoverLetter {
     motivation: editableString(input, "motivation"),
     closing: editableString(input, "closing"),
     signature: requiredString(input, "signature"),
+    workingLanguage: parseWorkingLanguage(input.workingLanguage),
   };
 }
 
@@ -194,6 +210,13 @@ export async function saveCoverLetter(
 ): Promise<CoverLetter> {
   await requireOwnedApplication(applicationId, userId);
   const input = toCoverLetterDocument(value);
+  const existing = await findCoverLetterByApplicationId(applicationId);
+  if (!existing && input.workingLanguage === null) {
+    throw new CoverLetterError(
+      'workingLanguage must be one of "es", "en", or "fr".',
+      400,
+    );
+  }
   const coverLetter = await upsertCoverLetter(applicationId, input);
   return toCoverLetterDocument(coverLetter);
 }

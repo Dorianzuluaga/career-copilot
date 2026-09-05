@@ -91,6 +91,7 @@ const input: CoverLetterGenerationInput = {
     skills: ["TypeScript", "REST APIs"],
     languages: [],
     certifications: [],
+    workingLanguage: null,
   },
 };
 

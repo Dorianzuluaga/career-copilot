@@ -47,6 +47,7 @@ const sampleOptimizedCv: OptimizedCv = {
       credentialUrl: null,
     },
   ],
+  workingLanguage: null,
 };
 
 const selectedPersonalProject = {
@@ -308,6 +309,7 @@ describe("document rendering service", () => {
         motivation: "I want to join Acme.",
         closing: "Thank you.",
         signature: "Taylor Smith",
+        workingLanguage: null,
       },
     });
 
@@ -454,6 +456,7 @@ describe("document rendering service", () => {
         motivation: "I want to join Acme.",
         closing: "Thank you.",
         signature: "Taylor Smith",
+        workingLanguage: null,
       },
     });
     const raw = buffer.toString("latin1");

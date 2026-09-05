@@ -309,12 +309,28 @@ describe("getOptimizedCv", () => {
       persistedOptimizedCv as never,
     );
 
-    await expect(getOptimizedCv(applicationId, userId)).resolves.toEqual(
-      optimizedCv,
-    );
+    await expect(getOptimizedCv(applicationId, userId)).resolves.toEqual({
+      ...optimizedCv,
+      workingLanguage: null,
+    });
     expect(getOwnedApplication).toHaveBeenCalledWith(applicationId, userId);
     expect(findOptimizedCvByApplicationId).toHaveBeenCalledWith(applicationId);
   });
+
+  it.each(["es", "en", "fr"] as const)(
+    "returns stored Working Language %s without substituting another locale",
+    async (workingLanguage) => {
+      vi.mocked(findOptimizedCvByApplicationId).mockResolvedValue({
+        ...persistedOptimizedCv,
+        workingLanguage,
+      } as never);
+
+      await expect(getOptimizedCv(applicationId, userId)).resolves.toEqual({
+        ...optimizedCv,
+        workingLanguage,
+      });
+    },
+  );
 
   it("returns 404 when no saved Optimized CV exists", async () => {
     await expect(getOptimizedCv(applicationId, userId)).rejects.toEqual(
@@ -336,9 +352,20 @@ describe("getOptimizedCv", () => {
 
 describe("saveOptimizedCv", () => {
   it("upserts the Optimized CV for an owned application", async () => {
+    vi.mocked(upsertOptimizedCv).mockResolvedValue({
+      ...persistedOptimizedCv,
+      workingLanguage: "en",
+    } as never);
+
     await expect(
-      saveOptimizedCv(applicationId, userId, optimizedCv),
-    ).resolves.toEqual(optimizedCv);
+      saveOptimizedCv(applicationId, userId, {
+        ...optimizedCv,
+        workingLanguage: "en",
+      }),
+    ).resolves.toEqual({
+      ...optimizedCv,
+      workingLanguage: "en",
+    });
 
     expect(getOwnedApplication).toHaveBeenCalledWith(applicationId, userId);
     expect(upsertOptimizedCv).toHaveBeenCalledWith(
@@ -350,8 +377,134 @@ describe("saveOptimizedCv", () => {
       null,
       null,
       null,
+      "en",
     );
     expect(snapshotMasterCvPhoto).not.toHaveBeenCalled();
+  });
+
+  it.each(["es", "en", "fr"] as const)(
+    "persists Working Language %s for a newly saved Optimized CV",
+    async (workingLanguage) => {
+      vi.mocked(upsertOptimizedCv).mockResolvedValue({
+        ...persistedOptimizedCv,
+        workingLanguage,
+      } as never);
+
+      await expect(
+        saveOptimizedCv(applicationId, userId, {
+          ...optimizedCv,
+          workingLanguage,
+        }),
+      ).resolves.toEqual({
+        ...optimizedCv,
+        workingLanguage,
+      });
+      expect(upsertOptimizedCv).toHaveBeenCalledWith(
+        applicationId,
+        expect.anything(),
+        null,
+        null,
+        null,
+        workingLanguage,
+      );
+    },
+  );
+
+  it("rejects a first save without Working Language", async () => {
+    await expect(
+      saveOptimizedCv(applicationId, userId, optimizedCv),
+    ).rejects.toEqual(
+      new OptimizedCvError(
+        'workingLanguage must be one of "es", "en", or "fr".',
+        400,
+      ),
+    );
+    expect(upsertOptimizedCv).not.toHaveBeenCalled();
+  });
+
+  it("rejects an unsupported Working Language before persistence", async () => {
+    await expect(
+      saveOptimizedCv(applicationId, userId, {
+        ...optimizedCv,
+        workingLanguage: "de",
+      }),
+    ).rejects.toEqual(
+      new OptimizedCvError(
+        'workingLanguage must be one of "es", "en", or "fr".',
+        400,
+      ),
+    );
+    expect(upsertOptimizedCv).not.toHaveBeenCalled();
+    expect(findOptimizedCvByApplicationId).not.toHaveBeenCalled();
+  });
+
+  it("returns null Working Language for a legacy row without substituting a locale", async () => {
+    vi.mocked(findOptimizedCvByApplicationId).mockResolvedValue(
+      persistedOptimizedCv as never,
+    );
+
+    await expect(getOptimizedCv(applicationId, userId)).resolves.toEqual({
+      ...optimizedCv,
+      workingLanguage: null,
+    });
+    expect(upsertOptimizedCv).not.toHaveBeenCalled();
+  });
+
+  it("preserves null Working Language when saving unchanged legacy text", async () => {
+    vi.mocked(findOptimizedCvByApplicationId).mockResolvedValue(
+      persistedOptimizedCv as never,
+    );
+    vi.mocked(upsertOptimizedCv).mockResolvedValue({
+      ...persistedOptimizedCv,
+      workingLanguage: null,
+    } as never);
+
+    await expect(
+      saveOptimizedCv(applicationId, userId, {
+        ...optimizedCv,
+        workingLanguage: null,
+      }),
+    ).resolves.toEqual({
+      ...optimizedCv,
+      workingLanguage: null,
+    });
+    expect(upsertOptimizedCv).toHaveBeenCalledWith(
+      applicationId,
+      expect.anything(),
+      null,
+      null,
+      null,
+      null,
+    );
+  });
+
+  it("replaces Working Language only when a newly generated draft is saved", async () => {
+    vi.mocked(findOptimizedCvByApplicationId).mockResolvedValue({
+      ...persistedOptimizedCv,
+      workingLanguage: "es",
+    } as never);
+    vi.mocked(upsertOptimizedCv).mockResolvedValue({
+      ...persistedOptimizedCv,
+      workingLanguage: "fr",
+    } as never);
+
+    await expect(
+      saveOptimizedCv(applicationId, userId, {
+        ...optimizedCv,
+        workingLanguage: "fr",
+      }),
+    ).resolves.toEqual({
+      ...optimizedCv,
+      workingLanguage: "fr",
+    });
+    expect(upsertOptimizedCv).toHaveBeenCalledWith(
+      applicationId,
+      expect.anything(),
+      null,
+      null,
+      null,
+      "fr",
+    );
   });
 
   it("persists the generation-time asset and position without reading Master CV", async () => {
@@ -362,6 +515,7 @@ describe("saveOptimizedCv", () => {
       profilePhotoAssetId: assetId,
       profilePhotoPositionX: 20,
       profilePhotoPositionY: 80,
+      workingLanguage: "en" as const,
     };
     vi.mocked(resolveOptimizedCvPhotoObjectKey).mockResolvedValue(objectKey);
     vi.mocked(upsertOptimizedCv).mockResolvedValue({
@@ -369,6 +523,7 @@ describe("saveOptimizedCv", () => {
       profilePhotoObjectKey: objectKey,
       profilePhotoPositionX: 20,
       profilePhotoPositionY: 80,
+      workingLanguage: "en",
     } as never);
 
     await expect(
@@ -377,6 +532,7 @@ describe("saveOptimizedCv", () => {
       profilePhotoAssetId: assetId,
       profilePhotoPositionX: 20,
       profilePhotoPositionY: 80,
+      workingLanguage: "en",
     });
     expect(upsertOptimizedCv).toHaveBeenCalledWith(
       applicationId,
@@ -384,6 +540,7 @@ describe("saveOptimizedCv", () => {
       objectKey,
       20,
       80,
+      "en",
     );
     expect(findMasterCvByUserId).not.toHaveBeenCalled();
   });
@@ -395,6 +552,7 @@ describe("saveOptimizedCv", () => {
         profilePhotoAssetId: "7e9c843b-5c3d-4e65-8514-7de898b2aca6",
         profilePhotoPositionX: 20,
         profilePhotoPositionY: undefined,
+        workingLanguage: "en",
       }),
     ).rejects.toMatchObject({ statusCode: 400 });
     expect(upsertOptimizedCv).not.toHaveBeenCalled();

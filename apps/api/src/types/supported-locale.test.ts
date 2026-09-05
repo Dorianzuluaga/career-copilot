@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   isSupportedLocale,
+  parseNullableSupportedLocale,
   SUPPORTED_LOCALES,
   validateSupportedLocale,
 } from "./supported-locale.js";
@@ -19,4 +20,16 @@ describe("supported locale contract", () => {
       );
     },
   );
+
+  it("parses missing and null values as null without substituting a locale", () => {
+    expect(parseNullableSupportedLocale(undefined)).toBeNull();
+    expect(parseNullableSupportedLocale(null)).toBeNull();
+    expect(parseNullableSupportedLocale("es")).toBe("es");
+  });
+
+  it("rejects unsupported persisted Working Language values", () => {
+    expect(() => parseNullableSupportedLocale("de", "workingLanguage")).toThrow(
+      'workingLanguage must be one of "es", "en", or "fr".',
+    );
+  });
 });

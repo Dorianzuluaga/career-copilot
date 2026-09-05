@@ -1010,6 +1010,7 @@ describe("App", () => {
           credentialUrl: null,
         },
       ],
+      workingLanguage: null,
     };
 
     const idleMarkup = renderWorkspace(
@@ -1259,6 +1260,7 @@ describe("App", () => {
       skills: ["TypeScript"],
       languages: [],
       certifications: [],
+      workingLanguage: null,
     };
 
     const allFieldsMarkup = renderWithLocale(
@@ -1418,6 +1420,7 @@ describe("App", () => {
           url: "https://example.com/career-copilot",
         },
       ],
+      workingLanguage: null,
     };
 
     const reviewMarkup = renderWithLocale(
@@ -1589,6 +1592,7 @@ describe("App", () => {
       languages: [],
       certifications: [],
       personalProjects: [careerCopilot],
+      workingLanguage: null,
     };
 
     expect(
@@ -1816,6 +1820,7 @@ describe("App", () => {
             url: "https://example.com/career-copilot",
           },
         ],
+        workingLanguage: null,
       };
       const omittedProject = {
         name: "Humidity Project",
@@ -1973,6 +1978,7 @@ describe("App", () => {
       closing:
         "Thank you for your consideration. I am available for an interview.",
       signature: "Taylor Smith",
+      workingLanguage: null,
     };
 
     const idleMarkup = renderWorkspace(
@@ -2325,6 +2331,7 @@ describe("App", () => {
         closing:
           "Thank you for your consideration. I am available for an interview.",
         signature: "Taylor Smith",
+        workingLanguage: null,
       };
 
       const emptyMarkup = renderWithLocale(
@@ -2529,6 +2536,7 @@ describe("App", () => {
           url: "https://example.com/career-copilot",
         },
       ],
+      workingLanguage: null,
     };
     const sampleCoverLetter = {
       candidateName: "Taylor Smith",
@@ -2546,6 +2554,7 @@ describe("App", () => {
       closing:
         "Thank you for your consideration. I am available for an interview.",
       signature: "Taylor Smith",
+      workingLanguage: null,
     };
 
     const markup = renderWorkspace(
@@ -2749,6 +2758,7 @@ describe("App", () => {
             url: "https://example.com/career-copilot",
           },
         ],
+        workingLanguage: null,
       };
       const sampleCoverLetter = {
         candidateName: "Taylor Smith",
@@ -2766,6 +2776,7 @@ describe("App", () => {
         closing:
           "Thank you for your consideration. I am available for an interview.",
         signature: "Taylor Smith",
+        workingLanguage: null,
       };
 
       const emptyMarkup = renderWithLocale(

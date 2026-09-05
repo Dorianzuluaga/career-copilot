@@ -89,6 +89,7 @@ const optimizedCv = {
   skills: ["TypeScript"],
   languages: [],
   certifications: [],
+  workingLanguage: null,
 };
 
 const coverLetter = {
@@ -103,6 +104,7 @@ const coverLetter = {
   motivation: "Motivation",
   closing: "Closing",
   signature: "Taylor Smith",
+  workingLanguage: null,
 };
 
 beforeEach(() => {

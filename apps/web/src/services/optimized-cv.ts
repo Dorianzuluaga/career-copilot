@@ -43,15 +43,13 @@ export async function saveOptimizedCv(
   applicationId: string,
   optimizedCv: OptimizedCv,
 ): Promise<OptimizedCv> {
-  const persistableOptimizedCv = { ...optimizedCv };
-  delete persistableOptimizedCv.workingLanguage;
   const response = await fetch(
     `${apiUrl}/api/applications/${applicationId}/optimized-cv`,
     {
       method: "PUT",
       credentials: "include",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(persistableOptimizedCv),
+      body: JSON.stringify(optimizedCv),
     },
   );
 

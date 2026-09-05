@@ -16,7 +16,12 @@ import type {
   GeneratedOptimizedCvDraft,
   OptimizedCv,
 } from "../types/optimized-cv.js";
-import type { SupportedLocale } from "../types/supported-locale.js";
+import {
+  isSupportedLocale,
+  parseNullableSupportedLocale,
+  SupportedLocaleValidationError,
+  type SupportedLocale,
+} from "../types/supported-locale.js";
 import {
   ApplicationError,
   getOwnedApplication,
@@ -43,6 +48,43 @@ export class OptimizedCvError extends Error {
   ) {
     super(message);
   }
+}
+
+function parseWorkingLanguage(value: unknown): SupportedLocale | null {
+  try {
+    return parseNullableSupportedLocale(value, "workingLanguage");
+  } catch (error) {
+    if (error instanceof SupportedLocaleValidationError) {
+      throw new OptimizedCvError(error.message, error.statusCode);
+    }
+    throw error;
+  }
+}
+
+function readPayloadWorkingLanguage(value: unknown): unknown {
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    return undefined;
+  }
+  return "workingLanguage" in value
+    ? (value as { workingLanguage: unknown }).workingLanguage
+    : undefined;
+}
+
+function readStoredWorkingLanguage(record: unknown): SupportedLocale | null {
+  if (!record || typeof record !== "object" || Array.isArray(record)) {
+    return null;
+  }
+  if (!("workingLanguage" in record)) {
+    return null;
+  }
+  const value = (record as { workingLanguage: unknown }).workingLanguage;
+  if (value === null || value === undefined) {
+    return null;
+  }
+  if (!isSupportedLocale(value)) {
+    throw new OptimizedCvError("The saved Optimized CV is invalid.", 400);
+  }
+  return value;
 }
 
 function validateOptimizedCvText(value: unknown): MasterCvInput {
@@ -98,6 +140,7 @@ function toPublicOptimizedCv(
       profilePhotoAssetId === null ? null : storedPositionX,
     profilePhotoPositionY:
       profilePhotoAssetId === null ? null : storedPositionY,
+    workingLanguage: readStoredWorkingLanguage(record),
   };
 }
 
@@ -275,8 +318,17 @@ export async function saveOptimizedCv(
 ): Promise<OptimizedCv> {
   await requireOwnedApplication(applicationId, userId);
   const input = validateOptimizedCvText(value);
+  const workingLanguage = parseWorkingLanguage(
+    readPayloadWorkingLanguage(value),
+  );
   const requestedPhoto = parseClientPhotoConfiguration(value);
   const saved = await findOptimizedCvByApplicationId(applicationId);
+  if (!saved && workingLanguage === null) {
+    throw new OptimizedCvError(
+      'workingLanguage must be one of "es", "en", or "fr".',
+      400,
+    );
+  }
   let nextObjectKey: string | null;
   try {
     nextObjectKey = await resolveOptimizedCvPhotoObjectKey({
@@ -302,6 +354,7 @@ export async function saveOptimizedCv(
       : (requestedPhoto?.positionY ??
           saved?.profilePhotoPositionY ??
           PROFILE_PHOTO_DEFAULT_POSITION),
+    workingLanguage,
   );
   await deleteUnreferencedProfilePhotoObjects(
     optimizedCvPhotoPrefix(userId, applicationId),

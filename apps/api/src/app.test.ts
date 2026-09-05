@@ -925,6 +925,7 @@ describe("Job Analysis API", () => {
       skills: ["TypeScript"],
       languages: [],
       certifications: [],
+      workingLanguage: null,
     };
     vi.mocked(getAuthenticatedUser).mockResolvedValue(user);
     vi.mocked(getOptimizedCv).mockResolvedValue(optimizedCv);
@@ -977,6 +978,7 @@ describe("Job Analysis API", () => {
       skills: ["TypeScript"],
       languages: [],
       certifications: [],
+      workingLanguage: "es" as const,
     };
     vi.mocked(getAuthenticatedUser).mockResolvedValue(user);
     vi.mocked(saveOptimizedCv).mockResolvedValue(optimizedCv);
@@ -1085,6 +1087,7 @@ describe("Job Analysis API", () => {
       closing:
         "Thank you for your consideration. I am available for an interview.",
       signature: "Taylor Smith",
+      workingLanguage: null,
     };
     vi.mocked(getAuthenticatedUser).mockResolvedValue(user);
     vi.mocked(getCoverLetter).mockResolvedValue(coverLetter);
@@ -1129,6 +1132,7 @@ describe("Job Analysis API", () => {
       closing:
         "Thank you for your consideration. I am available for an interview.",
       signature: "Taylor Smith",
+      workingLanguage: "en" as const,
     };
     vi.mocked(getAuthenticatedUser).mockResolvedValue(user);
     vi.mocked(saveCoverLetter).mockResolvedValue(coverLetter);

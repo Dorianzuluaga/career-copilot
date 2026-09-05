@@ -51,7 +51,7 @@ describe("generation locale propagation", () => {
     ]);
   });
 
-  it("does not send draft Working Language through pre-Phase-2 save contracts", async () => {
+  it("sends draft Working Language on save without substituting the current UI locale", async () => {
     const optimizedCv = {
       fullName: "Taylor Smith",
       professionalTitle: null,
@@ -87,10 +87,55 @@ describe("generation locale propagation", () => {
     await saveOptimizedCv("application-id", optimizedCv);
     await saveCoverLetter("application-id", coverLetter);
 
-    for (const [, init] of fetchMock.mock.calls) {
-      expect(JSON.parse(String(init?.body))).not.toHaveProperty(
-        "workingLanguage",
-      );
-    }
+    expect(
+      fetchMock.mock.calls.map(([, init]) => JSON.parse(String(init?.body))),
+    ).toEqual([
+      expect.objectContaining({ workingLanguage: "fr" }),
+      expect.objectContaining({ workingLanguage: "fr" }),
+    ]);
+  });
+
+  it("sends null Working Language for legacy documents instead of the current UI locale", async () => {
+    const optimizedCv = {
+      fullName: "Taylor Smith",
+      professionalTitle: null,
+      email: "taylor@example.com",
+      phone: null,
+      location: null,
+      linkedin: null,
+      website: null,
+      professionalSummary: "Software engineer.",
+      experience: [],
+      education: [],
+      skills: ["TypeScript"],
+      languages: [],
+      certifications: [],
+      personalProjects: [],
+      workingLanguage: null,
+    };
+    const coverLetter = {
+      candidateName: "Taylor Smith",
+      email: "taylor@example.com",
+      phone: null,
+      date: "2026-09-04",
+      companyName: null,
+      greeting: "Hello,",
+      introduction: "Introduction",
+      professionalValue: "Value",
+      motivation: "Motivation",
+      closing: "Regards,",
+      signature: "Taylor Smith",
+      workingLanguage: null,
+    };
+
+    await saveOptimizedCv("application-id", optimizedCv);
+    await saveCoverLetter("application-id", coverLetter);
+
+    expect(
+      fetchMock.mock.calls.map(([, init]) => JSON.parse(String(init?.body))),
+    ).toEqual([
+      expect.objectContaining({ workingLanguage: null }),
+      expect.objectContaining({ workingLanguage: null }),
+    ]);
   });
 });

@@ -43,15 +43,13 @@ export async function saveCoverLetter(
   applicationId: string,
   coverLetter: CoverLetter,
 ): Promise<CoverLetter> {
-  const persistableCoverLetter = { ...coverLetter };
-  delete persistableCoverLetter.workingLanguage;
   const response = await fetch(
     `${apiUrl}/api/applications/${applicationId}/cover-letter`,
     {
       method: "PUT",
       credentials: "include",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(persistableCoverLetter),
+      body: JSON.stringify(coverLetter),
     },
   );
 

@@ -300,7 +300,7 @@ export function enforceMasterCvIntegrity(
   profilePhotoAssetId: string | null = null,
   profilePhotoPositionX: number | null = null,
   profilePhotoPositionY: number | null = null,
-): OptimizedCv {
+): Omit<OptimizedCv, "workingLanguage"> {
   return {
     fullName: masterCv.fullName,
     professionalTitle: masterCv.professionalTitle,
