@@ -7,6 +7,8 @@ import { ApplicationCard } from "./components/ApplicationCard";
 import { ApplicationCoverLetter } from "./components/ApplicationCoverLetter";
 import {
   ApplicationExport,
+  createExportPreviewCache,
+  ExportPreviewPanel,
   updateDocumentSelection,
 } from "./components/ApplicationExport";
 import { ApplicationForm } from "./components/ApplicationForm";
@@ -1010,6 +1012,7 @@ describe("App", () => {
           credentialUrl: null,
         },
       ],
+      workingLanguage: null,
     };
 
     const idleMarkup = renderWorkspace(
@@ -1259,6 +1262,7 @@ describe("App", () => {
       skills: ["TypeScript"],
       languages: [],
       certifications: [],
+      workingLanguage: null,
     };
 
     const allFieldsMarkup = renderWithLocale(
@@ -1418,6 +1422,7 @@ describe("App", () => {
           url: "https://example.com/career-copilot",
         },
       ],
+      workingLanguage: null,
     };
 
     const reviewMarkup = renderWithLocale(
@@ -1589,6 +1594,7 @@ describe("App", () => {
       languages: [],
       certifications: [],
       personalProjects: [careerCopilot],
+      workingLanguage: null,
     };
 
     expect(
@@ -1816,6 +1822,7 @@ describe("App", () => {
             url: "https://example.com/career-copilot",
           },
         ],
+        workingLanguage: null,
       };
       const omittedProject = {
         name: "Humidity Project",
@@ -1973,6 +1980,7 @@ describe("App", () => {
       closing:
         "Thank you for your consideration. I am available for an interview.",
       signature: "Taylor Smith",
+      workingLanguage: null,
     };
 
     const idleMarkup = renderWorkspace(
@@ -2325,6 +2333,7 @@ describe("App", () => {
         closing:
           "Thank you for your consideration. I am available for an interview.",
         signature: "Taylor Smith",
+        workingLanguage: null,
       };
 
       const emptyMarkup = renderWithLocale(
@@ -2529,6 +2538,7 @@ describe("App", () => {
           url: "https://example.com/career-copilot",
         },
       ],
+      workingLanguage: null,
     };
     const sampleCoverLetter = {
       candidateName: "Taylor Smith",
@@ -2546,6 +2556,7 @@ describe("App", () => {
       closing:
         "Thank you for your consideration. I am available for an interview.",
       signature: "Taylor Smith",
+      workingLanguage: null,
     };
 
     const markup = renderWorkspace(
@@ -2564,6 +2575,7 @@ describe("App", () => {
           applicationId="application-id"
           coverLetter={sampleCoverLetter}
           optimizedCv={sampleOptimizedCv}
+          previewCache={createExportPreviewCache()}
         />
       </ApplicationWorkspace>,
     );
@@ -2578,6 +2590,13 @@ describe("App", () => {
     expect(markup).toContain(
       "Previsualiza los últimos documentos de candidatura guardados y elige cuáles se descargarán.",
     );
+    expect(markup).toContain("Idioma de presentación");
+    expect(markup).toContain(
+      "Este idioma se aplica tanto al CV optimizado como a la carta de presentación.",
+    );
+    expect(markup).toContain(">Español<");
+    expect(markup).toContain(">English<");
+    expect(markup).toContain(">Français<");
     expect(markup).toContain("Documentos a descargar");
     expect(markup).toContain(
       '<label class="flex items-center gap-2 text-sm font-medium text-ink"><input type="checkbox" checked=""',
@@ -2588,23 +2607,8 @@ describe("App", () => {
     expect(markup).toContain('role="tablist"');
     expect(markup).toContain('aria-label="Vista previa del documento"');
     expect(markup).toContain('aria-selected="true"');
-    expect(markup).toContain('aria-label="CV optimizado"');
-    expect(markup).toContain("<header");
-    expect(markup).toContain("<aside");
-    expect(markup).toContain("minmax(0,68fr)_minmax(0,32fr)");
-    expect(markup).toContain("Taylor Smith");
-    expect(markup).toContain("TypeScript engineer building APIs.");
-    expect(markup).toContain("text-justify");
-    expect(markup).toContain("Built REST APIs with TypeScript.");
-    expect(markup).toContain("TypeScript · Node.js");
-    expect(markup).toContain("Proyectos personales");
-    expect(markup.indexOf("Proyectos personales")).toBeGreaterThan(
-      markup.indexOf("</aside>"),
-    );
-    expect(markup).toContain("Career Copilot");
-    expect(markup).not.toContain("Personal information");
-    expect(markup).not.toContain("Información personal");
-    expect(markup).not.toContain('aria-label="Carta de presentación"');
+    expect(markup).toContain("Preparando la vista previa…");
+    expect(markup).not.toContain("TypeScript engineer building APIs.");
     expect(markup).not.toContain("Dear Hiring Manager,");
     expect(markup).not.toContain(">Edit<");
     expect(markup).not.toContain(">Editar<");
@@ -2620,6 +2624,51 @@ describe("App", () => {
     expect(markup).not.toContain(
       "Se necesita un CV optimizado y una carta de presentación guardados",
     );
+
+    const previewMarkup = renderWithLocale(
+      <ExportPreviewPanel
+        applicationId="application-id"
+        preview={{
+          document: "optimized-cv",
+          presentationLanguage: "fr",
+          data: sampleOptimizedCv,
+          chrome: {
+            professionalSummary: "Résumé professionnel",
+            experience: "Expérience",
+            education: "Formation",
+            skills: "Compétences",
+            languages: "Langues",
+            certifications: "Certifications",
+            personalProjects: "Projets personnels",
+            present: "Aujourd'hui",
+            openProject: "Ouvrir le projet",
+          },
+        }}
+      />,
+    );
+
+    expect(previewMarkup).toContain('data-presentation-language="fr"');
+    expect(previewMarkup).toContain('aria-label="CV optimizado"');
+    expect(previewMarkup).toContain("<header");
+    expect(previewMarkup).toContain("<aside");
+    expect(previewMarkup).toContain("minmax(0,68fr)_minmax(0,32fr)");
+    expect(previewMarkup).toContain("Taylor Smith");
+    expect(previewMarkup).toContain("TypeScript engineer building APIs.");
+    expect(previewMarkup).toContain("text-justify");
+    expect(previewMarkup).toContain("Built REST APIs with TypeScript.");
+    expect(previewMarkup).toContain("TypeScript · Node.js");
+    expect(previewMarkup).toContain("Projets personnels");
+    expect(previewMarkup.indexOf("Projets personnels")).toBeGreaterThan(
+      previewMarkup.indexOf("</aside>"),
+    );
+    expect(previewMarkup).toContain("Career Copilot");
+    expect(previewMarkup).toContain("Ouvrir le projet");
+    expect(previewMarkup).toContain("Aujourd&#x27;hui");
+    expect(previewMarkup).not.toContain("Proyectos personales");
+    expect(previewMarkup).not.toContain("Personal information");
+    expect(previewMarkup).not.toContain("Información personal");
+    expect(previewMarkup).not.toContain('aria-label="Carta de presentación"');
+    expect(previewMarkup).not.toContain("Dear Hiring Manager,");
   });
 
   it("shows a prerequisite empty state when Export documents are missing", () => {
@@ -2628,6 +2677,7 @@ describe("App", () => {
         applicationId="application-id"
         coverLetter={null}
         optimizedCv={null}
+        previewCache={createExportPreviewCache()}
       />,
     );
 
@@ -2639,6 +2689,7 @@ describe("App", () => {
     expect(markup).not.toContain(">Descargar<");
     expect(markup).not.toContain('role="tablist"');
     expect(markup).not.toContain("Taylor Smith");
+    expect(markup).not.toContain("Idioma de presentación");
   });
 
   it.each([
@@ -2653,6 +2704,10 @@ describe("App", () => {
       coverLetter: "Cover Letter",
       download: "Download",
       previewAria: "Document preview",
+      presentationLanguage: "Presentation Language",
+      presentationLanguageHelp:
+        "This language applies to both the Optimized CV and the Cover Letter.",
+      previewLoading: "Preparing preview…",
       requiresDocuments:
         "Saved Optimized CV and Cover Letter are required before documents can be previewed.",
     },
@@ -2667,6 +2722,10 @@ describe("App", () => {
       coverLetter: "Lettre de motivation",
       download: "Télécharger",
       previewAria: "Aperçu du document",
+      presentationLanguage: "Langue de présentation",
+      presentationLanguageHelp:
+        "Cette langue s&#x27;applique à la fois au CV optimisé et à la lettre de motivation.",
+      previewLoading: "Préparation de l&#x27;aperçu…",
       requiresDocuments:
         "Un CV optimisé et une lettre de motivation enregistrés sont requis avant de prévisualiser les documents.",
     },
@@ -2682,6 +2741,9 @@ describe("App", () => {
       coverLetter,
       download,
       previewAria,
+      presentationLanguage,
+      presentationLanguageHelp,
+      previewLoading,
       requiresDocuments,
     }) => {
       const storage = new Map<string, string>();
@@ -2749,6 +2811,7 @@ describe("App", () => {
             url: "https://example.com/career-copilot",
           },
         ],
+        workingLanguage: null,
       };
       const sampleCoverLetter = {
         candidateName: "Taylor Smith",
@@ -2766,6 +2829,7 @@ describe("App", () => {
         closing:
           "Thank you for your consideration. I am available for an interview.",
         signature: "Taylor Smith",
+        workingLanguage: null,
       };
 
       const emptyMarkup = renderWithLocale(
@@ -2773,6 +2837,7 @@ describe("App", () => {
           applicationId="application-id"
           coverLetter={null}
           optimizedCv={null}
+          previewCache={createExportPreviewCache()}
         />,
       );
       expect(emptyMarkup).toContain(title);
@@ -2780,27 +2845,32 @@ describe("App", () => {
       expect(emptyMarkup).toContain(description);
       expect(emptyMarkup).toContain(requiresDocuments);
       expect(emptyMarkup).not.toContain(`>${download}<`);
+      expect(emptyMarkup).not.toContain(presentationLanguage);
 
       const previewMarkup = renderWithLocale(
         <ApplicationExport
           applicationId="application-id"
           coverLetter={sampleCoverLetter}
           optimizedCv={sampleOptimizedCv}
+          previewCache={createExportPreviewCache()}
         />,
       );
       expect(previewMarkup).toContain(title);
       expect(previewMarkup).toContain(kicker);
       expect(previewMarkup).toContain(description);
       expect(previewMarkup).toContain(documentsToDownload);
+      expect(previewMarkup).toContain(presentationLanguage);
+      expect(previewMarkup).toContain(presentationLanguageHelp);
       expect(previewMarkup).toContain(`>${optimizedCv}</label>`);
       expect(previewMarkup).toContain(`>${coverLetter}</label>`);
       expect(previewMarkup).toContain(`>${download}</button>`);
       expect(previewMarkup).toContain(`aria-label="${previewAria}"`);
-      expect(previewMarkup).toContain(`aria-label="${optimizedCv}"`);
-      expect(previewMarkup).toContain("Taylor Smith");
-      expect(previewMarkup).toContain("TypeScript engineer building APIs.");
-      expect(previewMarkup).toContain("Career Copilot");
-      expect(previewMarkup).not.toContain(`aria-label="${coverLetter}"`);
+      expect(previewMarkup).toContain(`aria-label="${presentationLanguage}"`);
+      expect(previewMarkup).toContain(previewLoading);
+      expect(previewMarkup).toContain(">Español<");
+      expect(previewMarkup).toContain(">English<");
+      expect(previewMarkup).toContain(">Français<");
+      expect(previewMarkup).not.toContain("TypeScript engineer building APIs.");
       expect(previewMarkup).not.toContain("Dear Hiring Manager,");
       expect(previewMarkup).not.toContain(requiresDocuments);
     },

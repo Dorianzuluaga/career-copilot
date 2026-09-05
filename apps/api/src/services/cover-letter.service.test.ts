@@ -124,6 +124,7 @@ const profileMatch = {
 const optimizedCv = {
   ...masterCv,
   professionalSummary: "TypeScript engineer building APIs.",
+  workingLanguage: null,
 };
 
 const coverLetter = {
@@ -163,14 +164,20 @@ beforeEach(() => {
   });
   vi.mocked(getOptimizedCv).mockResolvedValue(optimizedCv);
   vi.mocked(getProfileComparison).mockResolvedValue(profileMatch);
-  vi.mocked(generateCoverLetterDraft).mockResolvedValue(coverLetter);
+  vi.mocked(generateCoverLetterDraft).mockResolvedValue({
+    ...coverLetter,
+    workingLanguage: "en",
+  });
 });
 
 describe("generateCoverLetter", () => {
   it("generates a Cover Letter from Master CV, Job Analysis, saved Profile Match, and saved Optimized CV", async () => {
-    await expect(generateCoverLetter(applicationId, userId)).resolves.toEqual(
-      coverLetter,
-    );
+    await expect(
+      generateCoverLetter(applicationId, userId, "en"),
+    ).resolves.toEqual({
+      ...coverLetter,
+      workingLanguage: "en",
+    });
 
     expect(prepareProfileComparisonInput).toHaveBeenCalledWith(
       applicationId,
@@ -178,12 +185,15 @@ describe("generateCoverLetter", () => {
     );
     expect(getOptimizedCv).toHaveBeenCalledWith(applicationId, userId);
     expect(getProfileComparison).toHaveBeenCalledWith(applicationId, userId);
-    expect(generateCoverLetterDraft).toHaveBeenCalledWith({
-      masterCv,
-      jobAnalysis,
-      profileMatch,
-      optimizedCv,
-    });
+    expect(generateCoverLetterDraft).toHaveBeenCalledWith(
+      {
+        masterCv,
+        jobAnalysis,
+        profileMatch,
+        optimizedCv,
+      },
+      "en",
+    );
   });
 
   it("returns an error when no saved Optimized CV exists", async () => {
@@ -191,9 +201,9 @@ describe("generateCoverLetter", () => {
       new OptimizedCvError("Optimized CV not found.", 404),
     );
 
-    await expect(generateCoverLetter(applicationId, userId)).rejects.toEqual(
-      new CoverLetterError("Optimized CV not found.", 404),
-    );
+    await expect(
+      generateCoverLetter(applicationId, userId, "en"),
+    ).rejects.toEqual(new CoverLetterError("Optimized CV not found.", 404));
     expect(getProfileComparison).not.toHaveBeenCalled();
     expect(generateCoverLetterDraft).not.toHaveBeenCalled();
   });
@@ -203,9 +213,9 @@ describe("generateCoverLetter", () => {
       new ProfileComparisonError("Profile Match not found.", 404),
     );
 
-    await expect(generateCoverLetter(applicationId, userId)).rejects.toEqual(
-      new CoverLetterError("Profile Match not found.", 404),
-    );
+    await expect(
+      generateCoverLetter(applicationId, userId, "en"),
+    ).rejects.toEqual(new CoverLetterError("Profile Match not found.", 404));
     expect(generateCoverLetterDraft).not.toHaveBeenCalled();
   });
 
@@ -214,9 +224,9 @@ describe("generateCoverLetter", () => {
       new ProfileComparisonError("Job analysis not found.", 404),
     );
 
-    await expect(generateCoverLetter(applicationId, userId)).rejects.toEqual(
-      new CoverLetterError("Job analysis not found.", 404),
-    );
+    await expect(
+      generateCoverLetter(applicationId, userId, "en"),
+    ).rejects.toEqual(new CoverLetterError("Job analysis not found.", 404));
     expect(getOptimizedCv).not.toHaveBeenCalled();
     expect(getProfileComparison).not.toHaveBeenCalled();
     expect(generateCoverLetterDraft).not.toHaveBeenCalled();
@@ -229,12 +239,28 @@ describe("getCoverLetter", () => {
       persistedCoverLetter as never,
     );
 
-    await expect(getCoverLetter(applicationId, userId)).resolves.toEqual(
-      coverLetter,
-    );
+    await expect(getCoverLetter(applicationId, userId)).resolves.toEqual({
+      ...coverLetter,
+      workingLanguage: null,
+    });
     expect(getOwnedApplication).toHaveBeenCalledWith(applicationId, userId);
     expect(findCoverLetterByApplicationId).toHaveBeenCalledWith(applicationId);
   });
+
+  it.each(["es", "en", "fr"] as const)(
+    "returns stored Working Language %s without substituting another locale",
+    async (workingLanguage) => {
+      vi.mocked(findCoverLetterByApplicationId).mockResolvedValue({
+        ...persistedCoverLetter,
+        workingLanguage,
+      } as never);
+
+      await expect(getCoverLetter(applicationId, userId)).resolves.toEqual({
+        ...coverLetter,
+        workingLanguage,
+      });
+    },
+  );
 
   it("returns 404 when no saved Cover Letter exists", async () => {
     await expect(getCoverLetter(applicationId, userId)).rejects.toEqual(
@@ -256,12 +282,139 @@ describe("getCoverLetter", () => {
 
 describe("saveCoverLetter", () => {
   it("upserts the Cover Letter for an owned application", async () => {
+    vi.mocked(upsertCoverLetter).mockResolvedValue({
+      ...persistedCoverLetter,
+      workingLanguage: "en",
+    } as never);
+
     await expect(
-      saveCoverLetter(applicationId, userId, coverLetter),
-    ).resolves.toEqual(coverLetter);
+      saveCoverLetter(applicationId, userId, {
+        ...coverLetter,
+        workingLanguage: "en",
+      }),
+    ).resolves.toEqual({
+      ...coverLetter,
+      workingLanguage: "en",
+    });
 
     expect(getOwnedApplication).toHaveBeenCalledWith(applicationId, userId);
-    expect(upsertCoverLetter).toHaveBeenCalledWith(applicationId, coverLetter);
+    expect(upsertCoverLetter).toHaveBeenCalledWith(applicationId, {
+      ...coverLetter,
+      workingLanguage: "en",
+    });
+  });
+
+  it.each(["es", "en", "fr"] as const)(
+    "persists Working Language %s for a newly saved Cover Letter",
+    async (workingLanguage) => {
+      vi.mocked(upsertCoverLetter).mockResolvedValue({
+        ...persistedCoverLetter,
+        workingLanguage,
+      } as never);
+
+      await expect(
+        saveCoverLetter(applicationId, userId, {
+          ...coverLetter,
+          workingLanguage,
+        }),
+      ).resolves.toEqual({
+        ...coverLetter,
+        workingLanguage,
+      });
+      expect(upsertCoverLetter).toHaveBeenCalledWith(applicationId, {
+        ...coverLetter,
+        workingLanguage,
+      });
+    },
+  );
+
+  it("rejects a first save without Working Language", async () => {
+    await expect(
+      saveCoverLetter(applicationId, userId, coverLetter),
+    ).rejects.toEqual(
+      new CoverLetterError(
+        'workingLanguage must be one of "es", "en", or "fr".',
+        400,
+      ),
+    );
+    expect(upsertCoverLetter).not.toHaveBeenCalled();
+  });
+
+  it("rejects an unsupported Working Language before persistence", async () => {
+    await expect(
+      saveCoverLetter(applicationId, userId, {
+        ...coverLetter,
+        workingLanguage: "de",
+      }),
+    ).rejects.toEqual(
+      new CoverLetterError(
+        'workingLanguage must be one of "es", "en", or "fr".',
+        400,
+      ),
+    );
+    expect(upsertCoverLetter).not.toHaveBeenCalled();
+    expect(findCoverLetterByApplicationId).not.toHaveBeenCalled();
+  });
+
+  it("returns null Working Language for a legacy row without substituting a locale", async () => {
+    vi.mocked(findCoverLetterByApplicationId).mockResolvedValue(
+      persistedCoverLetter as never,
+    );
+
+    await expect(getCoverLetter(applicationId, userId)).resolves.toEqual({
+      ...coverLetter,
+      workingLanguage: null,
+    });
+    expect(upsertCoverLetter).not.toHaveBeenCalled();
+  });
+
+  it("preserves null Working Language when saving unchanged legacy text", async () => {
+    vi.mocked(findCoverLetterByApplicationId).mockResolvedValue(
+      persistedCoverLetter as never,
+    );
+    vi.mocked(upsertCoverLetter).mockResolvedValue({
+      ...persistedCoverLetter,
+      workingLanguage: null,
+    } as never);
+
+    await expect(
+      saveCoverLetter(applicationId, userId, {
+        ...coverLetter,
+        workingLanguage: null,
+      }),
+    ).resolves.toEqual({
+      ...coverLetter,
+      workingLanguage: null,
+    });
+    expect(upsertCoverLetter).toHaveBeenCalledWith(applicationId, {
+      ...coverLetter,
+      workingLanguage: null,
+    });
+  });
+
+  it("replaces Working Language only when a newly generated draft is saved", async () => {
+    vi.mocked(findCoverLetterByApplicationId).mockResolvedValue({
+      ...persistedCoverLetter,
+      workingLanguage: "en",
+    } as never);
+    vi.mocked(upsertCoverLetter).mockResolvedValue({
+      ...persistedCoverLetter,
+      workingLanguage: "es",
+    } as never);
+
+    await expect(
+      saveCoverLetter(applicationId, userId, {
+        ...coverLetter,
+        workingLanguage: "es",
+      }),
+    ).resolves.toEqual({
+      ...coverLetter,
+      workingLanguage: "es",
+    });
+    expect(upsertCoverLetter).toHaveBeenCalledWith(applicationId, {
+      ...coverLetter,
+      workingLanguage: "es",
+    });
   });
 
   it("rejects invalid Cover Letter payloads", async () => {
@@ -305,6 +458,7 @@ describe("saveCoverLetter", () => {
       professionalValue: "",
       motivation: "",
       closing: "",
+      workingLanguage: "en" as const,
     };
     vi.mocked(upsertCoverLetter).mockResolvedValue({
       ...persistedCoverLetter,

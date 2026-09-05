@@ -197,6 +197,7 @@ describe("getCoverLetterFieldErrors", () => {
     motivation: "I want to join the team.",
     closing: "Thank you.",
     signature: "Taylor Smith",
+    workingLanguage: null,
   };
 
   it("accepts a valid Cover Letter and allows empty body text", () => {

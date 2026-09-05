@@ -10,6 +10,7 @@ import {
   View,
 } from "@react-pdf/renderer";
 import type { ReactNode } from "react";
+import type { OptimizedCvDocumentChrome } from "../types/export.js";
 import type { OptimizedCv } from "../types/optimized-cv.js";
 import { formatDateRange, hasText } from "./document-helpers.js";
 import {
@@ -217,7 +218,7 @@ function projectLinkTarget(url: string): string {
   return URL_SCHEME_PATTERN.test(trimmed) ? trimmed : `https://${trimmed}`;
 }
 
-function ProjectLink({ url }: { url: string }) {
+function ProjectLink({ url, label }: { url: string; label: string }) {
   return (
     <Link src={projectLinkTarget(url)} style={styles.projectLink}>
       <Svg
@@ -228,7 +229,7 @@ function ProjectLink({ url }: { url: string }) {
       >
         <Path d={PROJECT_LINK_ICON_PATH} fill="#475569" />
       </Svg>
-      <Text style={styles.projectLinkText}>Open project</Text>
+      <Text style={styles.projectLinkText}>{label}</Text>
     </Link>
   );
 }
@@ -254,9 +255,11 @@ function HeaderContactRow({
 
 export function OptimizedCvPdfDocument({
   cv,
+  chrome,
   profilePhotoSrc = null,
 }: {
   cv: OptimizedCv;
+  chrome: OptimizedCvDocumentChrome;
   profilePhotoSrc?: string | null;
 }) {
   const header = buildOptimizedCvHeaderModel(cv);
@@ -338,7 +341,7 @@ export function OptimizedCvPdfDocument({
               <View style={styles.leftColumn}>
                 {showProfessionalSummary ? (
                   <Section
-                    title="Professional summary"
+                    title={chrome.professionalSummary}
                     first={leftFirst === "summary"}
                   >
                     <Text style={styles.summary}>{cv.professionalSummary}</Text>
@@ -347,7 +350,7 @@ export function OptimizedCvPdfDocument({
 
                 {showExperience ? (
                   <Section
-                    title="Experience"
+                    title={chrome.experience}
                     first={leftFirst === "experience"}
                   >
                     {cv.experience.map((item, index) => {
@@ -359,6 +362,7 @@ export function OptimizedCvPdfDocument({
                           item.startDate,
                           item.endDate,
                           item.current,
+                          chrome.present,
                         ),
                         item.location,
                       ].filter(hasText);
@@ -391,7 +395,10 @@ export function OptimizedCvPdfDocument({
             {showRight ? (
               <View style={styles.rightColumn}>
                 {showEducation ? (
-                  <Section title="Education" first={rightFirst === "education"}>
+                  <Section
+                    title={chrome.education}
+                    first={rightFirst === "education"}
+                  >
                     {cv.education.map((item, index) => {
                       const title =
                         [item.degree, item.fieldOfStudy]
@@ -400,7 +407,12 @@ export function OptimizedCvPdfDocument({
                         (hasText(item.institution) ? item.institution : null);
                       const metaParts = [
                         title !== item.institution ? item.institution : null,
-                        formatDateRange(item.startDate, item.endDate, null),
+                        formatDateRange(
+                          item.startDate,
+                          item.endDate,
+                          null,
+                          chrome.present,
+                        ),
                       ].filter(hasText);
 
                       return (
@@ -425,7 +437,10 @@ export function OptimizedCvPdfDocument({
                 ) : null}
 
                 {showSkills ? (
-                  <Section title="Skills" first={rightFirst === "skills"}>
+                  <Section
+                    title={chrome.skills}
+                    first={rightFirst === "skills"}
+                  >
                     <Text style={styles.skills}>
                       {cv.skills.filter(hasText).join(" · ")}
                     </Text>
@@ -433,7 +448,10 @@ export function OptimizedCvPdfDocument({
                 ) : null}
 
                 {showLanguages ? (
-                  <Section title="Languages" first={rightFirst === "languages"}>
+                  <Section
+                    title={chrome.languages}
+                    first={rightFirst === "languages"}
+                  >
                     {cv.languages.map((item, index) => {
                       const label = [item.name, item.proficiency]
                         .filter(hasText)
@@ -452,7 +470,7 @@ export function OptimizedCvPdfDocument({
 
                 {showCertifications ? (
                   <Section
-                    title="Certifications"
+                    title={chrome.certifications}
                     first={rightFirst === "certifications"}
                   >
                     {cv.certifications.map((item, index) => {
@@ -487,7 +505,10 @@ export function OptimizedCvPdfDocument({
         ) : null}
 
         {showPersonalProjects ? (
-          <Section title="Personal projects" first={!showLeft && !showRight}>
+          <Section
+            title={chrome.personalProjects}
+            first={!showLeft && !showRight}
+          >
             {personalProjects.map((item, index) => {
               const title = hasText(item.name) ? item.name : null;
               if (
@@ -510,7 +531,9 @@ export function OptimizedCvPdfDocument({
                   {hasText(item.technologies) ? (
                     <Text style={styles.entryMeta}>{item.technologies}</Text>
                   ) : null}
-                  {hasText(item.url) ? <ProjectLink url={item.url} /> : null}
+                  {hasText(item.url) ? (
+                    <ProjectLink url={item.url} label={chrome.openProject} />
+                  ) : null}
                 </View>
               );
             })}

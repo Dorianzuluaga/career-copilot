@@ -25,6 +25,7 @@ import type {
   LanguageItem,
   PersonalProjectItem,
 } from "../types/master-cv";
+import type { OptimizedCvDocumentChrome } from "../types/export";
 import type { OptimizedCv } from "../types/optimized-cv";
 import { optimizedCvPhotoUrl } from "../services/optimized-cv";
 
@@ -278,13 +279,12 @@ function HeaderContactIcon({ kind }: { kind: OptimizedCvHeaderContactKind }) {
 function ProjectLink({
   url,
   projectName,
+  label,
 }: {
   url: string;
   projectName: string | null;
+  label: string;
 }) {
-  const { t } = useLocale();
-  const label = t("optimizedCv.openProject");
-
   return (
     <a
       href={projectLinkHref(url)}
@@ -426,14 +426,15 @@ function DocumentHeader({
 function ExperienceEntries({
   items,
   isEditing,
+  presentLabel,
   onDescriptionChange,
 }: {
   items: ExperienceItem[];
   isEditing: boolean;
+  presentLabel: string;
   onDescriptionChange?: (index: number, description: string) => void;
 }) {
   const { t } = useLocale();
-  const presentLabel = t("optimizedCv.present");
 
   return (
     <div className="space-y-5">
@@ -515,13 +516,12 @@ function ExperienceEntries({
 function EducationEntries({
   items,
   isEditing,
+  presentLabel,
 }: {
   items: EducationItem[];
   isEditing: boolean;
+  presentLabel: string;
 }) {
-  const { t } = useLocale();
-  const presentLabel = t("optimizedCv.present");
-
   return (
     <div className="space-y-3">
       {items.map((item, index) => {
@@ -679,11 +679,13 @@ function AddPersonalProjectControls({
 function PersonalProjectEntries({
   items,
   isEditing,
+  openProjectLabel,
   onDescriptionChange,
   onRemove,
 }: {
   items: PersonalProjectItem[];
   isEditing: boolean;
+  openProjectLabel: string;
   onDescriptionChange?: (index: number, description: string) => void;
   onRemove?: (index: number) => void;
 }) {
@@ -716,7 +718,13 @@ function PersonalProjectEntries({
                 {technologies}
               </p>
             ) : null}
-            {url ? <ProjectLink url={url} projectName={title} /> : null}
+            {url ? (
+              <ProjectLink
+                url={url}
+                projectName={title}
+                label={openProjectLabel}
+              />
+            ) : null}
           </>
         );
         const editingDetails = (
@@ -724,7 +732,13 @@ function PersonalProjectEntries({
             {technologies ? (
               <p className="text-sm text-muted">{technologies}</p>
             ) : null}
-            {url ? <ProjectLink url={url} projectName={title} /> : null}
+            {url ? (
+              <ProjectLink
+                url={url}
+                projectName={title}
+                label={openProjectLabel}
+              />
+            ) : null}
           </>
         );
 
@@ -903,6 +917,7 @@ export function OptimizedCvDocument({
   fieldErrors = {},
   onChange,
   applicationId,
+  chrome,
 }: {
   cv: OptimizedCv;
   isEditing?: boolean;
@@ -910,8 +925,20 @@ export function OptimizedCvDocument({
   fieldErrors?: FieldErrors;
   onChange?: (optimizedCv: OptimizedCv) => void;
   applicationId?: string;
+  chrome?: OptimizedCvDocumentChrome;
 }) {
   const { t } = useLocale();
+  const labels = chrome ?? {
+    professionalSummary: t("optimizedCv.professionalSummary"),
+    experience: t("optimizedCv.experience"),
+    education: t("optimizedCv.education"),
+    skills: t("optimizedCv.skills"),
+    languages: t("optimizedCv.languages"),
+    certifications: t("optimizedCv.certifications"),
+    personalProjects: t("optimizedCv.personalProjects"),
+    present: t("optimizedCv.present"),
+    openProject: t("optimizedCv.openProject"),
+  };
   const showProfessionalSummary = isEditing || hasText(cv.professionalSummary);
   const showExperience = cv.experience.length > 0;
   const showEducation = cv.education.length > 0;
@@ -964,14 +991,14 @@ export function OptimizedCvDocument({
             <div className="space-y-5">
               {showProfessionalSummary ? (
                 <DocumentSection
-                  title={t("optimizedCv.professionalSummary")}
+                  title={labels.professionalSummary}
                   editable={isEditing}
                   first={leftFirst === "summary"}
                 >
                   {isEditing && onChange ? (
                     <label className="block text-sm font-medium text-ink">
                       <span className="sr-only">
-                        {t("optimizedCv.professionalSummary")}
+                        {labels.professionalSummary}
                       </span>
                       <textarea
                         id="professional-summary"
@@ -984,7 +1011,7 @@ export function OptimizedCvDocument({
                           })
                         }
                         rows={6}
-                        aria-label={t("optimizedCv.professionalSummary")}
+                        aria-label={labels.professionalSummary}
                         aria-invalid={Boolean(fieldErrors.professionalSummary)}
                         aria-describedby={
                           fieldErrors.professionalSummary
@@ -1012,13 +1039,14 @@ export function OptimizedCvDocument({
 
               {showExperience ? (
                 <DocumentSection
-                  title={t("optimizedCv.experience")}
+                  title={labels.experience}
                   editable={isEditing}
                   first={leftFirst === "experience"}
                 >
                   <ExperienceEntries
                     items={cv.experience}
                     isEditing={isEditing}
+                    presentLabel={labels.present}
                     onDescriptionChange={
                       isEditing && onChange
                         ? (index, description) =>
@@ -1048,19 +1076,20 @@ export function OptimizedCvDocument({
             <aside className="space-y-5">
               {showEducation ? (
                 <DocumentSection
-                  title={t("optimizedCv.education")}
+                  title={labels.education}
                   first={rightFirst === "education"}
                 >
                   <EducationEntries
                     items={cv.education}
                     isEditing={isEditing}
+                    presentLabel={labels.present}
                   />
                 </DocumentSection>
               ) : null}
 
               {showSkills ? (
                 <DocumentSection
-                  title={t("optimizedCv.skills")}
+                  title={labels.skills}
                   editable={isEditing}
                   first={rightFirst === "skills"}
                 >
@@ -1094,7 +1123,7 @@ export function OptimizedCvDocument({
 
               {showLanguages ? (
                 <DocumentSection
-                  title={t("optimizedCv.languages")}
+                  title={labels.languages}
                   first={rightFirst === "languages"}
                 >
                   <LanguageEntries items={cv.languages} isEditing={isEditing} />
@@ -1103,7 +1132,7 @@ export function OptimizedCvDocument({
 
               {showCertifications ? (
                 <DocumentSection
-                  title={t("optimizedCv.certifications")}
+                  title={labels.certifications}
                   first={rightFirst === "certifications"}
                 >
                   <CertificationEntries
@@ -1120,13 +1149,14 @@ export function OptimizedCvDocument({
       {showPersonalProjects ? (
         <div className={showLeft || showRight ? undefined : "mt-6"}>
           <DocumentSection
-            title={t("optimizedCv.personalProjects")}
+            title={labels.personalProjects}
             editable={isEditing}
             first={!showLeft && !showRight}
           >
             <PersonalProjectEntries
               items={personalProjects}
               isEditing={isEditing}
+              openProjectLabel={labels.openProject}
               onDescriptionChange={
                 isEditing && onChange
                   ? (index, description) =>

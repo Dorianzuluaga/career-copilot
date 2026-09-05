@@ -33,6 +33,20 @@ const documents = [
 ];
 
 describe("unsaved documents", () => {
+  it("treats matching null Working Language as clean and a draft locale change as dirty", () => {
+    const legacy = { ...savedCv, workingLanguage: null };
+    const generated = { ...savedCv, workingLanguage: "fr" };
+
+    expect(isDocumentDirty(legacy, legacy)).toBe(false);
+    expect(isDocumentDirty(generated, legacy)).toBe(true);
+    expect(
+      isDocumentDirty(
+        { ...legacy, professionalSummary: "Edited summary" },
+        legacy,
+      ),
+    ).toBe(true);
+  });
+
   it("detects dirty documents with deep equality", () => {
     expect(isDocumentDirty(editedCv, savedCv)).toBe(true);
     expect(isDocumentDirty(savedCv, { ...savedCv })).toBe(false);

@@ -91,6 +91,7 @@ const input: CoverLetterGenerationInput = {
     skills: ["TypeScript", "REST APIs"],
     languages: [],
     certifications: [],
+    workingLanguage: null,
   },
 };
 
@@ -108,9 +109,9 @@ afterAll(() => {
 });
 
 describe("formatCoverLetterDate", () => {
-  it("formats the date in a cover-letter friendly UTC form", () => {
+  it("formats the date as an unambiguous UTC calendar date", () => {
     expect(formatCoverLetterDate(new Date("2026-08-07T12:00:00.000Z"))).toBe(
-      "August 7, 2026",
+      "2026-08-07",
     );
   });
 });
@@ -126,6 +127,7 @@ describe("assembleCoverLetter", () => {
         motivation: "I want to contribute to Acme's product work.",
         closing: "Thank you for your consideration.",
       },
+      "fr",
       new Date("2026-08-07T12:00:00.000Z"),
     );
 
@@ -133,7 +135,7 @@ describe("assembleCoverLetter", () => {
       candidateName: "Taylor Smith",
       email: "taylor@example.com",
       phone: "+1 555 0100",
-      date: "August 7, 2026",
+      date: "2026-08-07",
       companyName: "Acme",
       greeting: "Dear Hiring Manager,",
       introduction: "I am applying for the Software Engineer role.",
@@ -141,6 +143,7 @@ describe("assembleCoverLetter", () => {
       motivation: "I want to contribute to Acme's product work.",
       closing: "Thank you for your consideration.",
       signature: "Taylor Smith",
+      workingLanguage: "fr",
     });
   });
 });
@@ -161,12 +164,16 @@ describe("generateCoverLetterDraft", () => {
     });
 
     await expect(
-      generateCoverLetterDraft(input, new Date("2026-08-07T12:00:00.000Z")),
+      generateCoverLetterDraft(
+        input,
+        "es",
+        new Date("2026-08-07T12:00:00.000Z"),
+      ),
     ).resolves.toEqual({
       candidateName: "Taylor Smith",
       email: "taylor@example.com",
       phone: "+1 555 0100",
-      date: "August 7, 2026",
+      date: "2026-08-07",
       companyName: "Acme",
       greeting: "Dear Hiring Manager,",
       introduction: "I am writing to apply for the Software Engineer role.",
@@ -177,9 +184,13 @@ describe("generateCoverLetterDraft", () => {
       closing:
         "Thank you for your consideration. I am available for an interview.",
       signature: "Taylor Smith",
+      workingLanguage: "es",
     });
 
     expect(createResponse).toHaveBeenCalledOnce();
+    expect(createResponse.mock.calls[0][0].input[0].content[0].text).toContain(
+      "Spanish (es)",
+    );
   });
 
   it("rejects invalid AI responses", async () => {
@@ -187,7 +198,7 @@ describe("generateCoverLetterDraft", () => {
       output_text: JSON.stringify({ greeting: "Dear Hiring Manager," }),
     });
 
-    await expect(generateCoverLetterDraft(input)).rejects.toThrow(
+    await expect(generateCoverLetterDraft(input, "en")).rejects.toThrow(
       "Invalid cover letter response.",
     );
   });

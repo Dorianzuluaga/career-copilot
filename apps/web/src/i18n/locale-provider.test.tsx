@@ -3,6 +3,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { LanguageSelector } from "../components/LanguageSelector";
 import { LocaleProvider } from "../context/LocaleProvider";
 import { useLocale } from "../hooks/useLocale";
+import { SUPPORTED_LOCALES } from "./locales";
 import { writeStoredLocale } from "./storage";
 
 function LocaleProbe() {
@@ -56,6 +57,12 @@ describe("LocaleProvider", () => {
     );
 
     expect(markup).toContain("en:Language");
+  });
+});
+
+describe("locale contract", () => {
+  it("supports exactly es, en, and fr", () => {
+    expect(SUPPORTED_LOCALES).toEqual(["es", "en", "fr"]);
   });
 });
 

@@ -214,8 +214,47 @@ describe("translate", () => {
     expect(translate("en", "export.documentsToDownload")).toBe(
       "Documents to download",
     );
-    expect(translate("fr", "export.documentsToDownload")).toBe(
-      "Documents à télécharger",
+    expect(translate("es", "export.presentationLanguage")).toBe(
+      "Idioma de presentación",
+    );
+    expect(translate("en", "export.presentationLanguage")).toBe(
+      "Presentation Language",
+    );
+    expect(translate("fr", "export.presentationLanguage")).toBe(
+      "Langue de présentation",
+    );
+    expect(translate("es", "export.presentationLanguageHelp")).toBe(
+      "Este idioma se aplica tanto al CV optimizado como a la carta de presentación.",
+    );
+    expect(translate("en", "export.presentationLanguageHelp")).toBe(
+      "This language applies to both the Optimized CV and the Cover Letter.",
+    );
+    expect(translate("fr", "export.presentationLanguageHelp")).toBe(
+      "Cette langue s'applique à la fois au CV optimisé et à la lettre de motivation.",
+    );
+    expect(translate("es", "export.packageIncomplete")).toBe(
+      "El paquete está incompleto.",
+    );
+    expect(translate("en", "export.packageIncomplete")).toBe(
+      "The package is incomplete.",
+    );
+    expect(translate("fr", "export.packageIncomplete")).toBe(
+      "L'exportation est incomplète.",
+    );
+    expect(translate("es", "export.adaptationFailedOptimizedCv")).toBe(
+      "No se ha podido preparar el CV optimizado en el idioma de presentación seleccionado.",
+    );
+    expect(translate("en", "export.adaptationFailedOptimizedCv")).toBe(
+      "The Optimized CV could not be prepared in the selected presentation language.",
+    );
+    expect(translate("es", "export.adaptationFailedCoverLetter")).toBe(
+      "No se ha podido preparar la carta de presentación en el idioma de presentación seleccionado.",
+    );
+    expect(translate("en", "export.adaptationFailedCoverLetter")).toBe(
+      "The Cover Letter could not be prepared in the selected presentation language.",
+    );
+    expect(translate("fr", "export.adaptationFailedCoverLetter")).toBe(
+      "La lettre de motivation n'a pas pu être préparée dans la langue de présentation sélectionnée.",
     );
   });
 
@@ -575,8 +614,17 @@ describe("translate", () => {
       "export.download",
       "export.downloading",
       "export.downloadFailed",
+      "export.packageIncomplete",
+      "export.downloadFailedOptimizedCv",
+      "export.downloadFailedCoverLetter",
+      "export.adaptationFailedOptimizedCv",
+      "export.adaptationFailedCoverLetter",
       "export.previewAria",
       "export.requiresDocuments",
+      "export.presentationLanguage",
+      "export.presentationLanguageHelp",
+      "export.previewLoading",
+      "export.previewFailed",
     ];
 
     for (const requiredKey of requiredKeys) {

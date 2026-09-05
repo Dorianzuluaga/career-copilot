@@ -14,6 +14,7 @@ function toData(input: CoverLetter) {
     motivation: input.motivation,
     closing: input.closing,
     signature: input.signature,
+    workingLanguage: input.workingLanguage,
   };
 }
 

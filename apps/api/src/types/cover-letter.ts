@@ -2,6 +2,7 @@ import type { JobAnalysisData } from "./job-analysis.js";
 import type { MasterCvInput } from "./master-cv.js";
 import type { OptimizedCv } from "./optimized-cv.js";
 import type { ProfileComparisonResult } from "./profile-comparison.js";
+import type { SupportedLocale } from "./supported-locale.js";
 
 export interface CoverLetter {
   candidateName: string;
@@ -15,7 +16,12 @@ export interface CoverLetter {
   motivation: string;
   closing: string;
   signature: string;
+  workingLanguage: SupportedLocale | null;
 }
+
+export type GeneratedCoverLetterDraft = CoverLetter & {
+  workingLanguage: SupportedLocale;
+};
 
 export interface CoverLetterGenerationInput {
   masterCv: MasterCvInput;

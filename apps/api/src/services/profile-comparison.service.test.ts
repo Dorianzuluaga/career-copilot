@@ -236,25 +236,37 @@ describe("compareProfiles", () => {
       ],
     });
 
-    await expect(compareProfiles(applicationId, userId)).resolves.toEqual(
+    await expect(compareProfiles(applicationId, userId, "es")).resolves.toEqual(
       profileMatch,
     );
-    expect(identifyMatchingSkills).toHaveBeenCalledWith({
-      masterCv: masterCvInput,
-      jobAnalysis,
-    });
-    expect(identifyMissingSkills).toHaveBeenCalledWith({
-      masterCv: masterCvInput,
-      jobAnalysis,
-    });
-    expect(identifyStrengths).toHaveBeenCalledWith({
-      masterCv: masterCvInput,
-      jobAnalysis,
-    });
-    expect(identifyWeaknesses).toHaveBeenCalledWith({
-      masterCv: masterCvInput,
-      jobAnalysis,
-    });
+    expect(identifyMatchingSkills).toHaveBeenCalledWith(
+      {
+        masterCv: masterCvInput,
+        jobAnalysis,
+      },
+      "es",
+    );
+    expect(identifyMissingSkills).toHaveBeenCalledWith(
+      {
+        masterCv: masterCvInput,
+        jobAnalysis,
+      },
+      "es",
+    );
+    expect(identifyStrengths).toHaveBeenCalledWith(
+      {
+        masterCv: masterCvInput,
+        jobAnalysis,
+      },
+      "es",
+    );
+    expect(identifyWeaknesses).toHaveBeenCalledWith(
+      {
+        masterCv: masterCvInput,
+        jobAnalysis,
+      },
+      "es",
+    );
     expect(evaluateProfileAlignment).toHaveBeenCalledWith(
       {
         masterCv: masterCvInput,
@@ -270,6 +282,7 @@ describe("compareProfiles", () => {
           "Docker is required by the role but is not demonstrated in the Master CV.",
         ],
       },
+      "es",
     );
     expect(generateRecommendation).toHaveBeenCalledWith(
       {
@@ -289,6 +302,7 @@ describe("compareProfiles", () => {
         alignmentReasoning:
           "Relevant backend experience supports the role, but Docker is missing.",
       },
+      "es",
     );
     expect(upsertProfileMatch).toHaveBeenCalledWith(
       applicationId,
@@ -306,7 +320,7 @@ describe("compareProfiles", () => {
       persistedProfileMatch as never,
     );
 
-    await expect(compareProfiles(applicationId, userId)).resolves.toEqual(
+    await expect(compareProfiles(applicationId, userId, "es")).resolves.toEqual(
       profileMatch,
     );
     expect(identifyMatchingSkills).not.toHaveBeenCalled();
@@ -350,24 +364,32 @@ describe("compareProfiles", () => {
       updatedAt: new Date("2026-08-11T10:00:00.000Z"),
     } as never);
 
-    await expect(compareProfiles(applicationId, userId)).resolves.toEqual(
+    await expect(compareProfiles(applicationId, userId, "es")).resolves.toEqual(
       emptyComparison,
     );
-    expect(evaluateProfileAlignment).toHaveBeenCalledWith(expect.any(Object), {
-      matchingSkills: [],
-      missingSkills: [],
-      strengths: [],
-      weaknesses: [],
-    });
-    expect(generateRecommendation).toHaveBeenCalledWith(expect.any(Object), {
-      matchingSkills: [],
-      missingSkills: [],
-      strengths: [],
-      weaknesses: [],
-      alignmentScore: 72,
-      alignmentReasoning:
-        "Relevant backend experience supports the role, but Docker is missing.",
-    });
+    expect(evaluateProfileAlignment).toHaveBeenCalledWith(
+      expect.any(Object),
+      {
+        matchingSkills: [],
+        missingSkills: [],
+        strengths: [],
+        weaknesses: [],
+      },
+      "es",
+    );
+    expect(generateRecommendation).toHaveBeenCalledWith(
+      expect.any(Object),
+      {
+        matchingSkills: [],
+        missingSkills: [],
+        strengths: [],
+        weaknesses: [],
+        alignmentScore: 72,
+        alignmentReasoning:
+          "Relevant backend experience supports the role, but Docker is missing.",
+      },
+      "es",
+    );
     expect(upsertProfileMatch).toHaveBeenCalledWith(
       applicationId,
       emptyComparison,

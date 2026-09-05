@@ -386,9 +386,22 @@ export const spanishMessages = {
     download: "Descargar",
     downloading: "Descargando…",
     downloadFailed: "No se han podido descargar los documentos seleccionados.",
+    packageIncomplete: "El paquete está incompleto.",
+    downloadFailedOptimizedCv: "No se ha podido descargar el CV optimizado.",
+    downloadFailedCoverLetter:
+      "No se ha podido descargar la carta de presentación.",
+    adaptationFailedOptimizedCv:
+      "No se ha podido preparar el CV optimizado en el idioma de presentación seleccionado.",
+    adaptationFailedCoverLetter:
+      "No se ha podido preparar la carta de presentación en el idioma de presentación seleccionado.",
     previewAria: "Vista previa del documento",
     requiresDocuments:
       "Se necesita un CV optimizado y una carta de presentación guardados antes de previsualizar los documentos.",
+    presentationLanguage: "Idioma de presentación",
+    presentationLanguageHelp:
+      "Este idioma se aplica tanto al CV optimizado como a la carta de presentación.",
+    previewLoading: "Preparando la vista previa…",
+    previewFailed: "No se ha podido preparar la vista previa de exportación.",
   },
 } as const;
 
@@ -781,9 +794,21 @@ const englishMessages: Messages = {
     download: "Download",
     downloading: "Downloading…",
     downloadFailed: "Unable to download the selected documents.",
+    packageIncomplete: "The package is incomplete.",
+    downloadFailedOptimizedCv: "The Optimized CV could not be downloaded.",
+    downloadFailedCoverLetter: "The Cover Letter could not be downloaded.",
+    adaptationFailedOptimizedCv:
+      "The Optimized CV could not be prepared in the selected presentation language.",
+    adaptationFailedCoverLetter:
+      "The Cover Letter could not be prepared in the selected presentation language.",
     previewAria: "Document preview",
     requiresDocuments:
       "Saved Optimized CV and Cover Letter are required before documents can be previewed.",
+    presentationLanguage: "Presentation Language",
+    presentationLanguageHelp:
+      "This language applies to both the Optimized CV and the Cover Letter.",
+    previewLoading: "Preparing preview…",
+    previewFailed: "Unable to prepare the export preview.",
   },
 };
 
@@ -1169,9 +1194,22 @@ const frenchMessages: Messages = {
     download: "Télécharger",
     downloading: "Téléchargement…",
     downloadFailed: "Impossible de télécharger les documents sélectionnés.",
+    packageIncomplete: "L'exportation est incomplète.",
+    downloadFailedOptimizedCv: "Le CV optimisé n'a pas pu être téléchargé.",
+    downloadFailedCoverLetter:
+      "La lettre de motivation n'a pas pu être téléchargée.",
+    adaptationFailedOptimizedCv:
+      "Le CV optimisé n'a pas pu être préparé dans la langue de présentation sélectionnée.",
+    adaptationFailedCoverLetter:
+      "La lettre de motivation n'a pas pu être préparée dans la langue de présentation sélectionnée.",
     previewAria: "Aperçu du document",
     requiresDocuments:
       "Un CV optimisé et une lettre de motivation enregistrés sont requis avant de prévisualiser les documents.",
+    presentationLanguage: "Langue de présentation",
+    presentationLanguageHelp:
+      "Cette langue s'applique à la fois au CV optimisé et à la lettre de motivation.",
+    previewLoading: "Préparation de l'aperçu…",
+    previewFailed: "Impossible de préparer l'aperçu d'exportation.",
   },
 };
 

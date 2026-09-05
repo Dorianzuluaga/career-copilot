@@ -1,11 +1,45 @@
 import { inflateSync } from "node:zlib";
 import sharp from "sharp";
 import { describe, expect, it } from "vitest";
+import {
+  resolveCoverLetterDocumentChrome,
+  resolveOptimizedCvDocumentChrome,
+} from "../documents/document-localization.js";
+import type { CoverLetter } from "../types/cover-letter.js";
 import type { OptimizedCv } from "../types/optimized-cv.js";
+import type { SupportedLocale } from "../types/supported-locale.js";
 import {
   renderDocument,
   toPdfProfilePhotoSource,
 } from "./document-rendering.service.js";
+
+const englishCvChrome = resolveOptimizedCvDocumentChrome("en");
+
+const sampleCoverLetter: CoverLetter = {
+  candidateName: "Taylor Smith",
+  email: "taylor@example.com",
+  phone: null,
+  date: "August 8, 2026",
+  companyName: "Acme",
+  greeting: "Dear Hiring Manager,",
+  introduction: "I am writing to apply.",
+  professionalValue: "I build TypeScript APIs.",
+  motivation: "I want to join Acme.",
+  closing: "Thank you.",
+  signature: "Taylor Smith",
+  workingLanguage: null,
+};
+
+function coverLetterDocument(
+  data: CoverLetter,
+  locale: SupportedLocale = "en",
+) {
+  return {
+    type: "cover-letter" as const,
+    data,
+    chrome: resolveCoverLetterDocumentChrome(data.date, locale),
+  };
+}
 
 const sampleOptimizedCv: OptimizedCv = {
   fullName: "Taylor Smith",
@@ -47,6 +81,7 @@ const sampleOptimizedCv: OptimizedCv = {
       credentialUrl: null,
     },
   ],
+  workingLanguage: null,
 };
 
 const selectedPersonalProject = {
@@ -124,6 +159,7 @@ describe("document rendering service", () => {
   it("renders an optimized CV as a PDF buffer", async () => {
     const buffer = await renderDocument({
       type: "optimized-cv",
+      chrome: englishCvChrome,
       data: sampleOptimizedCv,
     });
 
@@ -140,6 +176,7 @@ describe("document rendering service", () => {
 
     const buffer = await renderDocument({
       type: "optimized-cv",
+      chrome: englishCvChrome,
       data: cv,
     });
     const text = extractPdfText(buffer);
@@ -183,6 +220,7 @@ describe("document rendering service", () => {
 
     const buffer = await renderDocument({
       type: "optimized-cv",
+      chrome: englishCvChrome,
       data: cv,
     });
 
@@ -196,10 +234,12 @@ describe("document rendering service", () => {
   it("omits the personal projects section when none are selected", async () => {
     const withoutField = await renderDocument({
       type: "optimized-cv",
+      chrome: englishCvChrome,
       data: sampleOptimizedCv,
     });
     const withEmpty = await renderDocument({
       type: "optimized-cv",
+      chrome: englishCvChrome,
       data: { ...sampleOptimizedCv, personalProjects: [] },
     });
 
@@ -241,16 +281,32 @@ describe("document rendering service", () => {
     };
 
     const allText = extractPdfText(
-      await renderDocument({ type: "optimized-cv", data: allFields }),
+      await renderDocument({
+        type: "optimized-cv",
+        chrome: englishCvChrome,
+        data: allFields,
+      }),
     );
     const requiredText = extractPdfText(
-      await renderDocument({ type: "optimized-cv", data: requiredOnly }),
+      await renderDocument({
+        type: "optimized-cv",
+        chrome: englishCvChrome,
+        data: requiredOnly,
+      }),
     );
     const partialText = extractPdfText(
-      await renderDocument({ type: "optimized-cv", data: partialPairs }),
+      await renderDocument({
+        type: "optimized-cv",
+        chrome: englishCvChrome,
+        data: partialPairs,
+      }),
     );
     const migratedText = extractPdfText(
-      await renderDocument({ type: "optimized-cv", data: migratedWebsite }),
+      await renderDocument({
+        type: "optimized-cv",
+        chrome: englishCvChrome,
+        data: migratedWebsite,
+      }),
     );
 
     expect(allText).toContain("Taylor Smith");
@@ -286,7 +342,11 @@ describe("document rendering service", () => {
       professionalTitle: null,
     };
     const text = extractPdfText(
-      await renderDocument({ type: "optimized-cv", data: savedSnapshot }),
+      await renderDocument({
+        type: "optimized-cv",
+        chrome: englishCvChrome,
+        data: savedSnapshot,
+      }),
     );
 
     expect(text).toContain("Taylor Smith");
@@ -294,22 +354,7 @@ describe("document rendering service", () => {
   });
 
   it("renders a cover letter as a PDF buffer", async () => {
-    const buffer = await renderDocument({
-      type: "cover-letter",
-      data: {
-        candidateName: "Taylor Smith",
-        email: "taylor@example.com",
-        phone: null,
-        date: "August 8, 2026",
-        companyName: "Acme",
-        greeting: "Dear Hiring Manager,",
-        introduction: "I am writing to apply.",
-        professionalValue: "I build TypeScript APIs.",
-        motivation: "I want to join Acme.",
-        closing: "Thank you.",
-        signature: "Taylor Smith",
-      },
-    });
+    const buffer = await renderDocument(coverLetterDocument(sampleCoverLetter));
 
     expect(buffer.subarray(0, 4).toString()).toBe("%PDF");
     const text = extractPdfText(buffer);
@@ -323,6 +368,7 @@ describe("document rendering service", () => {
   it("omits the photo region when the Optimized CV snapshot is empty", async () => {
     const buffer = await renderDocument({
       type: "optimized-cv",
+      chrome: englishCvChrome,
       data: sampleOptimizedCv,
     });
     const raw = buffer.toString("latin1");
@@ -338,6 +384,7 @@ describe("document rendering service", () => {
     );
     const buffer = await renderDocument({
       type: "optimized-cv",
+      chrome: englishCvChrome,
       data: {
         ...sampleOptimizedCv,
         profilePhotoAssetId: "7e9c843b-5c3d-4e65-8514-7de898b2aca6",
@@ -398,6 +445,7 @@ describe("document rendering service", () => {
     await expect(
       renderDocument({
         type: "optimized-cv",
+        chrome: englishCvChrome,
         data: {
           ...sampleOptimizedCv,
           profilePhotoAssetId: "7e9c843b-5c3d-4e65-8514-7de898b2aca6",
@@ -418,6 +466,7 @@ describe("document rendering service", () => {
       extractPdfStreams(
         await renderDocument({
           type: "optimized-cv",
+          chrome: englishCvChrome,
           data: {
             ...sampleOptimizedCv,
             profilePhotoAssetId: assetId,
@@ -440,25 +489,125 @@ describe("document rendering service", () => {
   });
 
   it("does not embed a photo in Cover Letter PDFs", async () => {
-    const buffer = await renderDocument({
-      type: "cover-letter",
-      data: {
-        candidateName: "Taylor Smith",
-        email: "taylor@example.com",
-        phone: null,
-        date: "August 8, 2026",
-        companyName: "Acme",
-        greeting: "Dear Hiring Manager,",
-        introduction: "I am writing to apply.",
-        professionalValue: "I build TypeScript APIs.",
-        motivation: "I want to join Acme.",
-        closing: "Thank you.",
-        signature: "Taylor Smith",
-      },
-    });
+    const buffer = await renderDocument(coverLetterDocument(sampleCoverLetter));
     const raw = buffer.toString("latin1");
 
     expect(raw).not.toMatch(/\/Subtype\s*\/Image/);
     expect(raw).not.toContain("data-cv-header-photo");
+  });
+});
+
+describe("document presentation localization", () => {
+  it.each([
+    {
+      locale: "es" as const,
+      summary: "RESUMEN PROFESIONAL",
+      experience: "EXPERIENCIA",
+      education: "FORMACIÓN",
+      skills: "COMPETENCIAS",
+      languages: "IDIOMAS",
+      certifications: "CERTIFICACIONES",
+      personalProjects: "PROYECTOS PERSONALES",
+      present: "Actualidad",
+      openProject: "Abrir proyecto",
+      formattedDate: "8 de agosto de 2026",
+    },
+    {
+      locale: "en" as const,
+      summary: "PROFESSIONAL SUMMARY",
+      experience: "EXPERIENCE",
+      education: "EDUCATION",
+      skills: "SKILLS",
+      languages: "LANGUAGES",
+      certifications: "CERTIFICATIONS",
+      personalProjects: "PERSONAL PROJECTS",
+      present: "Present",
+      openProject: "Open project",
+      formattedDate: "August 8, 2026",
+    },
+    {
+      locale: "fr" as const,
+      summary: "RÉSUMÉ PROFESSIONNEL",
+      experience: "EXPÉRIENCE",
+      education: "FORMATION",
+      skills: "COMPÉTENCES",
+      languages: "LANGUES",
+      certifications: "CERTIFICATIONS",
+      personalProjects: "PROJETS PERSONNELS",
+      present: "Aujourd'hui",
+      openProject: "Ouvrir le projet",
+      formattedDate: "8 août 2026",
+    },
+  ])(
+    "renders $locale Optimized CV chrome and Cover Letter date in the PDF",
+    async ({
+      locale,
+      summary,
+      experience,
+      education,
+      skills,
+      languages,
+      certifications,
+      personalProjects,
+      present,
+      openProject,
+      formattedDate,
+    }) => {
+      const chrome = resolveOptimizedCvDocumentChrome(locale);
+      const cvText = extractPdfText(
+        await renderDocument({
+          type: "optimized-cv",
+          chrome,
+          data: {
+            ...sampleOptimizedCv,
+            personalProjects: [selectedPersonalProject],
+          },
+        }),
+      );
+
+      expect(cvText).toContain(summary);
+      expect(cvText).toContain(experience);
+      expect(cvText).toContain(education);
+      expect(cvText).toContain(skills);
+      expect(cvText).toContain(languages);
+      expect(cvText).toContain(certifications);
+      expect(cvText).toContain(personalProjects);
+      expect(cvText).toContain(present);
+      expect(cvText).toContain(openProject);
+      expect(cvText).toContain(selectedPersonalProject.name);
+      expect(cvText).toContain("TypeScript");
+
+      const coverLetterText = extractPdfText(
+        await renderDocument(coverLetterDocument(sampleCoverLetter, locale)),
+      );
+      expect(coverLetterText).toContain(formattedDate);
+      expect(coverLetterText).toContain("Taylor Smith");
+      expect(coverLetterText).not.toContain("Software Engineer");
+    },
+  );
+
+  it("renders presentation-localized language entries in the PDF", async () => {
+    const chrome = resolveOptimizedCvDocumentChrome("fr");
+    const cvText = extractPdfText(
+      await renderDocument({
+        type: "optimized-cv",
+        chrome,
+        data: {
+          ...sampleOptimizedCv,
+          languages: [
+            { name: "Espagnol", proficiency: "Natif" },
+            { name: "Anglais", proficiency: "Intermédiaire" },
+          ],
+        },
+      }),
+    );
+
+    expect(cvText).toContain("LANGUES");
+    expect(cvText).toContain("Espagnol");
+    expect(cvText).toContain("Natif");
+    expect(cvText).toContain("Anglais");
+    expect(cvText).toContain("Interm");
+    expect(cvText).not.toContain("Español");
+    expect(cvText).not.toContain("Nativo");
   });
 });

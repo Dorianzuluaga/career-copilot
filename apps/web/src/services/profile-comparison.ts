@@ -1,14 +1,18 @@
+import type { Locale } from "../i18n/locales";
 import type { ProfileComparison } from "../types/profile-comparison";
 import { apiUrl, ApiError, readResponse } from "./api";
 
 export async function compareProfile(
   applicationId: string,
+  locale: Locale,
 ): Promise<ProfileComparison> {
   const response = await fetch(
     `${apiUrl}/api/applications/${applicationId}/profile-comparison`,
     {
       method: "POST",
       credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ locale }),
     },
   );
 

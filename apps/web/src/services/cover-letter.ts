@@ -1,18 +1,27 @@
-import type { CoverLetter } from "../types/cover-letter";
+import type { Locale } from "../i18n/locales";
+import type {
+  CoverLetter,
+  GeneratedCoverLetterDraft,
+} from "../types/cover-letter";
 import { apiUrl, ApiError, readResponse } from "./api";
 
 export async function generateCoverLetter(
   applicationId: string,
-): Promise<CoverLetter> {
+  locale: Locale,
+): Promise<GeneratedCoverLetterDraft> {
   const response = await fetch(
     `${apiUrl}/api/applications/${applicationId}/cover-letter`,
     {
       method: "POST",
       credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ locale }),
     },
   );
 
-  const result = await readResponse<{ coverLetter: CoverLetter }>(response);
+  const result = await readResponse<{
+    coverLetter: GeneratedCoverLetterDraft;
+  }>(response);
   return result.coverLetter;
 }
 

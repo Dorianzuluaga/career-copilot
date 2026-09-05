@@ -1,7 +1,10 @@
 import { useEffect, useRef, useState } from "react";
 import { Link, useParams } from "react-router";
 import { ApplicationCoverLetter } from "../components/ApplicationCoverLetter";
-import { ApplicationExport } from "../components/ApplicationExport";
+import {
+  ApplicationExport,
+  createExportPreviewCache,
+} from "../components/ApplicationExport";
 import { ApplicationJobAnalysis } from "../components/ApplicationJobAnalysis";
 import { ApplicationOptimizedCv } from "../components/ApplicationOptimizedCv";
 import { ApplicationOverview } from "../components/ApplicationOverview";
@@ -47,7 +50,7 @@ export function ApplicationWorkspacePage() {
   const { applicationId } = useParams();
   const currentApplicationId = useRef(applicationId);
   currentApplicationId.current = applicationId;
-  const { t } = useLocale();
+  const { locale, t } = useLocale();
   const { requestNavigation } = useUnsavedChangesGuard();
   const [application, setApplication] = useState<PersistedApplication | null>(
     null,
@@ -91,6 +94,7 @@ export function ApplicationWorkspacePage() {
   const [masterCvPersonalProjects, setMasterCvPersonalProjects] = useState<
     PersonalProjectItem[]
   >([]);
+  const previewCacheRef = useRef(createExportPreviewCache());
 
   const documentDescriptors: UnsavedDocumentDescriptor[] = [
     {
@@ -110,6 +114,7 @@ export function ApplicationWorkspacePage() {
   ];
 
   useEffect(() => {
+    previewCacheRef.current.clear();
     setApplication(null);
     setErrorMessage(null);
     setIsLoading(true);
@@ -187,7 +192,7 @@ export function ApplicationWorkspacePage() {
     setIsComparingProfile(true);
     setProfileComparisonError(null);
     try {
-      const comparison = await compareProfile(applicationId);
+      const comparison = await compareProfile(applicationId, locale);
       if (currentApplicationId.current === applicationId) {
         setProfileComparison(comparison);
       }
@@ -214,7 +219,7 @@ export function ApplicationWorkspacePage() {
     setOptimizedCvSaveError(null);
     setOptimizedCvSavedMessage(null);
     try {
-      const result = await generateOptimizedCv(applicationId);
+      const result = await generateOptimizedCv(applicationId, locale);
       if (currentApplicationId.current === applicationId) {
         setOptimizedCv(result);
       }
@@ -243,6 +248,10 @@ export function ApplicationWorkspacePage() {
     try {
       const saved = await saveOptimizedCv(applicationId, optimizedCv);
       if (currentApplicationId.current === applicationId) {
+        previewCacheRef.current.invalidateDocument(
+          applicationId,
+          OPTIMIZED_CV_DOCUMENT_ID,
+        );
         setOptimizedCv(saved);
         setSavedOptimizedCv(saved);
         setOptimizedCvSavedMessage(t("optimizedCv.saved"));
@@ -272,7 +281,7 @@ export function ApplicationWorkspacePage() {
     setCoverLetterSaveError(null);
     setCoverLetterSavedMessage(null);
     try {
-      const result = await generateCoverLetter(applicationId);
+      const result = await generateCoverLetter(applicationId, locale);
       if (currentApplicationId.current === applicationId) {
         setCoverLetter(result);
       }
@@ -303,6 +312,10 @@ export function ApplicationWorkspacePage() {
     try {
       const saved = await saveCoverLetter(applicationId, coverLetter);
       if (currentApplicationId.current === applicationId) {
+        previewCacheRef.current.invalidateDocument(
+          applicationId,
+          COVER_LETTER_DOCUMENT_ID,
+        );
         setCoverLetter(saved);
         setSavedCoverLetter(saved);
         setCoverLetterSavedMessage(t("coverLetter.saved"));
@@ -481,6 +494,7 @@ export function ApplicationWorkspacePage() {
           applicationId={application.id}
           coverLetter={savedCoverLetter}
           optimizedCv={savedOptimizedCv}
+          previewCache={previewCacheRef.current}
         />
       ) : null}
     </ApplicationWorkspace>

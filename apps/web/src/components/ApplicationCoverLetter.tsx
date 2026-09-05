@@ -9,7 +9,9 @@ import {
   hasFieldErrors,
   type FieldErrors,
 } from "../lib/field-validation";
+import { formatCoverLetterWorkspaceDate } from "../lib/cover-letter-date";
 import type { CoverLetter } from "../types/cover-letter";
+import type { CoverLetterDocumentChrome } from "../types/export";
 
 type Translate = LocaleContextValue["t"];
 
@@ -145,13 +147,21 @@ export function CoverLetterDocument({
   coverLetter,
   isEditing = false,
   onChange,
+  chrome,
 }: {
   coverLetter: CoverLetter;
   isEditing?: boolean;
   onChange?: (coverLetter: CoverLetter) => void;
+  chrome?: CoverLetterDocumentChrome;
 }) {
   const { t } = useLocale();
   const canEdit = isEditing && onChange !== undefined;
+  const displayedDate = chrome
+    ? chrome.formattedDate
+    : formatCoverLetterWorkspaceDate(
+        coverLetter.date,
+        coverLetter.workingLanguage,
+      );
 
   const header = (
     <header>
@@ -180,7 +190,7 @@ export function CoverLetterDocument({
         </p>
       ) : null}
       <p className="mt-4 text-sm text-muted" data-field="date" tabIndex={-1}>
-        {coverLetter.date}
+        {displayedDate}
       </p>
       {hasText(coverLetter.companyName) ? (
         <p className="mt-1 text-sm text-muted">{coverLetter.companyName}</p>

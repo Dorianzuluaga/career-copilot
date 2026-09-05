@@ -336,9 +336,7 @@ describe("enforceMasterCvIntegrity", () => {
         profilePhotoPositionY: 75,
       }),
     );
-    expect(
-      enforceMasterCvIntegrity(input.masterCv, generated, null),
-    ).toEqual(
+    expect(enforceMasterCvIntegrity(input.masterCv, generated, null)).toEqual(
       expect.objectContaining({
         profilePhotoAssetId: null,
       }),
@@ -378,7 +376,7 @@ describe("generateOptimizedCvDraft", () => {
       }),
     });
 
-    await expect(generateOptimizedCvDraft(input)).resolves.toEqual({
+    await expect(generateOptimizedCvDraft(input, "es")).resolves.toEqual({
       ...input.masterCv,
       professionalSummary: "TypeScript engineer focused on REST APIs.",
       experience: [
@@ -404,6 +402,7 @@ describe("generateOptimizedCvDraft", () => {
       profilePhotoAssetId: null,
       profilePhotoPositionX: null,
       profilePhotoPositionY: null,
+      workingLanguage: "es",
     });
     expect(createResponse).toHaveBeenCalledOnce();
     const prompt = createResponse.mock.calls[0][0].input[0].content[0]
@@ -428,12 +427,13 @@ describe("generateOptimizedCvDraft", () => {
     expect(prompt).toContain(
       "Do not control fonts, margins, spacing, columns, or visual layout.",
     );
+    expect(prompt).toContain("Spanish (es)");
   });
 
   it("throws when OpenAI is not configured", async () => {
     delete process.env.OPENAI_API_KEY;
 
-    await expect(generateOptimizedCvDraft(input)).rejects.toThrow(
+    await expect(generateOptimizedCvDraft(input, "es")).rejects.toThrow(
       "OpenAI is not configured.",
     );
   });

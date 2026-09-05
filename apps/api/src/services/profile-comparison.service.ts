@@ -7,6 +7,7 @@ import type {
   ProfileComparisonInput,
   ProfileComparisonResult,
 } from "../types/profile-comparison.js";
+import type { SupportedLocale } from "../types/supported-locale.js";
 import {
   ApplicationError,
   getOwnedApplication,
@@ -106,13 +107,14 @@ export async function prepareProfileComparisonInput(
 
 export async function comparePreparedProfiles(
   input: ProfileComparisonInput,
+  locale: SupportedLocale,
 ): Promise<ProfileComparisonResult> {
   const [matchingSkills, missingSkills, strengths, weaknesses] =
     await Promise.all([
-      identifyMatchingSkills(input),
-      identifyMissingSkills(input),
-      identifyStrengths(input),
-      identifyWeaknesses(input),
+      identifyMatchingSkills(input, locale),
+      identifyMissingSkills(input, locale),
+      identifyStrengths(input, locale),
+      identifyWeaknesses(input, locale),
     ]);
 
   const comparison = {
@@ -121,9 +123,13 @@ export async function comparePreparedProfiles(
     ...strengths,
     ...weaknesses,
   };
-  const alignment = await evaluateProfileAlignment(input, comparison);
+  const alignment = await evaluateProfileAlignment(input, comparison, locale);
   const alignedComparison = { ...comparison, ...alignment };
-  const recommendation = await generateRecommendation(input, alignedComparison);
+  const recommendation = await generateRecommendation(
+    input,
+    alignedComparison,
+    locale,
+  );
 
   return { ...alignedComparison, ...recommendation };
 }
@@ -143,6 +149,7 @@ export async function getProfileComparison(
 export async function compareProfiles(
   applicationId: string,
   userId: string,
+  locale: SupportedLocale,
 ): Promise<ProfileComparisonResult> {
   await requireOwnedApplication(applicationId, userId);
 
@@ -152,7 +159,7 @@ export async function compareProfiles(
   }
 
   const input = await prepareProfileComparisonInput(applicationId, userId);
-  const comparison = await comparePreparedProfiles(input);
+  const comparison = await comparePreparedProfiles(input, locale);
   const saved = await upsertProfileMatch(applicationId, comparison);
   return toProfileMatchDocument(saved);
 }

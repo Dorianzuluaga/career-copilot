@@ -4,6 +4,7 @@ import {
   getCoverLetter,
   saveCoverLetter,
 } from "../services/cover-letter.service.js";
+import { validateSupportedLocale } from "../types/supported-locale.js";
 import { sendErrorResponse } from "./error-response.js";
 
 export async function createCoverLetter(
@@ -11,9 +12,11 @@ export async function createCoverLetter(
   response: Response,
 ): Promise<void> {
   try {
+    const locale = validateSupportedLocale(request.body?.locale);
     const coverLetter = await generateCoverLetter(
       request.params.id,
       request.authenticatedUser!.id,
+      locale,
     );
     response.status(200).json({ coverLetter });
   } catch (error) {

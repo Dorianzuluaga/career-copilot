@@ -83,10 +83,13 @@ describe("identifyMatchingSkills", () => {
       }),
     });
 
-    await expect(identifyMatchingSkills(input)).resolves.toEqual({
+    await expect(identifyMatchingSkills(input, "fr")).resolves.toEqual({
       matchingSkills: ["TypeScript", "REST APIs"],
     });
     expect(createResponse).toHaveBeenCalledOnce();
+    expect(createResponse.mock.calls[0][0].input[0].content[0].text).toContain(
+      "French (fr)",
+    );
   });
 
   it("rejects an invalid structured response", async () => {
@@ -94,7 +97,7 @@ describe("identifyMatchingSkills", () => {
       output_text: JSON.stringify({ matchingSkills: ["TypeScript", 42] }),
     });
 
-    await expect(identifyMatchingSkills(input)).rejects.toThrow(
+    await expect(identifyMatchingSkills(input, "fr")).rejects.toThrow(
       "Invalid profile comparison response.",
     );
   });
@@ -108,7 +111,7 @@ describe("identifyMissingSkills", () => {
       }),
     });
 
-    await expect(identifyMissingSkills(input)).resolves.toEqual({
+    await expect(identifyMissingSkills(input, "fr")).resolves.toEqual({
       missingSkills: ["AWS"],
     });
     expect(createResponse).toHaveBeenCalledOnce();
@@ -119,7 +122,7 @@ describe("identifyMissingSkills", () => {
       output_text: JSON.stringify({ missingSkills: ["AWS", 42] }),
     });
 
-    await expect(identifyMissingSkills(input)).rejects.toThrow(
+    await expect(identifyMissingSkills(input, "fr")).rejects.toThrow(
       "Invalid missing skills response.",
     );
   });
@@ -141,7 +144,7 @@ describe("identifyStrengths", () => {
       }),
     });
 
-    await expect(identifyStrengths(input)).resolves.toEqual({
+    await expect(identifyStrengths(input, "fr")).resolves.toEqual({
       strengths: [
         "TypeScript experience directly supports the role's core requirement.",
         "Building REST APIs demonstrates relevant backend experience.",
@@ -162,7 +165,7 @@ describe("identifyStrengths", () => {
       }),
     });
 
-    await expect(identifyStrengths(input)).resolves.toEqual({
+    await expect(identifyStrengths(input, "fr")).resolves.toEqual({
       strengths: [
         "TypeScript experience directly supports the role's core requirement.",
       ],
@@ -174,7 +177,7 @@ describe("identifyStrengths", () => {
       output_text: JSON.stringify({ strengths: ["TypeScript", 42] }),
     });
 
-    await expect(identifyStrengths(input)).rejects.toThrow(
+    await expect(identifyStrengths(input, "fr")).rejects.toThrow(
       "Invalid strengths response.",
     );
   });
@@ -196,7 +199,7 @@ describe("identifyWeaknesses", () => {
       }),
     });
 
-    await expect(identifyWeaknesses(input)).resolves.toEqual({
+    await expect(identifyWeaknesses(input, "fr")).resolves.toEqual({
       weaknesses: [
         "AWS is required but is not demonstrated in the Master CV.",
         "The expected cloud responsibilities are not supported by the documented experience.",
@@ -213,7 +216,7 @@ describe("identifyWeaknesses", () => {
       output_text: JSON.stringify({ weaknesses: [] }),
     });
 
-    await expect(identifyWeaknesses(input)).resolves.toEqual({
+    await expect(identifyWeaknesses(input, "fr")).resolves.toEqual({
       weaknesses: [],
     });
   });
@@ -223,7 +226,7 @@ describe("identifyWeaknesses", () => {
       output_text: JSON.stringify({ weaknesses: ["AWS", 42] }),
     });
 
-    await expect(identifyWeaknesses(input)).rejects.toThrow(
+    await expect(identifyWeaknesses(input, "fr")).rejects.toThrow(
       "Invalid weaknesses response.",
     );
   });
@@ -248,7 +251,9 @@ describe("evaluateProfileAlignment", () => {
       }),
     });
 
-    await expect(evaluateProfileAlignment(input, comparison)).resolves.toEqual({
+    await expect(
+      evaluateProfileAlignment(input, comparison, "fr"),
+    ).resolves.toEqual({
       alignmentScore: 72,
       alignmentReasoning:
         "Strong backend evidence supports the role, but the missing AWS requirement limits readiness.",
@@ -270,9 +275,9 @@ describe("evaluateProfileAlignment", () => {
         }),
       });
 
-      await expect(evaluateProfileAlignment(input, comparison)).rejects.toThrow(
-        "Invalid profile alignment response.",
-      );
+      await expect(
+        evaluateProfileAlignment(input, comparison, "fr"),
+      ).rejects.toThrow("Invalid profile alignment response.");
     },
   );
 
@@ -284,9 +289,9 @@ describe("evaluateProfileAlignment", () => {
       }),
     });
 
-    await expect(evaluateProfileAlignment(input, comparison)).rejects.toThrow(
-      "Invalid profile alignment response.",
-    );
+    await expect(
+      evaluateProfileAlignment(input, comparison, "fr"),
+    ).rejects.toThrow("Invalid profile alignment response.");
   });
 });
 
@@ -311,7 +316,9 @@ describe("generateRecommendation", () => {
       }),
     });
 
-    await expect(generateRecommendation(input, comparison)).resolves.toEqual({
+    await expect(
+      generateRecommendation(input, comparison, "fr"),
+    ).resolves.toEqual({
       recommendation:
         "Good opportunity. Improve your CV before applying so it reflects the supported experience more clearly.",
     });
@@ -339,8 +346,8 @@ describe("generateRecommendation", () => {
       output_text: JSON.stringify(output),
     });
 
-    await expect(generateRecommendation(input, comparison)).rejects.toThrow(
-      "Invalid profile recommendation response.",
-    );
+    await expect(
+      generateRecommendation(input, comparison, "fr"),
+    ).rejects.toThrow("Invalid profile recommendation response.");
   });
 });
