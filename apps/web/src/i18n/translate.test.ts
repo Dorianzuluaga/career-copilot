@@ -66,6 +66,22 @@ describe("translate", () => {
     expect(translate("fr", "masterCv.onboarding.title")).toBe(
       "Avez-vous déjà un CV ?",
     );
+    expect(translate("es", "masterCv.onboarding.selectCv")).toBe(
+      "Seleccionar CV",
+    );
+    expect(translate("en", "masterCv.onboarding.selectCv")).toBe("Select CV");
+    expect(translate("fr", "masterCv.onboarding.selectCv")).toBe(
+      "Sélectionner le CV",
+    );
+    expect(translate("es", "masterCv.onboarding.uploadHelpPdf")).toBe(
+      "PDF es el formato compatible actualmente.",
+    );
+    expect(translate("en", "masterCv.onboarding.uploadHelpPdf")).toBe(
+      "PDF is the currently supported format.",
+    );
+    expect(translate("fr", "masterCv.onboarding.uploadHelpPdf")).toBe(
+      "Le PDF est le format actuellement pris en charge.",
+    );
     expect(translate("es", "masterCv.editor.title")).toBe(
       "Edita tu CV Maestro",
     );
@@ -355,6 +371,12 @@ describe("translate", () => {
       "masterCv.onboarding.uploadHeading",
       "masterCv.onboarding.uploadHint",
       "masterCv.onboarding.fileLabel",
+      "masterCv.onboarding.selectCv",
+      "masterCv.onboarding.uploadHelpLabel",
+      "masterCv.onboarding.uploadHelpComputer",
+      "masterCv.onboarding.uploadHelpPdf",
+      "masterCv.onboarding.uploadHelpExport",
+      "masterCv.onboarding.uploadHelpLatest",
       "masterCv.onboarding.extracting",
       "masterCv.onboarding.uploadAndExtract",
       "masterCv.onboarding.retry",

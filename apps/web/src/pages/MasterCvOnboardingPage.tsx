@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Navigate, useNavigate } from "react-router";
 import { MasterCvForm } from "../components/MasterCvForm";
 import { useLocale } from "../hooks/useLocale";
@@ -30,6 +30,122 @@ const emptyMasterCv = (): MasterCvInput => ({
 });
 
 type Step = "choice" | "upload" | "form";
+
+export function MasterCvOnboardingUploadStep({
+  selectedFile,
+  isUploading,
+  uploadError,
+  onBack,
+  onFileChange,
+  onExtract,
+  onRetry,
+  onCompleteManually,
+}: {
+  selectedFile: File | null;
+  isUploading: boolean;
+  uploadError: string | null;
+  onBack: () => void;
+  onFileChange: (file: File | null) => void;
+  onExtract: () => void;
+  onRetry: () => void;
+  onCompleteManually: () => void;
+}) {
+  const { t } = useLocale();
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  return (
+    <section className="mx-auto max-w-2xl">
+      <button
+        type="button"
+        onClick={onBack}
+        className="text-sm font-semibold text-brand"
+      >
+        {t("masterCv.onboarding.back")}
+      </button>
+      <div className="mt-4 flex items-center gap-2">
+        <h1 className="text-3xl font-bold tracking-tight">
+          {t("masterCv.onboarding.uploadHeading")}
+        </h1>
+        <details className="relative shrink-0">
+          <summary
+            className="inline-flex h-7 w-7 cursor-pointer list-none items-center justify-center rounded-full border border-line bg-surface text-sm font-semibold text-muted outline-none transition hover:bg-canvas focus:border-brand focus:ring-2 focus:ring-brand-soft [&::-webkit-details-marker]:hidden [&::marker]:content-none"
+            aria-label={t("masterCv.onboarding.uploadHelpLabel")}
+          >
+            ?
+          </summary>
+          <div className="cc-card absolute left-0 z-10 mt-2 w-72 p-4 sm:left-auto sm:right-0">
+            <ul className="list-disc space-y-2 pl-4 text-sm text-muted">
+              <li>{t("masterCv.onboarding.uploadHelpComputer")}</li>
+              <li>{t("masterCv.onboarding.uploadHelpPdf")}</li>
+              <li>{t("masterCv.onboarding.uploadHelpExport")}</li>
+              <li>{t("masterCv.onboarding.uploadHelpLatest")}</li>
+            </ul>
+          </div>
+        </details>
+      </div>
+      <p className="mt-2 text-muted">{t("masterCv.onboarding.uploadHint")}</p>
+      <div className="cc-card mt-8 p-6">
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="application/pdf,.pdf"
+          aria-label={t("masterCv.onboarding.fileLabel")}
+          onChange={(event) => {
+            onFileChange(event.target.files?.[0] ?? null);
+          }}
+          className="sr-only"
+        />
+        <button
+          type="button"
+          onClick={() => fileInputRef.current?.click()}
+          className="cc-btn-secondary w-fit"
+        >
+          {t("masterCv.onboarding.selectCv")}
+        </button>
+        {selectedFile ? (
+          <p className="mt-3 text-sm font-medium text-ink">
+            {selectedFile.name}
+          </p>
+        ) : null}
+        <button
+          type="button"
+          disabled={!selectedFile || isUploading}
+          onClick={onExtract}
+          className="cc-btn-primary mt-5"
+        >
+          {isUploading
+            ? t("masterCv.onboarding.extracting")
+            : t("masterCv.onboarding.uploadAndExtract")}
+        </button>
+
+        {uploadError ? (
+          <div className="cc-alert-error mt-5">
+            <p role="alert" className="text-sm font-medium">
+              {uploadError}
+            </p>
+            <div className="mt-4 flex flex-wrap gap-3">
+              <button
+                type="button"
+                disabled={!selectedFile || isUploading}
+                onClick={onRetry}
+                className="cc-btn-danger px-3 py-2"
+              >
+                {t("masterCv.onboarding.retry")}
+              </button>
+              <button
+                type="button"
+                onClick={onCompleteManually}
+                className="cc-btn-navy px-3 py-2"
+              >
+                {t("masterCv.onboarding.completeManually")}
+              </button>
+            </div>
+          </div>
+        ) : null}
+      </div>
+    </section>
+  );
+}
 
 export function MasterCvOnboardingPage() {
   const { t } = useLocale();
@@ -170,66 +286,19 @@ export function MasterCvOnboardingPage() {
 
   if (step === "upload") {
     return (
-      <section className="mx-auto max-w-2xl">
-        <button
-          type="button"
-          onClick={() => setStep("choice")}
-          className="text-sm font-semibold text-brand"
-        >
-          {t("masterCv.onboarding.back")}
-        </button>
-        <h1 className="mt-4 text-3xl font-bold tracking-tight">
-          {t("masterCv.onboarding.uploadHeading")}
-        </h1>
-        <p className="mt-2 text-muted">{t("masterCv.onboarding.uploadHint")}</p>
-        <div className="cc-card mt-8 p-6">
-          <input
-            type="file"
-            accept="application/pdf,.pdf"
-            aria-label={t("masterCv.onboarding.fileLabel")}
-            onChange={(event) => {
-              setSelectedFile(event.target.files?.[0] ?? null);
-              setUploadError(null);
-            }}
-            className="block w-full text-sm text-ink"
-          />
-          <button
-            type="button"
-            disabled={!selectedFile || isUploading}
-            onClick={() => void handleUpload()}
-            className="cc-btn-primary mt-5"
-          >
-            {isUploading
-              ? t("masterCv.onboarding.extracting")
-              : t("masterCv.onboarding.uploadAndExtract")}
-          </button>
-
-          {uploadError ? (
-            <div className="cc-alert-error mt-5">
-              <p role="alert" className="text-sm font-medium">
-                {uploadError}
-              </p>
-              <div className="mt-4 flex flex-wrap gap-3">
-                <button
-                  type="button"
-                  disabled={!selectedFile || isUploading}
-                  onClick={() => void handleUpload()}
-                  className="cc-btn-danger px-3 py-2"
-                >
-                  {t("masterCv.onboarding.retry")}
-                </button>
-                <button
-                  type="button"
-                  onClick={continueManually}
-                  className="cc-btn-navy px-3 py-2"
-                >
-                  {t("masterCv.onboarding.completeManually")}
-                </button>
-              </div>
-            </div>
-          ) : null}
-        </div>
-      </section>
+      <MasterCvOnboardingUploadStep
+        selectedFile={selectedFile}
+        isUploading={isUploading}
+        uploadError={uploadError}
+        onBack={() => setStep("choice")}
+        onFileChange={(file) => {
+          setSelectedFile(file);
+          setUploadError(null);
+        }}
+        onExtract={() => void handleUpload()}
+        onRetry={() => void handleUpload()}
+        onCompleteManually={continueManually}
+      />
     );
   }
 
