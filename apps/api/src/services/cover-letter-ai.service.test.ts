@@ -66,6 +66,7 @@ const input: CoverLetterGenerationInput = {
     alignmentScore: 82,
     alignmentReasoning: "Core skills are well supported.",
     recommendation: "Strong opportunity. Continue with the application.",
+    workingLanguage: "es",
   },
   optimizedCv: {
     fullName: "Taylor Smith",

@@ -4,6 +4,7 @@ import {
 } from "../repositories/profile-match.repository.js";
 import type { JobAnalysisData } from "../types/job-analysis.js";
 import type {
+  ProfileComparisonGenerated,
   ProfileComparisonInput,
   ProfileComparisonResult,
 } from "../types/profile-comparison.js";
@@ -65,6 +66,7 @@ function toProfileMatchDocument(value: {
   alignmentScore: number;
   alignmentReasoning: string;
   recommendation: string;
+  workingLanguage?: SupportedLocale | null;
 }): ProfileComparisonResult {
   return {
     matchingSkills: toStringArray(value.matchingSkills),
@@ -74,6 +76,7 @@ function toProfileMatchDocument(value: {
     alignmentScore: value.alignmentScore,
     alignmentReasoning: value.alignmentReasoning,
     recommendation: value.recommendation,
+    workingLanguage: value.workingLanguage ?? null,
   };
 }
 
@@ -108,7 +111,7 @@ export async function prepareProfileComparisonInput(
 export async function comparePreparedProfiles(
   input: ProfileComparisonInput,
   locale: SupportedLocale,
-): Promise<ProfileComparisonResult> {
+): Promise<ProfileComparisonGenerated> {
   const [matchingSkills, missingSkills, strengths, weaknesses] =
     await Promise.all([
       identifyMatchingSkills(input, locale),
@@ -160,6 +163,6 @@ export async function compareProfiles(
 
   const input = await prepareProfileComparisonInput(applicationId, userId);
   const comparison = await comparePreparedProfiles(input, locale);
-  const saved = await upsertProfileMatch(applicationId, comparison);
+  const saved = await upsertProfileMatch(applicationId, comparison, locale);
   return toProfileMatchDocument(saved);
 }

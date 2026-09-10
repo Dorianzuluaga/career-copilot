@@ -147,6 +147,7 @@ const profileMatch = {
   alignmentScore: 80,
   alignmentReasoning: "Core skills are supported.",
   recommendation: "Strong opportunity. Continue with the application.",
+  workingLanguage: "es" as const,
 };
 
 const optimizedCv = {
@@ -230,6 +231,29 @@ describe("generateOptimizedCv", () => {
         masterCv,
         jobAnalysis,
         profileMatch,
+      },
+      "fr",
+      null,
+      null,
+      null,
+    );
+  });
+
+  it("passes the persisted Profile Match from getProfileComparison, including workingLanguage", async () => {
+    const persistedProfileMatch = {
+      ...profileMatch,
+      workingLanguage: "es" as const,
+    };
+    vi.mocked(getProfileComparison).mockResolvedValue(persistedProfileMatch);
+
+    await generateOptimizedCv(applicationId, userId, "fr");
+
+    expect(getProfileComparison).toHaveBeenCalledWith(applicationId, userId);
+    expect(generateOptimizedCvDraft).toHaveBeenCalledWith(
+      {
+        masterCv,
+        jobAnalysis,
+        profileMatch: persistedProfileMatch,
       },
       "fr",
       null,

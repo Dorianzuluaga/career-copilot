@@ -46,9 +46,13 @@ const LANGUAGE_NAMES: Record<SupportedLocale, string> = {
   fr: "French",
 };
 
+export function localeLanguageName(locale: SupportedLocale): string {
+  return LANGUAGE_NAMES[locale];
+}
+
 export function generationLanguageInstruction(locale: SupportedLocale): string {
   return [
-    `Write all generated narrative text in ${LANGUAGE_NAMES[locale]} (${locale}).`,
+    `Write all generated narrative text in ${localeLanguageName(locale)} (${locale}).`,
     "Keep verifiable names, skills, technologies, URLs, contact details, and other protected facts unchanged.",
   ].join(" ");
 }

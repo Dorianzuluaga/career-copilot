@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   isSupportedLocale,
+  localeLanguageName,
   parseNullableSupportedLocale,
   SUPPORTED_LOCALES,
   validateSupportedLocale,
@@ -10,6 +11,9 @@ describe("supported locale contract", () => {
   it("supports exactly es, en, and fr", () => {
     expect(SUPPORTED_LOCALES).toEqual(["es", "en", "fr"]);
     expect(SUPPORTED_LOCALES.every(isSupportedLocale)).toBe(true);
+    expect(localeLanguageName("es")).toBe("Spanish");
+    expect(localeLanguageName("en")).toBe("English");
+    expect(localeLanguageName("fr")).toBe("French");
   });
 
   it.each([undefined, null, "", "de", 42])(

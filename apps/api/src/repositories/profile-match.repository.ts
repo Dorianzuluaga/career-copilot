@@ -1,8 +1,9 @@
 import type { Prisma } from "../../generated/prisma/index.js";
 import { prisma } from "../lib/prisma.js";
-import type { ProfileComparisonResult } from "../types/profile-comparison.js";
+import type { ProfileComparisonGenerated } from "../types/profile-comparison.js";
+import type { SupportedLocale } from "../types/supported-locale.js";
 
-function toData(input: ProfileComparisonResult) {
+function toData(input: ProfileComparisonGenerated) {
   return {
     matchingSkills: input.matchingSkills as unknown as Prisma.InputJsonValue,
     missingSkills: input.missingSkills as unknown as Prisma.InputJsonValue,
@@ -20,7 +21,8 @@ export function findProfileMatchByApplicationId(applicationId: string) {
 
 export function upsertProfileMatch(
   applicationId: string,
-  input: ProfileComparisonResult,
+  input: ProfileComparisonGenerated,
+  workingLanguage: SupportedLocale,
 ) {
   const data = toData(input);
   return prisma.profileMatch.upsert({
@@ -28,6 +30,7 @@ export function upsertProfileMatch(
     create: {
       ...data,
       applicationId,
+      workingLanguage,
     },
     update: data,
   });

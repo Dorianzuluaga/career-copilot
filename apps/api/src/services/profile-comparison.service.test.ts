@@ -98,7 +98,7 @@ const masterCvInput = {
   certifications: [],
 };
 
-const profileMatch = {
+const generatedComparison = {
   matchingSkills: ["TypeScript", "REST APIs"],
   missingSkills: ["Docker"],
   strengths: [
@@ -113,12 +113,22 @@ const profileMatch = {
   recommendation: "Good opportunity. Improve your CV before applying.",
 };
 
+const profileMatch = {
+  ...generatedComparison,
+  workingLanguage: "es" as const,
+};
+
 const persistedProfileMatch = {
   id: "profile-match-id",
   applicationId,
   ...profileMatch,
   createdAt: new Date("2026-08-11T10:00:00.000Z"),
   updatedAt: new Date("2026-08-11T10:00:00.000Z"),
+};
+
+const legacyPersistedProfileMatch = {
+  ...persistedProfileMatch,
+  workingLanguage: null,
 };
 
 beforeEach(() => {
@@ -197,6 +207,32 @@ describe("getProfileComparison", () => {
     );
     expect(getOwnedApplication).toHaveBeenCalledWith(applicationId, userId);
     expect(findProfileMatchByApplicationId).toHaveBeenCalledWith(applicationId);
+  });
+
+  it("returns workingLanguage null for a legacy row without substituting a locale", async () => {
+    vi.mocked(findProfileMatchByApplicationId).mockResolvedValue(
+      legacyPersistedProfileMatch as never,
+    );
+
+    await expect(getProfileComparison(applicationId, userId)).resolves.toEqual({
+      ...generatedComparison,
+      workingLanguage: null,
+    });
+  });
+
+  it("does not infer workingLanguage when the stored column is missing", async () => {
+    vi.mocked(findProfileMatchByApplicationId).mockResolvedValue({
+      id: persistedProfileMatch.id,
+      applicationId,
+      ...generatedComparison,
+      createdAt: persistedProfileMatch.createdAt,
+      updatedAt: persistedProfileMatch.updatedAt,
+    } as never);
+
+    await expect(getProfileComparison(applicationId, userId)).resolves.toEqual({
+      ...generatedComparison,
+      workingLanguage: null,
+    });
   });
 
   it("returns 404 when no saved Profile Match exists", async () => {
@@ -306,7 +342,8 @@ describe("compareProfiles", () => {
     );
     expect(upsertProfileMatch).toHaveBeenCalledWith(
       applicationId,
-      profileMatch,
+      generatedComparison,
+      "es",
     );
     expect(
       vi.mocked(evaluateProfileAlignment).mock.invocationCallOrder[0],
@@ -314,6 +351,40 @@ describe("compareProfiles", () => {
       vi.mocked(generateRecommendation).mock.invocationCallOrder[0]!,
     );
   });
+
+  it.each(["es", "en", "fr"] as const)(
+    "persists workingLanguage %s from the validated request locale on first insert",
+    async (locale) => {
+      vi.mocked(identifyMatchingSkills).mockResolvedValue({
+        matchingSkills: ["TypeScript", "REST APIs"],
+      });
+      vi.mocked(identifyMissingSkills).mockResolvedValue({
+        missingSkills: ["Docker"],
+      });
+      vi.mocked(identifyStrengths).mockResolvedValue({
+        strengths: generatedComparison.strengths,
+      });
+      vi.mocked(identifyWeaknesses).mockResolvedValue({
+        weaknesses: generatedComparison.weaknesses,
+      });
+      vi.mocked(upsertProfileMatch).mockResolvedValue({
+        ...persistedProfileMatch,
+        workingLanguage: locale,
+      } as never);
+
+      await expect(
+        compareProfiles(applicationId, userId, locale),
+      ).resolves.toEqual({
+        ...generatedComparison,
+        workingLanguage: locale,
+      });
+      expect(upsertProfileMatch).toHaveBeenCalledWith(
+        applicationId,
+        generatedComparison,
+        locale,
+      );
+    },
+  );
 
   it("returns the saved Profile Match without calling AI when one already exists", async () => {
     vi.mocked(findProfileMatchByApplicationId).mockResolvedValue(
@@ -331,6 +402,40 @@ describe("compareProfiles", () => {
     expect(generateRecommendation).not.toHaveBeenCalled();
     expect(upsertProfileMatch).not.toHaveBeenCalled();
     expect(getMasterCv).not.toHaveBeenCalled();
+  });
+
+  it("does not regenerate or restamp workingLanguage when a Profile Match already exists", async () => {
+    vi.mocked(findProfileMatchByApplicationId).mockResolvedValue(
+      persistedProfileMatch as never,
+    );
+
+    await expect(compareProfiles(applicationId, userId, "fr")).resolves.toEqual(
+      {
+        ...generatedComparison,
+        workingLanguage: "es",
+      },
+    );
+    expect(identifyMatchingSkills).not.toHaveBeenCalled();
+    expect(identifyMissingSkills).not.toHaveBeenCalled();
+    expect(identifyStrengths).not.toHaveBeenCalled();
+    expect(identifyWeaknesses).not.toHaveBeenCalled();
+    expect(evaluateProfileAlignment).not.toHaveBeenCalled();
+    expect(generateRecommendation).not.toHaveBeenCalled();
+    expect(upsertProfileMatch).not.toHaveBeenCalled();
+  });
+
+  it("returns a legacy null workingLanguage without restamping it", async () => {
+    vi.mocked(findProfileMatchByApplicationId).mockResolvedValue(
+      legacyPersistedProfileMatch as never,
+    );
+
+    await expect(compareProfiles(applicationId, userId, "en")).resolves.toEqual(
+      {
+        ...generatedComparison,
+        workingLanguage: null,
+      },
+    );
+    expect(upsertProfileMatch).not.toHaveBeenCalled();
   });
 
   it("returns empty lists when the comparison finds no supported evidence", async () => {
@@ -360,12 +465,16 @@ describe("compareProfiles", () => {
       id: "profile-match-id",
       applicationId,
       ...emptyComparison,
+      workingLanguage: "es",
       createdAt: new Date("2026-08-11T10:00:00.000Z"),
       updatedAt: new Date("2026-08-11T10:00:00.000Z"),
     } as never);
 
     await expect(compareProfiles(applicationId, userId, "es")).resolves.toEqual(
-      emptyComparison,
+      {
+        ...emptyComparison,
+        workingLanguage: "es",
+      },
     );
     expect(evaluateProfileAlignment).toHaveBeenCalledWith(
       expect.any(Object),
@@ -393,6 +502,7 @@ describe("compareProfiles", () => {
     expect(upsertProfileMatch).toHaveBeenCalledWith(
       applicationId,
       emptyComparison,
+      "es",
     );
   });
 });

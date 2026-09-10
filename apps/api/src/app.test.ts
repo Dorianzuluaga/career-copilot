@@ -105,6 +105,18 @@ vi.mock("./services/profile-comparison.service.js", () => ({
   getProfileComparison: vi.fn(),
 }));
 
+vi.mock("./services/profile-match-presentation.service.js", () => ({
+  ProfileMatchPresentationError: class ProfileMatchPresentationError extends Error {
+    constructor(
+      message: string,
+      public readonly statusCode: number,
+    ) {
+      super(message);
+    }
+  },
+  presentProfileMatch: vi.fn(),
+}));
+
 vi.mock("./services/optimized-cv.service.js", () => ({
   OptimizedCvError: class OptimizedCvError extends Error {
     constructor(
@@ -212,6 +224,10 @@ import {
   getProfileComparison,
   ProfileComparisonError,
 } from "./services/profile-comparison.service.js";
+import {
+  presentProfileMatch,
+  ProfileMatchPresentationError,
+} from "./services/profile-match-presentation.service.js";
 import {
   exportApplicationDocument,
   ExportError,
@@ -532,6 +548,9 @@ describe("Job Analysis API", () => {
       request(app).post("/api/applications/application-id/job-offer"),
       request(app).post("/api/applications/application-id/job-analysis"),
       request(app).post("/api/applications/application-id/profile-comparison"),
+      request(app).post(
+        "/api/applications/application-id/profile-comparison/presentation",
+      ),
       request(app).get("/api/applications/application-id/profile-comparison"),
       request(app).post("/api/applications/application-id/optimized-cv"),
       request(app).get("/api/applications/application-id/optimized-cv"),
@@ -554,6 +573,7 @@ describe("Job Analysis API", () => {
     expect(analyzeJobOffer).not.toHaveBeenCalled();
     expect(compareProfiles).not.toHaveBeenCalled();
     expect(getProfileComparison).not.toHaveBeenCalled();
+    expect(presentProfileMatch).not.toHaveBeenCalled();
     expect(generateOptimizedCv).not.toHaveBeenCalled();
     expect(readOptimizedCvPhoto).not.toHaveBeenCalled();
     expect(exportApplicationDocument).not.toHaveBeenCalled();
@@ -748,6 +768,7 @@ describe("Job Analysis API", () => {
         "Relevant backend experience supports the role, but missing cloud skills limit readiness.",
       recommendation:
         "Good opportunity. Improve your CV before applying so the supported experience is clear.",
+      workingLanguage: "es",
     });
 
     const response = await request(app)
@@ -770,6 +791,7 @@ describe("Job Analysis API", () => {
         "Relevant backend experience supports the role, but missing cloud skills limit readiness.",
       recommendation:
         "Good opportunity. Improve your CV before applying so the supported experience is clear.",
+      workingLanguage: "es",
     });
     expect(compareProfiles).toHaveBeenCalledWith(
       "application-id",
@@ -812,6 +834,7 @@ describe("Job Analysis API", () => {
         "Relevant backend experience supports the role, but missing cloud skills limit readiness.",
       recommendation:
         "Good opportunity. Improve your CV before applying so the supported experience is clear.",
+      workingLanguage: "es",
     });
 
     const response = await request(app)
@@ -833,11 +856,33 @@ describe("Job Analysis API", () => {
         "Relevant backend experience supports the role, but missing cloud skills limit readiness.",
       recommendation:
         "Good opportunity. Improve your CV before applying so the supported experience is clear.",
+      workingLanguage: "es",
     });
     expect(getProfileComparison).toHaveBeenCalledWith(
       "application-id",
       user.id,
     );
+  });
+
+  it("returns persisted workingLanguage null for a legacy Profile Match", async () => {
+    vi.mocked(getAuthenticatedUser).mockResolvedValue(user);
+    vi.mocked(getProfileComparison).mockResolvedValue({
+      matchingSkills: ["TypeScript"],
+      missingSkills: [],
+      strengths: ["Relevant experience"],
+      weaknesses: [],
+      alignmentScore: 70,
+      alignmentReasoning: "Core skills are supported.",
+      recommendation: "Good opportunity.",
+      workingLanguage: null,
+    });
+
+    const response = await request(app)
+      .get("/api/applications/application-id/profile-comparison")
+      .set("Cookie", "career_copilot_session=opaque-session-id");
+
+    expect(response.status).toBe(200);
+    expect(response.body.workingLanguage).toBeNull();
   });
 
   it("returns 404 when no saved Profile Match exists", async () => {
@@ -852,6 +897,99 @@ describe("Job Analysis API", () => {
 
     expect(response.status).toBe(404);
     expect(response.body).toEqual({ message: "Profile Match not found." });
+  });
+
+  it("rejects invalid locales before preparing a Profile Match presentation", async () => {
+    vi.mocked(getAuthenticatedUser).mockResolvedValue(user);
+
+    for (const body of [{}, { locale: "de" }, { locale: 42 }]) {
+      const response = await request(app)
+        .post(
+          "/api/applications/application-id/profile-comparison/presentation",
+        )
+        .set("Cookie", "career_copilot_session=opaque-session-id")
+        .send(body);
+
+      expect(response.status).toBe(400);
+      expect(response.body).toEqual({
+        message: 'locale must be one of "es", "en", or "fr".',
+      });
+    }
+
+    expect(presentProfileMatch).not.toHaveBeenCalled();
+    expect(compareProfiles).not.toHaveBeenCalled();
+    expect(getProfileComparison).not.toHaveBeenCalled();
+  });
+
+  it.each(["es", "en", "fr"] as const)(
+    "returns a Profile Match presentation for locale %s",
+    async (locale) => {
+      const presentation = {
+        matchingSkills: ["TypeScript"],
+        missingSkills: ["Docker"],
+        strengths: ["TypeScript experience supports the role."],
+        weaknesses: ["Docker is missing."],
+        alignmentScore: 72,
+        alignmentReasoning: "Relevant experience with a Docker gap.",
+        recommendation: "Good opportunity.",
+        workingLanguage: "es" as const,
+      };
+      vi.mocked(getAuthenticatedUser).mockResolvedValue(user);
+      vi.mocked(presentProfileMatch).mockResolvedValue(presentation);
+
+      const response = await request(app)
+        .post(
+          "/api/applications/application-id/profile-comparison/presentation",
+        )
+        .set("Cookie", "career_copilot_session=opaque-session-id")
+        .send({ locale });
+
+      expect(response.status).toBe(200);
+      expect(response.body).toEqual(presentation);
+      expect(presentProfileMatch).toHaveBeenCalledWith(
+        "application-id",
+        user.id,
+        locale,
+      );
+      expect(compareProfiles).not.toHaveBeenCalled();
+    },
+  );
+
+  it("returns 404 when presentation has no saved Profile Match", async () => {
+    vi.mocked(getAuthenticatedUser).mockResolvedValue(user);
+    vi.mocked(presentProfileMatch).mockRejectedValue(
+      new ProfileMatchPresentationError("Profile Match not found.", 404),
+    );
+
+    const response = await request(app)
+      .post("/api/applications/application-id/profile-comparison/presentation")
+      .set("Cookie", "career_copilot_session=opaque-session-id")
+      .send({ locale: "fr" });
+
+    expect(response.status).toBe(404);
+    expect(response.body).toEqual({ message: "Profile Match not found." });
+  });
+
+  it("returns 502 when Profile Match presentation adaptation fails", async () => {
+    vi.mocked(getAuthenticatedUser).mockResolvedValue(user);
+    vi.mocked(presentProfileMatch).mockRejectedValue(
+      new ProfileMatchPresentationError(
+        "We couldn't prepare this Profile Match in the selected language.",
+        502,
+      ),
+    );
+
+    const response = await request(app)
+      .post("/api/applications/application-id/profile-comparison/presentation")
+      .set("Cookie", "career_copilot_session=opaque-session-id")
+      .send({ locale: "en" });
+
+    expect(response.status).toBe(502);
+    expect(response.body).toEqual({
+      message:
+        "We couldn't prepare this Profile Match in the selected language.",
+    });
+    expect(compareProfiles).not.toHaveBeenCalled();
   });
 
   it("returns the generated Optimized CV for the authenticated user", async () => {
