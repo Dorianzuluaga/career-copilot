@@ -24,6 +24,7 @@ import {
 } from "../controllers/optimized-cv.controller.js";
 import {
   prepareProfileComparison,
+  presentProfileComparison,
   showProfileComparison,
 } from "../controllers/profile-comparison.controller.js";
 import { requireAuth } from "../middleware/require-auth.js";
@@ -38,6 +39,10 @@ applicationRouter.delete("/:id", deleteApplication);
 applicationRouter.post("/:id/job-offer", createJobOffer);
 applicationRouter.post("/:id/job-analysis", createJobAnalysis);
 applicationRouter.post("/:id/profile-comparison", prepareProfileComparison);
+applicationRouter.post(
+  "/:id/profile-comparison/presentation",
+  presentProfileComparison,
+);
 applicationRouter.get("/:id/profile-comparison", showProfileComparison);
 applicationRouter.post("/:id/optimized-cv", createOptimizedCv);
 applicationRouter.get("/:id/optimized-cv/photo", showOptimizedCvPhoto);

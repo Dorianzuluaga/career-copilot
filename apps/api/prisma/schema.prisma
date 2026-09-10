@@ -130,6 +130,7 @@ model ProfileMatch {
   alignmentScore     Int
   alignmentReasoning String
   recommendation     String
+  workingLanguage    SupportedLocale?
   createdAt          DateTime    @default(now())
   updatedAt          DateTime    @updatedAt
 

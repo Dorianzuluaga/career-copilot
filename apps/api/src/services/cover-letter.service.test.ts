@@ -119,6 +119,7 @@ const profileMatch = {
   alignmentScore: 80,
   alignmentReasoning: "Core skills are supported.",
   recommendation: "Strong opportunity. Continue with the application.",
+  workingLanguage: "es" as const,
 };
 
 const optimizedCv = {
@@ -193,6 +194,27 @@ describe("generateCoverLetter", () => {
         optimizedCv,
       },
       "en",
+    );
+  });
+
+  it("passes the persisted Profile Match from getProfileComparison, including workingLanguage", async () => {
+    const persistedProfileMatch = {
+      ...profileMatch,
+      workingLanguage: "es" as const,
+    };
+    vi.mocked(getProfileComparison).mockResolvedValue(persistedProfileMatch);
+
+    await generateCoverLetter(applicationId, userId, "fr");
+
+    expect(getProfileComparison).toHaveBeenCalledWith(applicationId, userId);
+    expect(generateCoverLetterDraft).toHaveBeenCalledWith(
+      {
+        masterCv,
+        jobAnalysis,
+        profileMatch: persistedProfileMatch,
+        optimizedCv,
+      },
+      "fr",
     );
   });
 

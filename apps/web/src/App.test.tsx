@@ -732,6 +732,7 @@ describe("App", () => {
           alignmentScore: 72,
           alignmentReasoning: "Internal score reasoning",
           recommendation: "Good opportunity. Adapt your CV before applying.",
+          workingLanguage: "es",
         }}
         errorMessage={null}
         isLoading={false}
@@ -811,6 +812,7 @@ describe("App", () => {
           alignmentScore: 0,
           alignmentReasoning: "Internal score reasoning",
           recommendation: "AI recommendation stays as returned.",
+          workingLanguage: null,
         }}
         errorMessage={null}
         isLoading={false}
@@ -905,6 +907,7 @@ describe("App", () => {
             alignmentScore: 72,
             alignmentReasoning: "Internal score reasoning",
             recommendation: "Good opportunity. Adapt your CV before applying.",
+            workingLanguage: "es",
           }}
           errorMessage={null}
           isLoading={false}

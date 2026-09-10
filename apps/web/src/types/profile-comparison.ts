@@ -1,3 +1,5 @@
+import type { Locale } from "../i18n/locales";
+
 export interface ProfileComparison {
   matchingSkills: string[];
   missingSkills: string[];
@@ -6,4 +8,5 @@ export interface ProfileComparison {
   alignmentScore: number;
   alignmentReasoning: string;
   recommendation: string;
+  workingLanguage: Locale | null;
 }

@@ -27,6 +27,7 @@ Related specifications:
 
 - `docs/specs/job-analysis.md`
 - `docs/specs/job-analysis-2.md`
+- `docs/specs/profile-match-locale.md`
 - `docs/specs/optimized-cv.md`
 - `docs/specs/cover-letter.md`
 - `docs/specs/export.md`
@@ -1189,17 +1190,17 @@ Complete the end-to-end package flow and verify consistency, failure isolation, 
 
 ## Unresolved product decision
 
-### Existing persisted Job Analysis and Profile Match after UI locale changes
+### Existing persisted Job Analysis after UI locale changes
 
-Current Job Analysis and Profile Match results are persisted and reused, but their generation locale is not stored. The approved decisions establish that UI locale controls these outputs, while only saved Optimized CV and Cover Letter are explicitly protected from silent regeneration after a UI locale change.
+Profile Match display after a UI locale change is specified in `docs/specs/profile-match-locale.md`: adapt presentation without replacing the persisted result, without regeneration, and without translating skill identities or the alignment score.
 
-The product must decide what happens when a user changes UI locale after Job Analysis or Profile Match already exists:
+Job Analysis results are still persisted and reused, and their generation locale is not stored. This specification does not select what happens when a user changes UI locale after Job Analysis already exists:
 
 1. keep the existing persisted result in its original generated language;
 2. explicitly regenerate it in the new UI locale;
 3. adapt it for display without replacing the persisted result.
 
-This specification does not select among those behaviors. Phase 1 may propagate locale for newly created results, but implementation of locale changes for already persisted Job Analysis/Profile Match must wait for this decision. No implementation may silently regenerate, overwrite, or infer the language of those existing records.
+Implementation of locale changes for already persisted Job Analysis must wait for that decision. No implementation may silently regenerate, overwrite, or infer the language of those existing Job Analysis records.
 
 ## Validation checklist
 

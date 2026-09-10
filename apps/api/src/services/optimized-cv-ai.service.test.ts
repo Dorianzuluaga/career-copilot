@@ -101,6 +101,7 @@ const input: OptimizedCvGenerationInput = {
     alignmentScore: 82,
     alignmentReasoning: "Core skills are well supported.",
     recommendation: "Strong opportunity. Continue with the application.",
+    workingLanguage: "es",
   },
 };
 
