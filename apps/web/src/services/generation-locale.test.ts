@@ -2,7 +2,10 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { generateCoverLetter, saveCoverLetter } from "./cover-letter";
 import { analyzeJobOffer } from "./job-analysis";
 import { generateOptimizedCv, saveOptimizedCv } from "./optimized-cv";
-import { compareProfile } from "./profile-comparison";
+import {
+  compareProfile,
+  getProfileMatchPresentation,
+} from "./profile-comparison";
 
 const fetchMock = vi.fn();
 
@@ -23,6 +26,7 @@ describe("generation locale propagation", () => {
   it("sends the active UI locale in every generation request body", async () => {
     await analyzeJobOffer("application-id", "es");
     await compareProfile("application-id", "en");
+    await getProfileMatchPresentation("application-id", "fr");
     await generateOptimizedCv("application-id", "fr");
     await generateCoverLetter("application-id", "es");
 
@@ -46,8 +50,19 @@ describe("generation locale propagation", () => {
       },
       {
         headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ locale: "fr" }),
+      },
+      {
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ locale: "es" }),
       },
+    ]);
+    expect(fetchMock.mock.calls.map(([url]) => url)).toEqual([
+      "http://localhost:3001/api/applications/application-id/job-analysis",
+      "http://localhost:3001/api/applications/application-id/profile-comparison",
+      "http://localhost:3001/api/applications/application-id/profile-comparison/presentation",
+      "http://localhost:3001/api/applications/application-id/optimized-cv",
+      "http://localhost:3001/api/applications/application-id/cover-letter",
     ]);
   });
 

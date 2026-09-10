@@ -167,6 +167,30 @@ describe("translate", () => {
     expect(translate("fr", "profileMatch.title")).toBe(
       "Correspondance du profil",
     );
+    expect(translate("es", "profileMatch.loading")).toBe(
+      "Comparando tu CV Maestro con este análisis del puesto…",
+    );
+    expect(translate("en", "profileMatch.loading")).toBe(
+      "Comparing your Master CV with this job analysis…",
+    );
+    expect(translate("es", "profileMatch.presentationLoading")).toBe(
+      "Preparando la coincidencia de perfil en el idioma seleccionado…",
+    );
+    expect(translate("en", "profileMatch.presentationLoading")).toBe(
+      "Preparing this Profile Match in the selected language…",
+    );
+    expect(translate("fr", "profileMatch.presentationLoading")).toBe(
+      "Préparation de la correspondance du profil dans la langue sélectionnée…",
+    );
+    expect(translate("es", "profileMatch.presentationFailed")).toBe(
+      "No se ha podido preparar esta coincidencia de perfil en el idioma seleccionado.",
+    );
+    expect(translate("en", "profileMatch.presentationFailed")).toBe(
+      "We couldn't prepare this Profile Match in the selected language.",
+    );
+    expect(translate("fr", "profileMatch.presentationFailed")).toBe(
+      "Impossible de préparer cette correspondance du profil dans la langue sélectionnée.",
+    );
     expect(translate("es", "profileMatch.compare")).toBe("Comparar perfil");
     expect(translate("en", "profileMatch.compare")).toBe("Compare profile");
     expect(translate("fr", "profileMatch.compare")).toBe("Comparer le profil");
@@ -549,6 +573,8 @@ describe("translate", () => {
       "profileMatch.atsMatch",
       "profileMatch.scoreAria",
       "profileMatch.loading",
+      "profileMatch.presentationLoading",
+      "profileMatch.presentationFailed",
       "profileMatch.unexpectedError",
       "profileMatch.compare",
       "profileMatch.tryAgain",

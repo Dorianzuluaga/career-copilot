@@ -32,4 +32,21 @@ export async function getProfileComparison(
   return readResponse<ProfileComparison>(response);
 }
 
+export async function getProfileMatchPresentation(
+  applicationId: string,
+  locale: Locale,
+): Promise<ProfileComparison | null> {
+  const response = await fetch(
+    `${apiUrl}/api/applications/${applicationId}/profile-comparison/presentation`,
+    {
+      method: "POST",
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ locale }),
+    },
+  );
+  if (response.status === 404) return null;
+  return readResponse<ProfileComparison>(response);
+}
+
 export { ApiError };
