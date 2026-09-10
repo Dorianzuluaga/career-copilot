@@ -735,9 +735,13 @@ describe("App", () => {
           workingLanguage: "es",
         }}
         errorMessage={null}
+        hasSavedMatch={false}
         isLoading={false}
+        isLoadingPresentation={false}
         onCompare={() => undefined}
+        onRetryPresentation={() => undefined}
         onReturnToJobAnalysis={() => undefined}
+        presentationError={null}
       />,
     );
 
@@ -765,9 +769,13 @@ describe("App", () => {
       <ApplicationProfileMatch
         comparison={null}
         errorMessage={null}
+        hasSavedMatch={false}
         isLoading
+        isLoadingPresentation={false}
         onCompare={() => undefined}
+        onRetryPresentation={() => undefined}
         onReturnToJobAnalysis={() => undefined}
+        presentationError={null}
       />,
     );
     expect(loadingMarkup).toContain("Coincidencia de perfil");
@@ -779,9 +787,13 @@ describe("App", () => {
       <ApplicationProfileMatch
         comparison={null}
         errorMessage={null}
+        hasSavedMatch={false}
         isLoading={false}
+        isLoadingPresentation={false}
         onCompare={() => undefined}
+        onRetryPresentation={() => undefined}
         onReturnToJobAnalysis={() => undefined}
+        presentationError={null}
       />,
     );
     expect(emptyMarkup).toContain(
@@ -794,9 +806,13 @@ describe("App", () => {
       <ApplicationProfileMatch
         comparison={null}
         errorMessage="Profile Match not found."
+        hasSavedMatch={false}
         isLoading={false}
+        isLoadingPresentation={false}
         onCompare={() => undefined}
+        onRetryPresentation={() => undefined}
         onReturnToJobAnalysis={() => undefined}
+        presentationError={null}
       />,
     );
     expect(errorMarkup).toContain("Profile Match not found.");
@@ -815,9 +831,13 @@ describe("App", () => {
           workingLanguage: null,
         }}
         errorMessage={null}
+        hasSavedMatch={false}
         isLoading={false}
+        isLoadingPresentation={false}
         onCompare={() => undefined}
+        onRetryPresentation={() => undefined}
         onReturnToJobAnalysis={() => undefined}
+        presentationError={null}
       />,
     );
     expect(emptyListsMarkup).toContain("Ninguna identificada");
@@ -838,6 +858,10 @@ describe("App", () => {
       recommendation: "Recommendation",
       noneIdentified: "None identified",
       loading: "Comparing your Master CV with this job analysis…",
+      presentationLoading:
+        "Preparing this Profile Match in the selected language…",
+      presentationFailed:
+        "We couldn't prepare this Profile Match in the selected language.",
       description: "Compare your Master CV with the completed job analysis.",
       compare: "Compare profile",
       tryAgain: "Try again",
@@ -855,6 +879,10 @@ describe("App", () => {
       recommendation: "Recommandation",
       noneIdentified: "Aucune identifiée",
       loading: "Comparaison de votre CV maître avec cette analyse du poste…",
+      presentationLoading:
+        "Préparation de la correspondance du profil dans la langue sélectionnée…",
+      presentationFailed:
+        "Impossible de préparer cette correspondance du profil dans la langue sélectionnée.",
       description:
         "Comparez votre CV maître avec l&#x27;analyse du poste terminée.",
       compare: "Comparer le profil",
@@ -875,6 +903,8 @@ describe("App", () => {
       recommendation,
       noneIdentified,
       loading,
+      presentationLoading,
+      presentationFailed,
       description,
       compare,
       tryAgain,
@@ -910,9 +940,13 @@ describe("App", () => {
             workingLanguage: "es",
           }}
           errorMessage={null}
+          hasSavedMatch={false}
           isLoading={false}
+          isLoadingPresentation={false}
           onCompare={() => undefined}
+          onRetryPresentation={() => undefined}
           onReturnToJobAnalysis={() => undefined}
+          presentationError={null}
         />,
       );
 
@@ -939,21 +973,82 @@ describe("App", () => {
         <ApplicationProfileMatch
           comparison={null}
           errorMessage={null}
+          hasSavedMatch={false}
           isLoading
+          isLoadingPresentation={false}
           onCompare={() => undefined}
+          onRetryPresentation={() => undefined}
           onReturnToJobAnalysis={() => undefined}
+          presentationError={null}
         />,
       );
       expect(loadingMarkup).toContain(title);
       expect(loadingMarkup).toContain(loading);
 
+      const presentationLoadingMarkup = renderWithLocale(
+        <ApplicationProfileMatch
+          comparison={{
+            matchingSkills: ["TypeScript"],
+            missingSkills: [],
+            strengths: ["Previous locale narrative"],
+            weaknesses: ["Previous locale weakness"],
+            alignmentScore: 72,
+            alignmentReasoning: "Internal score reasoning",
+            recommendation: "Previous locale recommendation",
+            workingLanguage: "es",
+          }}
+          errorMessage={null}
+          hasSavedMatch
+          isLoading={false}
+          isLoadingPresentation
+          onCompare={() => undefined}
+          onRetryPresentation={() => undefined}
+          onReturnToJobAnalysis={() => undefined}
+          presentationError={null}
+        />,
+      );
+      expect(presentationLoadingMarkup).toContain(title);
+      expect(presentationLoadingMarkup).toContain(presentationLoading);
+      expect(presentationLoadingMarkup).not.toContain(loading);
+      expect(presentationLoadingMarkup).not.toContain(
+        "Previous locale narrative",
+      );
+      expect(presentationLoadingMarkup).not.toContain(compare);
+
+      const presentationErrorMarkup = renderWithLocale(
+        <ApplicationProfileMatch
+          comparison={null}
+          errorMessage={null}
+          hasSavedMatch
+          isLoading={false}
+          isLoadingPresentation={false}
+          onCompare={() => undefined}
+          onRetryPresentation={() => undefined}
+          onReturnToJobAnalysis={() => undefined}
+          presentationError={presentationFailed}
+        />,
+      );
+      expect(presentationErrorMarkup).toContain(title);
+      expect(presentationErrorMarkup).toContain(
+        presentationFailed.replaceAll("'", "&#x27;"),
+      );
+      expect(presentationErrorMarkup).toContain(tryAgain);
+      expect(presentationErrorMarkup).not.toContain(compare);
+      expect(presentationErrorMarkup).not.toContain("Comparar perfil");
+      expect(presentationErrorMarkup).not.toContain("Compare profile");
+      expect(presentationErrorMarkup).not.toContain("Comparer le profil");
+
       const emptyMarkup = renderWithLocale(
         <ApplicationProfileMatch
           comparison={null}
           errorMessage={null}
+          hasSavedMatch={false}
           isLoading={false}
+          isLoadingPresentation={false}
           onCompare={() => undefined}
+          onRetryPresentation={() => undefined}
           onReturnToJobAnalysis={() => undefined}
+          presentationError={null}
         />,
       );
       expect(emptyMarkup).toContain(description);
@@ -964,15 +1059,155 @@ describe("App", () => {
         <ApplicationProfileMatch
           comparison={null}
           errorMessage="Profile Match not found."
+          hasSavedMatch={false}
           isLoading={false}
+          isLoadingPresentation={false}
           onCompare={() => undefined}
+          onRetryPresentation={() => undefined}
           onReturnToJobAnalysis={() => undefined}
+          presentationError={null}
         />,
       );
       expect(errorMarkup).toContain("Profile Match not found.");
       expect(errorMarkup).toContain(tryAgain);
     },
   );
+
+  it("uses distinct presentation loading copy and hides the previous narrative", () => {
+    const markup = renderWithLocale(
+      <ApplicationProfileMatch
+        comparison={{
+          matchingSkills: ["TypeScript"],
+          missingSkills: ["Docker"],
+          strengths: ["Narrativa en español"],
+          weaknesses: ["Debilidad previa"],
+          alignmentScore: 72,
+          alignmentReasoning: "Internal score reasoning",
+          recommendation: "Recomendación previa",
+          workingLanguage: "es",
+        }}
+        errorMessage={null}
+        hasSavedMatch
+        isLoading={false}
+        isLoadingPresentation
+        onCompare={() => undefined}
+        onRetryPresentation={() => undefined}
+        onReturnToJobAnalysis={() => undefined}
+        presentationError={null}
+      />,
+    );
+
+    expect(markup).toContain("Coincidencia de perfil");
+    expect(markup).toContain(
+      "Preparando la coincidencia de perfil en el idioma seleccionado…",
+    );
+    expect(markup).not.toContain(
+      "Comparando tu CV Maestro con este análisis del puesto…",
+    );
+    expect(markup).not.toContain("Narrativa en español");
+    expect(markup).not.toContain("Recomendación previa");
+    expect(markup).not.toContain("Comparar perfil");
+    expect(markup).not.toContain("Internal score reasoning");
+  });
+
+  it("localizes presentation failures and retries without regenerating", () => {
+    const markup = renderWithLocale(
+      <ApplicationProfileMatch
+        comparison={null}
+        errorMessage={null}
+        hasSavedMatch
+        isLoading={false}
+        isLoadingPresentation={false}
+        onCompare={() => undefined}
+        onRetryPresentation={() => undefined}
+        onReturnToJobAnalysis={() => undefined}
+        presentationError="No se ha podido preparar esta coincidencia de perfil en el idioma seleccionado."
+      />,
+    );
+
+    expect(markup).toContain(
+      "No se ha podido preparar esta coincidencia de perfil en el idioma seleccionado.",
+    );
+    expect(markup).toContain("Reintentar");
+    expect(markup).toContain("Volver al análisis del puesto");
+    expect(markup).not.toContain("Comparar perfil");
+    expect(markup).not.toContain(
+      "We couldn&#x27;t prepare this Profile Match in the selected language.",
+    );
+    expect(markup).not.toContain("The saved Profile Match is invalid.");
+  });
+
+  it("keeps Optimized CV available while Profile Match presentation is loading or failed", () => {
+    const loadingMarkup = renderWorkspace(
+      <ApplicationWorkspace
+        company="Example Company"
+        title="Frontend Engineer"
+        status="NEW"
+        activeSection="profile-match"
+        isJobAnalysisCompleted
+        isProfileMatchCompleted
+        isOptimizedCvCompleted={false}
+        isCoverLetterCompleted={false}
+        onSectionChange={() => undefined}
+      >
+        <ApplicationProfileMatch
+          comparison={null}
+          errorMessage={null}
+          hasSavedMatch
+          isLoading={false}
+          isLoadingPresentation
+          onCompare={() => undefined}
+          onRetryPresentation={() => undefined}
+          onReturnToJobAnalysis={() => undefined}
+          presentationError={null}
+        />
+      </ApplicationWorkspace>,
+    );
+
+    expect(loadingMarkup).toContain(
+      "Preparando la coincidencia de perfil en el idioma seleccionado…",
+    );
+    expect(loadingMarkup).toContain(
+      "Secciones completadas: Análisis del puesto, Coincidencia de perfil",
+    );
+    expect(loadingMarkup).toContain("Siguiente paso recomendado:");
+    expect(loadingMarkup).toContain("CV optimizado");
+    expect(loadingMarkup.match(/<button[^>]*disabled=""/g)).toHaveLength(2);
+    expect(loadingMarkup).not.toContain("Comparar perfil");
+
+    const failedMarkup = renderWorkspace(
+      <ApplicationWorkspace
+        company="Example Company"
+        title="Frontend Engineer"
+        status="NEW"
+        activeSection="profile-match"
+        isJobAnalysisCompleted
+        isProfileMatchCompleted
+        isOptimizedCvCompleted={false}
+        isCoverLetterCompleted={false}
+        onSectionChange={() => undefined}
+      >
+        <ApplicationProfileMatch
+          comparison={null}
+          errorMessage={null}
+          hasSavedMatch
+          isLoading={false}
+          isLoadingPresentation={false}
+          onCompare={() => undefined}
+          onRetryPresentation={() => undefined}
+          onReturnToJobAnalysis={() => undefined}
+          presentationError="No se ha podido preparar esta coincidencia de perfil en el idioma seleccionado."
+        />
+      </ApplicationWorkspace>,
+    );
+
+    expect(failedMarkup).toContain(
+      "No se ha podido preparar esta coincidencia de perfil en el idioma seleccionado.",
+    );
+    expect(failedMarkup).toContain("Reintentar");
+    expect(failedMarkup).not.toContain("Comparar perfil");
+    expect(failedMarkup.match(/<button[^>]*disabled=""/g)).toHaveLength(2);
+  });
 
   it("presents the Optimized CV generation and review workflow after Profile Match", () => {
     const sampleOptimizedCv = {

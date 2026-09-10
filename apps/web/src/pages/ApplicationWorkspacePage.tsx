@@ -36,7 +36,15 @@ import {
 import {
   compareProfile,
   getProfileComparison,
+  getProfileMatchPresentation,
 } from "../services/profile-comparison";
+import {
+  createProfileMatchPresentationCache,
+  isCurrentProfileMatchPresentationScope,
+  loadProfileMatchPresentation,
+  profileMatchPresentationErrorMessage,
+  readCachedProfileMatchPresentation,
+} from "../services/profile-match-presentation";
 import type { CoverLetter } from "../types/cover-letter";
 import type { PersistedApplication } from "../types/job-analysis";
 import type { PersonalProjectItem } from "../types/master-cv";
@@ -61,10 +69,15 @@ export function ApplicationWorkspacePage() {
     useState<WorkspaceSection>("overview");
   const [profileComparison, setProfileComparison] =
     useState<ProfileComparison | null>(null);
+  const [hasSavedProfileMatch, setHasSavedProfileMatch] = useState(false);
   const [profileComparisonError, setProfileComparisonError] = useState<
     string | null
   >(null);
+  const [presentationError, setPresentationError] = useState<string | null>(
+    null,
+  );
   const [isComparingProfile, setIsComparingProfile] = useState(false);
+  const [isLoadingPresentation, setIsLoadingPresentation] = useState(false);
   const [optimizedCv, setOptimizedCv] = useState<OptimizedCv | null>(null);
   const [savedOptimizedCv, setSavedOptimizedCv] = useState<OptimizedCv | null>(
     null,
@@ -95,6 +108,16 @@ export function ApplicationWorkspacePage() {
     PersonalProjectItem[]
   >([]);
   const previewCacheRef = useRef(createExportPreviewCache());
+  const presentationCacheRef = useRef(createProfileMatchPresentationCache());
+  const presentationScopeRef = useRef<{
+    applicationId: string;
+    locale: typeof locale;
+  } | null>(null);
+  const presentationRequestRef = useRef(0);
+  const loadedMatchApplicationIdRef = useRef<string | null>(null);
+  const localeRef = useRef(locale);
+  localeRef.current = locale;
+  const [presentationRetryKey, setPresentationRetryKey] = useState(0);
 
   const documentDescriptors: UnsavedDocumentDescriptor[] = [
     {
@@ -115,13 +138,20 @@ export function ApplicationWorkspacePage() {
 
   useEffect(() => {
     previewCacheRef.current.clear();
+    presentationCacheRef.current.clear();
+    presentationScopeRef.current = null;
+    presentationRequestRef.current += 1;
+    loadedMatchApplicationIdRef.current = null;
     setApplication(null);
     setErrorMessage(null);
     setIsLoading(true);
     setActiveSection("overview");
     setProfileComparison(null);
+    setHasSavedProfileMatch(false);
     setProfileComparisonError(null);
+    setPresentationError(null);
     setIsComparingProfile(false);
+    setIsLoadingPresentation(false);
     setOptimizedCv(null);
     setSavedOptimizedCv(null);
     setOptimizedCvError(null);
@@ -161,7 +191,8 @@ export function ApplicationWorkspacePage() {
         ]) => {
           if (!isActive) return;
           setApplication(result);
-          setProfileComparison(savedProfileComparison);
+          loadedMatchApplicationIdRef.current = applicationId;
+          setHasSavedProfileMatch(savedProfileComparison !== null);
           setOptimizedCv(savedOptimizedCv);
           setSavedOptimizedCv(savedOptimizedCv);
           setCoverLetter(savedCoverLetter);
@@ -186,6 +217,83 @@ export function ApplicationWorkspacePage() {
     };
   }, [applicationId]);
 
+  useEffect(() => {
+    if (
+      !applicationId ||
+      !hasSavedProfileMatch ||
+      loadedMatchApplicationIdRef.current !== applicationId
+    ) {
+      return;
+    }
+
+    const requestId = ++presentationRequestRef.current;
+    const scope = { applicationId, locale };
+    const previousScope = presentationScopeRef.current;
+    const cached = readCachedProfileMatchPresentation(
+      presentationCacheRef.current,
+      previousScope,
+      scope,
+    );
+    presentationScopeRef.current = scope;
+
+    if (cached) {
+      setProfileComparison(cached);
+      setPresentationError(null);
+      setIsLoadingPresentation(false);
+      return;
+    }
+
+    let cancelled = false;
+    setProfileComparison(null);
+    setPresentationError(null);
+    setIsLoadingPresentation(true);
+
+    void loadProfileMatchPresentation({
+      cache: presentationCacheRef.current,
+      previousScope: scope,
+      scope,
+      fetchPresentation: getProfileMatchPresentation,
+    })
+      .then(({ presentation, scope: resultScope }) => {
+        if (
+          cancelled ||
+          currentApplicationId.current !== applicationId ||
+          requestId !== presentationRequestRef.current ||
+          !isCurrentProfileMatchPresentationScope(resultScope, scope)
+        ) {
+          return;
+        }
+
+        if (!presentation) {
+          setHasSavedProfileMatch(false);
+          setProfileComparison(null);
+          setPresentationError(null);
+          setIsLoadingPresentation(false);
+          return;
+        }
+
+        setProfileComparison(presentation);
+        setPresentationError(null);
+        setIsLoadingPresentation(false);
+      })
+      .catch(() => {
+        if (
+          cancelled ||
+          currentApplicationId.current !== applicationId ||
+          requestId !== presentationRequestRef.current
+        ) {
+          return;
+        }
+        setProfileComparison(null);
+        setPresentationError(profileMatchPresentationErrorMessage(t));
+        setIsLoadingPresentation(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [applicationId, locale, hasSavedProfileMatch, presentationRetryKey, t]);
+
   async function runProfileComparison() {
     if (!applicationId || isComparingProfile) return;
 
@@ -194,7 +302,13 @@ export function ApplicationWorkspacePage() {
     try {
       const comparison = await compareProfile(applicationId, locale);
       if (currentApplicationId.current === applicationId) {
-        setProfileComparison(comparison);
+        presentationCacheRef.current.set(applicationId, locale, comparison);
+        setHasSavedProfileMatch(true);
+        if (localeRef.current === locale) {
+          setProfileComparison(comparison);
+          setPresentationError(null);
+          setIsLoadingPresentation(false);
+        }
       }
     } catch (error) {
       if (currentApplicationId.current === applicationId) {
@@ -434,7 +548,7 @@ export function ApplicationWorkspacePage() {
       status={application.status}
       activeSection={activeSection}
       isJobAnalysisCompleted={application.jobAnalysis !== null}
-      isProfileMatchCompleted={profileComparison !== null}
+      isProfileMatchCompleted={hasSavedProfileMatch}
       isOptimizedCvCompleted={hasSavedOptimizedCv}
       isCoverLetterCompleted={hasSavedCoverLetter}
       onSectionChange={changeSection}
@@ -451,9 +565,15 @@ export function ApplicationWorkspacePage() {
         <ApplicationProfileMatch
           comparison={profileComparison}
           errorMessage={profileComparisonError}
+          hasSavedMatch={hasSavedProfileMatch}
           isLoading={isComparingProfile}
+          isLoadingPresentation={isLoadingPresentation}
           onCompare={() => void runProfileComparison()}
+          onRetryPresentation={() =>
+            setPresentationRetryKey((current) => current + 1)
+          }
           onReturnToJobAnalysis={() => changeSection("job-analysis")}
+          presentationError={presentationError}
         />
       ) : activeSection === "optimized-cv" ? (
         <ApplicationOptimizedCv

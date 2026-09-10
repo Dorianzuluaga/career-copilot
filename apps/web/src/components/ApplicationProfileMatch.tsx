@@ -4,9 +4,13 @@ import type { ProfileComparison } from "../types/profile-comparison";
 interface ApplicationProfileMatchProps {
   comparison: ProfileComparison | null;
   errorMessage: string | null;
+  hasSavedMatch: boolean;
   isLoading: boolean;
+  isLoadingPresentation: boolean;
   onCompare: () => void;
+  onRetryPresentation: () => void;
   onReturnToJobAnalysis: () => void;
+  presentationError: string | null;
 }
 
 function ComparisonList({
@@ -52,9 +56,13 @@ function ComparisonList({
 export function ApplicationProfileMatch({
   comparison,
   errorMessage,
+  hasSavedMatch,
   isLoading,
+  isLoadingPresentation,
   onCompare,
+  onRetryPresentation,
   onReturnToJobAnalysis,
+  presentationError,
 }: ApplicationProfileMatchProps) {
   const { t } = useLocale();
 
@@ -65,6 +73,49 @@ export function ApplicationProfileMatch({
           {t("profileMatch.title")}
         </h2>
         <p className="mt-2 text-sm text-muted">{t("profileMatch.loading")}</p>
+      </section>
+    );
+  }
+
+  if (
+    isLoadingPresentation ||
+    (hasSavedMatch && !comparison && !presentationError)
+  ) {
+    return (
+      <section className="cc-card p-8 text-center">
+        <h2 className="text-lg font-bold text-ink">
+          {t("profileMatch.title")}
+        </h2>
+        <p className="mt-2 text-sm text-muted">
+          {t("profileMatch.presentationLoading")}
+        </p>
+      </section>
+    );
+  }
+
+  if (presentationError) {
+    return (
+      <section className="cc-card p-8 text-center">
+        <h2 className="text-lg font-bold text-ink">
+          {t("profileMatch.title")}
+        </h2>
+        <p className="mt-2 text-sm text-muted">{presentationError}</p>
+        <div className="mt-6 flex flex-col justify-center gap-3 sm:flex-row">
+          <button
+            type="button"
+            onClick={onReturnToJobAnalysis}
+            className="cc-btn-secondary"
+          >
+            {t("profileMatch.returnToJobAnalysis")}
+          </button>
+          <button
+            type="button"
+            onClick={onRetryPresentation}
+            className="cc-btn-primary"
+          >
+            {t("profileMatch.tryAgain")}
+          </button>
+        </div>
       </section>
     );
   }

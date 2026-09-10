@@ -287,6 +287,10 @@ export const spanishMessages = {
     atsMatch: "Coincidencia ATS",
     scoreAria: "Puntuación de coincidencia ATS: {score}%",
     loading: "Comparando tu CV Maestro con este análisis del puesto…",
+    presentationLoading:
+      "Preparando la coincidencia de perfil en el idioma seleccionado…",
+    presentationFailed:
+      "No se ha podido preparar esta coincidencia de perfil en el idioma seleccionado.",
     unexpectedError: "Error inesperado. Inténtalo de nuevo más tarde.",
     compare: "Comparar perfil",
     tryAgain: "Reintentar",
@@ -703,6 +707,10 @@ const englishMessages: Messages = {
     atsMatch: "ATS Match",
     scoreAria: "ATS match score: {score}%",
     loading: "Comparing your Master CV with this job analysis…",
+    presentationLoading:
+      "Preparing this Profile Match in the selected language…",
+    presentationFailed:
+      "We couldn't prepare this Profile Match in the selected language.",
     unexpectedError: "Unexpected error. Try again later.",
     compare: "Compare profile",
     tryAgain: "Try again",
@@ -1110,6 +1118,10 @@ const frenchMessages: Messages = {
     atsMatch: "Correspondance ATS",
     scoreAria: "Score de correspondance ATS : {score} %",
     loading: "Comparaison de votre CV maître avec cette analyse du poste…",
+    presentationLoading:
+      "Préparation de la correspondance du profil dans la langue sélectionnée…",
+    presentationFailed:
+      "Impossible de préparer cette correspondance du profil dans la langue sélectionnée.",
     unexpectedError: "Erreur inattendue. Réessayez plus tard.",
     compare: "Comparer le profil",
     tryAgain: "Réessayer",
