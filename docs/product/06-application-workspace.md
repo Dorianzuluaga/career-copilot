@@ -62,7 +62,7 @@ Each Application Workspace is organized into independent sections.
 
 Every section has a single responsibility and represents one stage of the Fast Apply workflow.
 
-The completion of one section naturally enables the next one, creating a guided user experience while keeping the entire application organized in a single place.
+Required sections unlock the next required stage when they are completed. Cover Letter is an optional output: after a saved Optimized CV exists, both Cover Letter and Export become available. Cover Letter generation is never required to reach Export.
 
 Current MVP sections:
 
@@ -79,9 +79,9 @@ The final user interface may present them as tabs, navigation items, panels, or 
 
 # Workspace Progression
 
-The Application Workspace follows a progressive workflow where each completed section unlocks the next logical step of the application process.
+The Application Workspace follows a progressive workflow where each required completed section unlocks the next logical step of the application process.
 
-Rather than presenting every available feature at once, the workspace guides users through a structured sequence that reduces cognitive load and keeps the focus on a single objective at each stage.
+Rather than presenting every available feature at once, the workspace guides users through a structured sequence that reduces cognitive load and keeps the focus on a single objective at each stage. Cover Letter is the exception: it is optional and does not gate Export.
 
 This progression represents the expected product behavior rather than a technical implementation.
 
@@ -99,17 +99,22 @@ Profile Match Completed
         ▼
 Optimized CV Saved
         │
-        ▼
-Cover Letter Saved
-        │
-        ▼
-Ready for Export
-        │
-        ▼
-Application Completed
+        ├──► Cover Letter (optional)
+        │         │
+        │         ▼
+        │    Cover Letter Saved
+        │         │
+        └─────────┴──► Export available
+                         │
+                         ├── CV-only, if no Cover Letter exists
+                         └── CV + Cover Letter, if a Cover Letter is saved
 ```
 
-Completion of one stage should naturally expose the next recommended action without requiring users to determine the workflow themselves.
+Export becomes available as soon as a valid Optimized CV has been saved. Cover Letter remains accessible from that point, but it is not a required stage.
+
+The application may be exported as Optimized CV only or as Optimized CV + Cover Letter. This does not introduce a new application completion status. `ApplicationStatus` remains unchanged.
+
+Completion of a required stage should naturally expose the next available action without requiring users to determine the workflow themselves. After Optimized CV is saved, both Continue to Cover Letter and Export CV are valid next actions.
 
 At any point, users may return to previous sections to review information or regenerate documents.
 
@@ -613,7 +618,8 @@ Users can:
 - Edit the generated content.
 - Regenerate the document.
 - Save the current version.
-- Continue to the Cover Letter section.
+- Continue to Cover Letter.
+- Export CV.
 
 ---
 
@@ -653,15 +659,19 @@ The section is considered completed once the user has reviewed and approved the 
 
 ### Used by
 
+- Cover Letter, if the user chooses to generate one.
 - Export
 
 ---
 
 ## Navigation
 
-The recommended next step is:
+After a valid Optimized CV has been saved, both of the following are valid next actions:
 
-**Cover Letter**
+- **Continue to Cover Letter**
+- **Export CV**
+
+Cover Letter is not mandatory. Cover Letter generation is not required to leave the Optimized CV section. There is no Skip Cover Letter action.
 
 Users may regenerate the CV without affecting previous workspace sections.
 
@@ -707,9 +717,9 @@ Future versions may include:
 
 ## Purpose
 
-The Cover Letter section generates a personalized cover letter aligned with both the selected opportunity and the optimized CV.
+The Cover Letter section can generate a personalized cover letter aligned with both the selected opportunity and the optimized CV.
 
-Its purpose is to create a coherent narrative that complements the user's application while maintaining consistency with the information already available in the workspace.
+The Cover Letter is an optional output of Fast Apply, not a required stage. Its purpose is to create a coherent narrative that complements the user's application when the user chooses to include one.
 
 ---
 
@@ -726,7 +736,9 @@ The Cover Letter section is responsible for:
 
 ## Information Displayed
 
-The Cover Letter displays:
+When no Cover Letter exists, the section presents an explicit Generate action. It must not auto-generate a letter.
+
+When a generated or saved Cover Letter exists, the section displays:
 
 - Generated cover letter.
 - Live preview.
@@ -737,9 +749,13 @@ The Cover Letter displays:
 
 Users can:
 
+- Choose whether to generate a Cover Letter.
+- Explicitly generate the letter with Generate, Try again, or Generate again.
 - Review the generated letter.
-- Regenerate the document.
-- Continue to Export.
+- Edit and save the letter.
+- Continue to Export, including when no Cover Letter exists.
+
+Cover Letter generation is never automatic. The AI generation call occurs only after an explicit Generate, Try again, or Generate again action.
 
 ---
 
@@ -763,7 +779,13 @@ The Cover Letter produces:
 
 ## Completion Criteria
 
-once the user has reviewed and approved the generated cover letter.
+This section is completed only when a Cover Letter has been saved for the current application.
+
+The section may remain incomplete. That does not block Export.
+
+Absence of a saved Cover Letter record means no Cover Letter is included in the application. The product does not store a separate flag for wanting or skipping a Cover Letter.
+
+An unsaved Cover Letter draft exists only during the current workspace session. It is not a saved Cover Letter and is not included in Export.
 
 ---
 
@@ -775,19 +797,23 @@ once the user has reviewed and approved the generated cover letter.
 
 ### Used by
 
-- Export
+- Export, only when a Cover Letter has been saved.
 
 ---
 
 ## Navigation
 
-The recommended next step is:
+The Cover Letter section becomes accessible after a valid Optimized CV has been saved.
 
-**Export**
+Export is also available from that point, with or without a Cover Letter.
+
+If a Cover Letter is later generated and saved, Export may include it. Users may return to this section after a previous CV-only export.
 
 ---
 
 ## AI Responsibilities
+
+The AI generates a Cover Letter only after an explicit Generate, Try again, or Generate again action.
 
 The AI is responsible for:
 
@@ -800,6 +826,7 @@ The AI must not:
 - Invent experience.
 - Contradict the CV.
 - Introduce unsupported claims.
+- Run automatically when the user enters the section, saves an Optimized CV, or opens Export.
 
 ---
 
@@ -834,23 +861,22 @@ Its purpose is to consolidate all generated application documents and prepare th
 
 The Export section is responsible for:
 
--Preparing approved application documents for export.
--Generating downloadable files.
--Providing access to the final application package.
+- Preparing approved application documents for export.
+- Generating downloadable files.
+- Providing access to the final application package.
 
-This section does not invoke AI.
+This section does not generate Optimized CV or Cover Letter content.
 
-It only presents or prepares information generated by previous workspace sections.
+It only presents or prepares the latest saved application documents. When a saved Cover Letter is included and Presentation Language differs from Working Language, existing Cover Letter presentation-language adaptation still applies. CV-only export must not call Cover Letter generation or Cover Letter presentation/adaptation AI.
 
 ---
 
 ## Information Displayed
 
-The Export section displays:
+The Export section displays the latest saved documents that exist:
 
-- Optimized CV.
-- Cover Letter.
-- Export status.
+- Optimized CV, which is always required.
+- Cover Letter, only when a Cover Letter has been saved.
 
 ---
 
@@ -858,10 +884,10 @@ The Export section displays:
 
 Users can:
 
-- Export the CV.
-- Export the Cover Letter.
-- Export the complete application package.
-- Return to any previous workspace section.
+- Export the Optimized CV.
+- Export the Cover Letter, only when a Cover Letter has been saved.
+- Export both documents, only when a Cover Letter has been saved.
+- Return to any previous workspace section, including Cover Letter after a previous CV-only export.
 
 ---
 
@@ -869,8 +895,9 @@ Users can:
 
 The Export section requires:
 
-- Optimized CV.
-- Cover Letter.
+- A saved Optimized CV.
+
+A saved Cover Letter is included when it exists. It is not required.
 
 ---
 
@@ -885,7 +912,9 @@ The Export section produces:
 
 ## Completion Criteria
 
-The Application Workspace is considered completed once all required documents have been successfully exported.
+Export does not change `ApplicationStatus`.
+
+The application may be exported as Optimized CV only, or as Optimized CV + Cover Letter when a Cover Letter has been saved.
 
 ---
 
@@ -894,7 +923,6 @@ The Application Workspace is considered completed once all required documents ha
 ### Requires
 
 - Optimized CV completed.
-- Cover Letter completed.
 
 ### Used by
 
@@ -912,15 +940,19 @@ Users may return to any previous section to regenerate documents before exportin
 
 ## AI Responsibilities
 
-The AI has no responsibilities in this section.
+Export must not generate an Optimized CV or Cover Letter.
 
-The Export section only prepares existing artifacts for delivery.
+When no Cover Letter exists, Export must not call Cover Letter generation or Cover Letter presentation/adaptation AI.
+
+When a saved Cover Letter is previewed or downloaded and Presentation Language differs from Working Language, existing Cover Letter presentation-language adaptation remains unchanged.
 
 ---
 
 ## Quality Assurance
 
-Only validated documents may be exported.
+Only validated saved documents may be exported.
+
+CV-only export must not require a Cover Letter. Cover Letter preview or download must be rejected when no saved Cover Letter exists.
 
 ---
 

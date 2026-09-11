@@ -55,9 +55,11 @@ The MVP should allow the following workflow:
 2. User pastes a job description.
 3. AI analyzes the job offer.
 4. AI generates an optimized CV.
-5. AI generates a personalized cover letter.
+5. User may generate a personalized cover letter.
 6. User saves the application.
 7. User tracks the application's progress.
+
+Cover Letter is optional. After a saved Optimized CV, the user may continue to Cover Letter or go directly to Export CV. A Cover Letter is not required to complete Fast Apply export.
 
 This is the complete value loop the MVP must validate.
 
@@ -112,9 +114,11 @@ Users can:
 
 Users can:
 
-- Generate personalized cover letters
+- Generate personalized cover letters, when they choose to include one
 - Edit generated content
 - Save versions
+
+Cover Letter generation is optional. It is not required to export a saved Optimized CV.
 
 ---
 
@@ -153,7 +157,8 @@ The MVP is successful if users can:
 
 - Complete one application in less time than their traditional workflow.
 - Generate an optimized CV.
-- Generate a cover letter.
+- Optionally generate a cover letter.
+- Export the Optimized CV, with or without a Cover Letter.
 - Save and manage applications.
 - Keep all information centralized.
 

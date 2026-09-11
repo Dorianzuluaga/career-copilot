@@ -321,6 +321,7 @@ export const spanishMessages = {
     saved: "CV optimizado guardado.",
     generateAgain: "Generar de nuevo",
     continueToCoverLetter: "Continuar a la carta de presentación",
+    exportCv: "Exportar CV",
     unexpectedError: "Error inesperado. Inténtalo de nuevo más tarde.",
     saveFailed: "No se ha podido guardar este CV optimizado.",
     editable: "Editable",
@@ -407,10 +408,11 @@ export const spanishMessages = {
       "No se ha podido preparar la carta de presentación en el idioma de presentación seleccionado.",
     previewAria: "Vista previa del documento",
     requiresDocuments:
-      "Se necesita un CV optimizado y una carta de presentación guardados antes de previsualizar los documentos.",
+      "Se necesita un CV optimizado guardado antes de previsualizar los documentos.",
     presentationLanguage: "Idioma de presentación",
     presentationLanguageHelp:
       "Este idioma se aplica tanto al CV optimizado como a la carta de presentación.",
+    presentationLanguageHelpCvOnly: "Este idioma se aplica al CV optimizado.",
     previewLoading: "Preparando la vista previa…",
     previewFailed: "No se ha podido preparar la vista previa de exportación.",
   },
@@ -741,6 +743,7 @@ const englishMessages: Messages = {
     saved: "Optimized CV saved.",
     generateAgain: "Generate again",
     continueToCoverLetter: "Continue to Cover Letter",
+    exportCv: "Export CV",
     unexpectedError: "Unexpected error. Try again later.",
     saveFailed: "Unable to save this Optimized CV.",
     editable: "Editable",
@@ -825,10 +828,12 @@ const englishMessages: Messages = {
       "The Cover Letter could not be prepared in the selected presentation language.",
     previewAria: "Document preview",
     requiresDocuments:
-      "Saved Optimized CV and Cover Letter are required before documents can be previewed.",
+      "A saved Optimized CV is required before documents can be previewed.",
     presentationLanguage: "Presentation Language",
     presentationLanguageHelp:
       "This language applies to both the Optimized CV and the Cover Letter.",
+    presentationLanguageHelpCvOnly:
+      "This language applies to the Optimized CV.",
     previewLoading: "Preparing preview…",
     previewFailed: "Unable to prepare the export preview.",
   },
@@ -1152,6 +1157,7 @@ const frenchMessages: Messages = {
     saved: "CV optimisé enregistré.",
     generateAgain: "Générer à nouveau",
     continueToCoverLetter: "Continuer vers la lettre de motivation",
+    exportCv: "Exporter le CV",
     unexpectedError: "Erreur inattendue. Réessayez plus tard.",
     saveFailed: "Impossible d'enregistrer ce CV optimisé.",
     editable: "Modifiable",
@@ -1238,10 +1244,11 @@ const frenchMessages: Messages = {
       "La lettre de motivation n'a pas pu être préparée dans la langue de présentation sélectionnée.",
     previewAria: "Aperçu du document",
     requiresDocuments:
-      "Un CV optimisé et une lettre de motivation enregistrés sont requis avant de prévisualiser les documents.",
+      "Un CV optimisé enregistré est requis avant de prévisualiser les documents.",
     presentationLanguage: "Langue de présentation",
     presentationLanguageHelp:
       "Cette langue s'applique à la fois au CV optimisé et à la lettre de motivation.",
+    presentationLanguageHelpCvOnly: "Cette langue s'applique au CV optimisé.",
     previewLoading: "Préparation de l'aperçu…",
     previewFailed: "Impossible de préparer l'aperçu d'exportation.",
   },

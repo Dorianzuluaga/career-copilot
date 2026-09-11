@@ -1446,7 +1446,7 @@ describe("Job Analysis API", () => {
     vi.mocked(getAuthenticatedUser).mockResolvedValue(user);
     vi.mocked(exportApplicationDocument).mockRejectedValue(
       new ExportError(
-        "A saved Optimized CV and Cover Letter are required before export.",
+        "A saved Cover Letter is required for this document.",
         400,
       ),
     );
@@ -1458,8 +1458,7 @@ describe("Job Analysis API", () => {
 
     expect(response.status).toBe(400);
     expect(response.body).toEqual({
-      message:
-        "A saved Optimized CV and Cover Letter are required before export.",
+      message: "A saved Cover Letter is required for this document.",
     });
   });
 

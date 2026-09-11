@@ -8,7 +8,7 @@ Its purpose is to adapt the user's existing professional experience to the requi
 
 This adaptation focuses on improving the presentation of existing information rather than changing the user's professional background.
 
-The Optimized CV belongs exclusively to one Application Workspace and represents the document that users will review, edit, and eventually export after completing the Fast Apply workflow.
+The Optimized CV belongs exclusively to one Application Workspace and represents the document that users will review, edit, and eventually export during the Fast Apply workflow. A Cover Letter is not required before Export.
 
 ## Design Philosophy
 
@@ -30,7 +30,14 @@ The Optimized CV is the fourth stage of the Application Workspace.
 
 It becomes available after the Profile Match has been completed.
 
-Its output becomes the foundation for future Cover Letter generation and PDF Export.
+Its output enables PDF Export. It also becomes the foundation for optional Cover Letter generation.
+
+After a valid Optimized CV has been saved, both of the following are valid next actions:
+
+- Continue to Cover Letter
+- Export CV
+
+Cover Letter is not mandatory. Users may go directly to Export CV and generate a Cover Letter later if they choose. There is no Skip Cover Letter action.
 
 ## Inputs
 

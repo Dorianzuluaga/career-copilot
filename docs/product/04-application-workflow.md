@@ -51,7 +51,7 @@ The workspace contains:
 * AI analysis
 * Suggested improvements
 * Generated CV version
-* Cover letter 
+* Cover letter, when the user chooses to generate one
 * Generated PDF
 
 The Master CV is never modified automatically.
@@ -191,12 +191,15 @@ Optimized CV
  ├─ Edit
  └─ Save
         │
-        ▼
-Cover Letter
- ├─ Generate
- ├─ Review
- ├─ Edit
- └─ Save
-        │
-        ▼
-Export
+        ├── Continue to Cover Letter
+        │         │
+        │         ▼
+        │    Cover Letter
+        │     ├─ Generate
+        │     ├─ Review
+        │     ├─ Edit
+        │     └─ Save
+        │         │
+        └── Export CV
+
+Cover Letter is an optional Fast Apply output. After a saved Optimized CV, both Continue to Cover Letter and Export CV are valid next actions. Cover Letter is not required to export. Users may generate and save a Cover Letter later after a CV-only export. There is no Skip Cover Letter action and no persisted skip state.

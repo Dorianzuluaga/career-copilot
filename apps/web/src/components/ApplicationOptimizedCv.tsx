@@ -40,6 +40,7 @@ interface ApplicationOptimizedCvProps {
   masterCvPersonalProjects?: PersonalProjectItem[];
   onChange: (optimizedCv: OptimizedCv) => void;
   onContinueToCoverLetter?: () => void;
+  onExportCv?: () => void;
   onGenerate: () => void;
   onSave?: () => void;
   optimizedCv: OptimizedCv | null;
@@ -1219,6 +1220,7 @@ export function ApplicationOptimizedCv({
   masterCvPersonalProjects = [],
   onChange,
   onContinueToCoverLetter,
+  onExportCv,
   onGenerate,
   onSave,
   optimizedCv,
@@ -1330,6 +1332,15 @@ export function ApplicationOptimizedCv({
                 className="cc-btn-secondary"
               >
                 {t("optimizedCv.continueToCoverLetter")}
+              </button>
+            ) : null}
+            {onExportCv ? (
+              <button
+                type="button"
+                onClick={onExportCv}
+                className="cc-btn-secondary"
+              >
+                {t("optimizedCv.exportCv")}
               </button>
             ) : null}
           </div>

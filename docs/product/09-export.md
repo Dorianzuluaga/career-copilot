@@ -4,7 +4,7 @@
 
 The Export section is the final step of the Application Workspace.
 
-Its purpose is to allow users to export the final application documents after they have completed and approved their Optimized CV and Cover Letter.
+Its purpose is to allow users to export the latest saved application documents after they have completed and approved their Optimized CV. A Cover Letter is included only when one has been saved.
 
 Export never creates new content.
 
@@ -47,40 +47,48 @@ so that I can confidently submit them to employers knowing they match the versio
 ```text
 Saved Optimized CV
         │
-Saved Cover Letter
+        ├── no Cover Letter ──► Export (Optimized CV only)
         │
-        ▼
-Export
-        │
-        ▼
-Select Documents
-        │
-        ▼
-Preview Selected Document
-        │
-        ▼
-Generate PDF(s)
-        │
-        ▼
-Download
+        └── saved Cover Letter ──► Export (Optimized CV and Cover Letter)
+                │
+                ▼
+            Select Documents
+                │
+                ▼
+            Preview Selected Document
+                │
+                ▼
+            Generate PDF(s)
+                │
+                ▼
+            Download
 ```
 
 ---
 
 # Export Availability
 
-Export becomes available only after:
+Export becomes available after:
 
 - A valid saved Optimized CV exists.
-- A valid saved Cover Letter exists.
 
-Export cannot be accessed before both application documents have been saved.
+A saved Cover Letter is not required.
+
+Export cannot be accessed before an Optimized CV has been saved.
+
+Users may later generate and save a Cover Letter after a previous CV-only export. Export then may include both documents.
 
 ---
 
 # Source of Truth
 
-The latest saved Optimized CV and the latest saved Cover Letter are the only source of truth for Export.
+The latest saved Optimized CV is always a source of truth for Export.
+
+The latest saved Cover Letter is a source of truth only when a Cover Letter exists.
+
+If no Cover Letter exists, Export is Optimized CV only. The export pipeline must not require or load a Cover Letter for that CV-only output.
+
+An unsaved Cover Letter draft is never a source of truth for Export.
 
 Export never uses:
 
@@ -95,7 +103,9 @@ Export never uses:
 
 The Export section displays one document preview at a time.
 
-Users switch between document previews using the document selector.
+When no Cover Letter exists, Optimized CV is the only previewable document. Cover Letter is not shown as a selectable or previewable document.
+
+When a Cover Letter has been saved, users switch between document previews using the document selector.
 
 The preview represents exactly how the generated PDF will appear.
 
@@ -109,13 +119,17 @@ If users want to modify a document, they must return to its corresponding worksp
 
 # Document Selection
 
-Users may choose to download:
+When no Cover Letter exists, Optimized CV is the only selectable and downloadable document.
+
+When a Cover Letter has been saved, users may choose to download:
 
 - Optimized CV only
 - Cover Letter only
 - Both documents
 
 Only the selected documents are exported.
+
+When a saved Cover Letter is included, existing Presentation Language behavior for that Cover Letter remains unchanged. When no Cover Letter exists, Presentation Language applies to the Optimized CV only, and no Cover Letter presentation or adaptation AI call occurs.
 
 ---
 
@@ -201,7 +215,9 @@ Filenames are normalized with a single slugification rule:
 Export must never:
 
 - Modify saved documents.
-- Generate new AI content.
+- Generate new Optimized CV or Cover Letter content.
+- Call Cover Letter generation AI.
+- Call Cover Letter presentation or adaptation AI when no Cover Letter exists.
 - Save new document versions.
 - Update the Application.
 - Replace existing saved documents.
@@ -229,11 +245,13 @@ These capabilities are outside the MVP.
 
 Users can:
 
-- Preview the latest saved application documents.
-- Choose which documents to download.
-- Download one or both documents as independent PDF files.
+- Preview the latest saved Optimized CV after it has been saved.
+- Preview a Cover Letter only when a Cover Letter has been saved.
+- Choose which documents to download from the documents that exist.
+- Download Optimized CV only, or both documents as independent PDF files when a Cover Letter has been saved.
 - Trust that exported PDFs exactly match the latest saved versions.
-- Complete the application workflow without editing documents inside Export.
+- Complete Export without generating a Cover Letter.
+- Return later to generate and save a Cover Letter after a previous CV-only export.
 
 # Product Principle
 

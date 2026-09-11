@@ -103,7 +103,6 @@ describe("preparePresentationDocument", () => {
   it("skips AI when the saved Working Language matches Presentation Language", async () => {
     const preview = await preparePresentationDocument("optimized-cv", "es", {
       optimizedCv,
-      coverLetter,
     });
 
     expect(adaptOptimizedCvNarrative).not.toHaveBeenCalled();
@@ -120,7 +119,6 @@ describe("preparePresentationDocument", () => {
   it("adapts only the requested document from the saved source", async () => {
     const preview = await preparePresentationDocument("optimized-cv", "fr", {
       optimizedCv,
-      coverLetter,
     });
 
     expect(adaptOptimizedCvNarrative).toHaveBeenCalledWith(optimizedCv, "fr");
@@ -138,7 +136,6 @@ describe("preparePresentationDocument", () => {
 
   it("uses the same Presentation Language when adapting a Cover Letter with a different Working Language", async () => {
     const preview = await preparePresentationDocument("cover-letter", "fr", {
-      optimizedCv,
       coverLetter,
     });
 
@@ -157,7 +154,6 @@ describe("preparePresentationDocument", () => {
 
   it("adapts legacy documents whose Working Language is unknown", async () => {
     await preparePresentationDocument("cover-letter", "en", {
-      optimizedCv,
       coverLetter: { ...coverLetter, workingLanguage: null },
     });
 
@@ -170,11 +166,9 @@ describe("preparePresentationDocument", () => {
   it("always starts from the original saved document", async () => {
     await preparePresentationDocument("optimized-cv", "fr", {
       optimizedCv,
-      coverLetter,
     });
     await preparePresentationDocument("optimized-cv", "en", {
       optimizedCv,
-      coverLetter,
     });
 
     expect(adaptOptimizedCvNarrative).toHaveBeenNthCalledWith(
@@ -197,7 +191,6 @@ describe("preparePresentationDocument", () => {
           ...optimizedCv,
           email: "not-an-email",
         },
-        coverLetter,
       }),
     ).rejects.toMatchObject({
       message: "The saved Optimized CV is invalid.",
@@ -206,7 +199,6 @@ describe("preparePresentationDocument", () => {
 
     await expect(
       preparePresentationDocument("cover-letter", "fr", {
-        optimizedCv,
         coverLetter: {
           ...coverLetter,
           candidateName: "",
@@ -228,7 +220,6 @@ describe("preparePresentationDocument", () => {
           ...optimizedCv,
           workingLanguage: "de" as never,
         },
-        coverLetter,
       }),
     ).rejects.toMatchObject({
       message: "The saved Optimized CV is invalid.",
@@ -237,24 +228,19 @@ describe("preparePresentationDocument", () => {
     expect(adaptOptimizedCvNarrative).not.toHaveBeenCalled();
   });
 
-  it("does not call adaptation for the other document when package data is malformed", async () => {
-    await expect(
-      preparePresentationDocument("optimized-cv", "fr", {
-        optimizedCv,
-        coverLetter: { ...coverLetter, email: "bad" },
-      }),
-    ).rejects.toMatchObject({
-      message: "The saved Cover Letter is invalid.",
-      statusCode: 400,
+  it("does not receive or assert a Cover Letter when preparing Optimized CV", async () => {
+    const preview = await preparePresentationDocument("optimized-cv", "fr", {
+      optimizedCv,
     });
-    expect(adaptOptimizedCvNarrative).not.toHaveBeenCalled();
+
+    expect(preview.document).toBe("optimized-cv");
+    expect(adaptOptimizedCvNarrative).toHaveBeenCalledWith(optimizedCv, "fr");
     expect(adaptCoverLetterNarrative).not.toHaveBeenCalled();
   });
 
   it("resolves Presentation Language chrome without calling AI", async () => {
     const preview = await preparePresentationDocument("optimized-cv", "fr", {
       optimizedCv,
-      coverLetter,
     });
 
     expect(adaptOptimizedCvNarrative).toHaveBeenCalledTimes(1);
@@ -264,7 +250,6 @@ describe("preparePresentationDocument", () => {
 
   it("formats the Cover Letter date for Presentation Language and preserves the saved date", async () => {
     const preview = await preparePresentationDocument("cover-letter", "es", {
-      optimizedCv,
       coverLetter,
     });
 
@@ -279,7 +264,6 @@ describe("preparePresentationDocument", () => {
   it("formats ISO Cover Letter dates without calling AI when languages match", async () => {
     const isoCoverLetter = { ...coverLetter, date: "2026-08-07" };
     const preview = await preparePresentationDocument("cover-letter", "en", {
-      optimizedCv,
       coverLetter: isoCoverLetter,
     });
 
@@ -294,7 +278,6 @@ describe("preparePresentationDocument", () => {
   it("rejects an ambiguous Cover Letter date before AI adaptation", async () => {
     await expect(
       preparePresentationDocument("cover-letter", "fr", {
-        optimizedCv,
         coverLetter: { ...coverLetter, date: "2026-08" },
       }),
     ).rejects.toMatchObject({
@@ -312,7 +295,6 @@ describe("preparePresentationDocument", () => {
     await expect(
       preparePresentationDocument("optimized-cv", "fr", {
         optimizedCv,
-        coverLetter,
       }),
     ).rejects.toMatchObject({
       message: DOCUMENT_ADAPTATION_FAILED_MESSAGE,
@@ -329,7 +311,6 @@ describe("preparePresentationDocument", () => {
 
     const preview = await preparePresentationDocument("optimized-cv", "es", {
       optimizedCv: savedCv,
-      coverLetter,
     });
 
     expect(adaptOptimizedCvNarrative).not.toHaveBeenCalled();
@@ -352,7 +333,6 @@ describe("preparePresentationDocument", () => {
 
     const preview = await preparePresentationDocument("optimized-cv", "fr", {
       optimizedCv: savedCv,
-      coverLetter,
     });
 
     expect(adaptOptimizedCvNarrative).toHaveBeenCalledWith(savedCv, "fr");

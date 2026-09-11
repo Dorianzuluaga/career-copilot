@@ -68,9 +68,12 @@ Manual Editing
         ▼
 Save Optimized Version
         │
-        ▼
-Continue to Cover Letter
+        ├── Continue to Cover Letter
+        │
+        └── Export CV
 ```
+
+Cover Letter is optional. After a valid saved Optimized CV, both Continue to Cover Letter and Export CV are valid next actions. Cover Letter generation is not required to leave this step or to reach Export. There is no Skip Cover Letter action.
 
 ---
 
@@ -276,11 +279,18 @@ Personal Projects saved inside the Optimized CV are application-specific selecti
 
 ## Phase 5 — Continue Workflow
 
-After a valid saved Optimized CV exists, allow users to continue toward the Cover Letter section.
+After a valid saved Optimized CV exists, both of the following are valid next actions:
+
+- Continue to Cover Letter
+- Export CV
+
+Cover Letter is optional and is not required to leave the Optimized CV section.
 
 This phase only updates the workflow progression.
 
 No Cover Letter generation is implemented.
+
+No Skip Cover Letter action is introduced.
 
 ---
 
@@ -437,7 +447,7 @@ Only one Optimized CV exists per Application.
 
 The Master CV remains unchanged.
 
-The workflow can continue toward Cover Letter.
+The workflow can continue to Cover Letter or Export CV. Cover Letter generation is not required.
 
 Users can continue working inside the Application Workspace without losing the current application context.
 
