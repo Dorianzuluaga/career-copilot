@@ -108,12 +108,18 @@ async function prepareCoverLetterPresentation(
 export async function preparePresentationDocument(
   documentType: ExportDocumentType,
   presentationLanguage: SupportedLocale,
-  documents: { optimizedCv: OptimizedCv; coverLetter: CoverLetter },
+  documents: { optimizedCv: OptimizedCv } | { coverLetter: CoverLetter },
 ): Promise<ExportPreviewResponse> {
-  assertStoredOptimizedCv(documents.optimizedCv);
-  assertStoredCoverLetter(documents.coverLetter);
-
   if (documentType === "optimized-cv") {
+    if (!("optimizedCv" in documents)) {
+      throw new PresentationPreparationError(
+        "A saved Optimized CV is required before export.",
+        400,
+      );
+    }
+
+    assertStoredOptimizedCv(documents.optimizedCv);
+
     const chrome = resolveOptimizedCvDocumentChrome(presentationLanguage);
     return {
       document: "optimized-cv",
@@ -125,6 +131,15 @@ export async function preparePresentationDocument(
       chrome,
     };
   }
+
+  if (!("coverLetter" in documents)) {
+    throw new PresentationPreparationError(
+      "A saved Cover Letter is required for this document.",
+      400,
+    );
+  }
+
+  assertStoredCoverLetter(documents.coverLetter);
 
   let chrome;
   try {

@@ -1412,6 +1412,7 @@ describe("App", () => {
         isLoading={false}
         onChange={() => undefined}
         onContinueToCoverLetter={() => undefined}
+        onExportCv={() => undefined}
         onGenerate={() => undefined}
         onSave={() => undefined}
         optimizedCv={sampleOptimizedCv}
@@ -1421,6 +1422,7 @@ describe("App", () => {
     expect(savedMarkup).toContain("Optimized CV saved.");
     expect(savedMarkup).toContain('role="status"');
     expect(savedMarkup).toContain("Continuar a la carta de presentación");
+    expect(savedMarkup).toContain("Exportar CV");
 
     const continueWorkflowMarkup = renderWorkspace(
       <ApplicationWorkspace
@@ -1439,6 +1441,7 @@ describe("App", () => {
           isLoading={false}
           onChange={() => undefined}
           onContinueToCoverLetter={() => undefined}
+          onExportCv={() => undefined}
           onGenerate={() => undefined}
           onSave={() => undefined}
           optimizedCv={sampleOptimizedCv}
@@ -1448,15 +1451,18 @@ describe("App", () => {
     expect(continueWorkflowMarkup).toContain(
       "Continuar a la carta de presentación",
     );
+    expect(continueWorkflowMarkup).toContain("Exportar CV");
+    expect(continueWorkflowMarkup).not.toContain(
+      "Generar carta de presentación",
+    );
     expect(continueWorkflowMarkup).toContain(
       "Secciones completadas: Análisis del puesto, Coincidencia de perfil, CV optimizado",
     );
-    expect(continueWorkflowMarkup).toContain("Siguiente paso recomendado:");
-    expect(continueWorkflowMarkup).toContain("Carta de presentación");
-    expect(
-      continueWorkflowMarkup.match(/<button[^>]*disabled=""/g),
-    ).toHaveLength(1);
-    expect(continueWorkflowMarkup).toContain("Bloqueada");
+    expect(continueWorkflowMarkup).toContain(
+      'Siguiente paso recomendado: <span class="font-semibold text-ink">Exportación</span>',
+    );
+    expect(continueWorkflowMarkup.match(/<button[^>]*disabled=""/g)).toBeNull();
+    expect(continueWorkflowMarkup).not.toContain("Bloqueada");
 
     const saveErrorMarkup = renderWithLocale(
       <ApplicationOptimizedCv
@@ -1928,6 +1934,7 @@ describe("App", () => {
       removeProject: "Remove project",
       personalProjectDescriptionAria: "Personal project description 1",
       continueToCoverLetter: "Continue to Cover Letter",
+      exportCv: "Export CV",
       saving: "Saving…",
     },
     {
@@ -1960,6 +1967,7 @@ describe("App", () => {
       removeProject: "Supprimer le projet",
       personalProjectDescriptionAria: "Description du projet personnel 1",
       continueToCoverLetter: "Continuer vers la lettre de motivation",
+      exportCv: "Exporter le CV",
       saving: "Enregistrement…",
     },
   ])(
@@ -1993,6 +2001,7 @@ describe("App", () => {
       removeProject,
       personalProjectDescriptionAria,
       continueToCoverLetter,
+      exportCv,
       saving,
     }) => {
       const storage = new Map<string, string>();
@@ -2113,6 +2122,7 @@ describe("App", () => {
           isLoading={false}
           onChange={() => undefined}
           onContinueToCoverLetter={() => undefined}
+          onExportCv={() => undefined}
           onGenerate={() => undefined}
           onSave={() => undefined}
           optimizedCv={sampleOptimizedCv}
@@ -2124,6 +2134,7 @@ describe("App", () => {
       expect(reviewMarkup).toContain(`>${save}<`);
       expect(reviewMarkup).toContain(generateAgain);
       expect(reviewMarkup).toContain(continueToCoverLetter);
+      expect(reviewMarkup).toContain(exportCv);
       expect(reviewMarkup).toContain(professionalSummary);
       expect(reviewMarkup).toContain("TypeScript engineer building APIs.");
       expect(reviewMarkup).toContain(experience);
@@ -2246,6 +2257,8 @@ describe("App", () => {
     expect(idleMarkup).toContain('aria-current="page"');
     expect(idleMarkup).toContain("Carta de presentación");
     expect(idleMarkup).toContain("Generar carta de presentación");
+    expect(idleMarkup).not.toContain("Omitir carta de presentación");
+    expect(idleMarkup).not.toContain("Skip Cover Letter");
     expect(idleMarkup).toContain(
       "Genera una carta de presentación adaptada a esta oferta",
     );
@@ -2253,8 +2266,8 @@ describe("App", () => {
       "Secciones completadas: Análisis del puesto, Coincidencia de perfil, CV optimizado",
     );
     expect(idleMarkup).toContain("Siguiente paso recomendado:");
-    expect(idleMarkup.match(/<button[^>]*disabled=""/g)).toHaveLength(1);
-    expect(idleMarkup).toContain("Bloqueada");
+    expect(idleMarkup.match(/<button[^>]*disabled=""/g)).toBeNull();
+    expect(idleMarkup).not.toContain("Bloqueada");
     expect(idleMarkup).not.toContain("Continuar a la exportación");
     expect(idleMarkup).not.toContain("Download");
     expect(idleMarkup).not.toContain("Live preview");
@@ -2701,7 +2714,7 @@ describe("App", () => {
     expect(markup).toContain("Bloqueada");
   });
 
-  it("keeps Export locked until a saved Cover Letter exists", () => {
+  it("makes Export available after a saved Optimized CV without a Cover Letter", () => {
     const markup = renderWorkspace(
       <ApplicationWorkspace
         company="Example Company"
@@ -2721,10 +2734,11 @@ describe("App", () => {
     expect(markup).toContain(
       "Secciones completadas: Análisis del puesto, Coincidencia de perfil, CV optimizado",
     );
-    expect(markup).toContain("Siguiente paso recomendado:");
-    expect(markup).toContain("Carta de presentación");
-    expect(markup.match(/<button[^>]*disabled=""/g)).toHaveLength(1);
-    expect(markup).toContain("Bloqueada");
+    expect(markup).toContain(
+      'Siguiente paso recomendado: <span class="font-semibold text-ink">Exportación</span>',
+    );
+    expect(markup.match(/<button[^>]*disabled=""/g)).toBeNull();
+    expect(markup).not.toContain("Bloqueada");
   });
 
   it("previews saved application documents in Export without editing controls", () => {
@@ -2860,7 +2874,7 @@ describe("App", () => {
       "No exportable documents are currently available.",
     );
     expect(markup).not.toContain(
-      "Se necesita un CV optimizado y una carta de presentación guardados",
+      "Se necesita un CV optimizado guardado antes de previsualizar los documentos.",
     );
 
     const previewMarkup = renderWithLocale(
@@ -2922,12 +2936,69 @@ describe("App", () => {
     expect(markup).toContain("Exportación");
     expect(markup).toContain("Documentos de candidatura");
     expect(markup).toContain(
-      "Se necesita un CV optimizado y una carta de presentación guardados antes de previsualizar los documentos.",
+      "Se necesita un CV optimizado guardado antes de previsualizar los documentos.",
     );
     expect(markup).not.toContain(">Descargar<");
     expect(markup).not.toContain('role="tablist"');
     expect(markup).not.toContain("Taylor Smith");
     expect(markup).not.toContain("Idioma de presentación");
+  });
+
+  it("previews Optimized CV only when no saved Cover Letter exists", () => {
+    const sampleOptimizedCv = {
+      fullName: "Taylor Smith",
+      professionalTitle: null,
+      email: "taylor@example.com",
+      phone: null,
+      location: "Berlin",
+      linkedin: null,
+      website: null,
+      professionalSummary: "TypeScript engineer building APIs.",
+      experience: [
+        {
+          jobTitle: "Software Engineer",
+          company: "Example",
+          location: null,
+          startDate: "2022-01",
+          endDate: null,
+          current: true,
+          description: "Built REST APIs with TypeScript.",
+        },
+      ],
+      education: [],
+      skills: ["TypeScript"],
+      languages: [],
+      certifications: [],
+      personalProjects: [],
+      workingLanguage: null,
+    };
+
+    const markup = renderWithLocale(
+      <ApplicationExport
+        applicationId="application-id"
+        coverLetter={null}
+        optimizedCv={sampleOptimizedCv}
+        previewCache={createExportPreviewCache()}
+      />,
+    );
+
+    expect(markup).toContain("Exportación");
+    expect(markup).toContain("Idioma de presentación");
+    expect(markup).toContain("Este idioma se aplica al CV optimizado.");
+    expect(markup).toContain(">CV optimizado</label>");
+    expect(markup).toContain(">Descargar</button>");
+    expect(markup).toContain("Preparando la vista previa…");
+    expect(markup).not.toContain(">Carta de presentación</label>");
+    expect(markup).not.toContain('role="tablist"');
+    expect(markup).not.toContain(
+      "Este idioma se aplica tanto al CV optimizado como a la carta de presentación.",
+    );
+    expect(markup).not.toContain(
+      "Se necesita un CV optimizado guardado antes de previsualizar los documentos.",
+    );
+    expect(markup).not.toContain("Dear Hiring Manager,");
+    expect(markup).not.toContain("Skip Cover Letter");
+    expect(markup).not.toContain("Omitir carta de presentación");
   });
 
   it.each([
@@ -2945,9 +3016,11 @@ describe("App", () => {
       presentationLanguage: "Presentation Language",
       presentationLanguageHelp:
         "This language applies to both the Optimized CV and the Cover Letter.",
+      presentationLanguageHelpCvOnly:
+        "This language applies to the Optimized CV.",
       previewLoading: "Preparing preview…",
       requiresDocuments:
-        "Saved Optimized CV and Cover Letter are required before documents can be previewed.",
+        "A saved Optimized CV is required before documents can be previewed.",
     },
     {
       locale: "fr" as const,
@@ -2963,9 +3036,11 @@ describe("App", () => {
       presentationLanguage: "Langue de présentation",
       presentationLanguageHelp:
         "Cette langue s&#x27;applique à la fois au CV optimisé et à la lettre de motivation.",
+      presentationLanguageHelpCvOnly:
+        "Cette langue s&#x27;applique au CV optimisé.",
       previewLoading: "Préparation de l&#x27;aperçu…",
       requiresDocuments:
-        "Un CV optimisé et une lettre de motivation enregistrés sont requis avant de prévisualiser les documents.",
+        "Un CV optimisé enregistré est requis avant de prévisualiser les documents.",
     },
   ])(
     "translates Export when $locale is stored",
@@ -2981,6 +3056,7 @@ describe("App", () => {
       previewAria,
       presentationLanguage,
       presentationLanguageHelp,
+      presentationLanguageHelpCvOnly,
       previewLoading,
       requiresDocuments,
     }) => {
@@ -3084,6 +3160,24 @@ describe("App", () => {
       expect(emptyMarkup).toContain(requiresDocuments);
       expect(emptyMarkup).not.toContain(`>${download}<`);
       expect(emptyMarkup).not.toContain(presentationLanguage);
+
+      const cvOnlyMarkup = renderWithLocale(
+        <ApplicationExport
+          applicationId="application-id"
+          coverLetter={null}
+          optimizedCv={sampleOptimizedCv}
+          previewCache={createExportPreviewCache()}
+        />,
+      );
+      expect(cvOnlyMarkup).toContain(title);
+      expect(cvOnlyMarkup).toContain(presentationLanguage);
+      expect(cvOnlyMarkup).toContain(presentationLanguageHelpCvOnly);
+      expect(cvOnlyMarkup).toContain(`>${optimizedCv}</label>`);
+      expect(cvOnlyMarkup).toContain(`>${download}</button>`);
+      expect(cvOnlyMarkup).not.toContain(`>${coverLetter}</label>`);
+      expect(cvOnlyMarkup).not.toContain(`aria-label="${previewAria}"`);
+      expect(cvOnlyMarkup).not.toContain(presentationLanguageHelp);
+      expect(cvOnlyMarkup).not.toContain(requiresDocuments);
 
       const previewMarkup = renderWithLocale(
         <ApplicationExport

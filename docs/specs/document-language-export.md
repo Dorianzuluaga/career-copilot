@@ -15,7 +15,7 @@ This feature separates four concepts that must never be conflated:
 1. **Original job language** — the language and content supplied by the user in `JobOffer.originalDescription`.
 2. **UI locale** — the language of the application's interface and working experience.
 3. **Working language** — the persisted language of a saved Optimized CV or Cover Letter.
-4. **Presentation Language** — the export-time language selected for the complete Optimized CV + Cover Letter package.
+4. **Presentation Language** — the export-time language selected for the documents included in Export. When a Cover Letter exists, one value applies to the Optimized CV + Cover Letter package. When no Cover Letter exists, the same control applies to the Optimized CV only.
 
 The implementation must preserve saved user edits, keep the original job offer and Master CV unchanged, and localize final presentation without regenerating working documents.
 
@@ -77,7 +77,7 @@ It identifies the language contract under which that document draft was generate
 Presentation Language is selected only in Export.
 
 - Supported values are `es`, `en`, and `fr`.
-- One value applies to the complete application package: Optimized CV + Cover Letter.
+- One value applies to every document included in the current Export. When a Cover Letter exists, that is the Optimized CV + Cover Letter package. When no Cover Letter exists, that is the Optimized CV only.
 - It is independent of UI locale, both document Working Languages, original job language, Master CV language, company country, and any inferred language.
 - It is passed per preview/export request.
 - It must not be persisted as document truth, on `Application`, or in a new export record.
@@ -88,7 +88,7 @@ Presentation Language is selected only in Export.
 
 The following rules are mandatory:
 
-1. The latest saved Optimized CV and latest saved Cover Letter are the only content sources for Export.
+1. The latest saved Optimized CV is always a content source for Export. The latest saved Cover Letter is a content source only when a Cover Letter exists. If no Cover Letter exists, Export is CV-only and must not require or load a Cover Letter.
 2. Unsaved editor state is not exportable under the current explicit-Save architecture. The UI must continue to make Save status clear before entering Export.
 3. User edits present in the latest saved documents are authoritative.
 4. Export must never call Optimized CV generation, Cover Letter generation, or any generation path that starts from Master CV.
@@ -105,7 +105,7 @@ The following rules are mandatory:
    └── Export FR
    ```
 
-10. Both package documents use the same Presentation Language even if their Working Languages differ.
+10. When both documents are included, they use the same Presentation Language even if their Working Languages differ. When no Cover Letter exists, Presentation Language applies to the Optimized CV only.
 11. Presentation Language must not be inferred from original job language, UI locale, Master CV language, company country, or document content.
 12. Export adaptation is translation/localization only. It is not optimization, regeneration, or content improvement.
 
@@ -114,14 +114,14 @@ The following rules are mandatory:
 1. The user works in the selected UI locale.
 2. Initial Job Analysis and Profile Match requests carry that UI locale.
 3. Initial Optimized CV generation carries that UI locale and returns a draft with the same Working Language.
-4. The user reviews, edits, and explicitly saves the Optimized CV. Save persists its Working Language.
-5. Initial Cover Letter generation carries the current UI locale and returns a draft with the same Working Language.
-6. The user reviews, edits, and explicitly saves the Cover Letter. Save persists its Working Language.
+4. The user reviews, edits, and explicitly saves the Optimized CV. Save persists its Working Language. Export becomes available at this point, including when no Cover Letter exists.
+5. Cover Letter generation is optional. If the user chooses Generate, Try again, or Generate again, that request carries the current UI locale and returns a draft with the same Working Language. Cover Letter generation never runs automatically.
+6. If the user reviews, edits, and explicitly saves a Cover Letter, Save persists its Working Language. An unsaved Cover Letter draft is not included in Export.
 7. The user enters Export.
-8. The user selects one Presentation Language for the complete CV + Cover Letter package.
-9. Export Preview prepares each saved document under that Presentation Language.
-10. The user selects Optimized CV, Cover Letter, or both and explicitly downloads.
-11. Each selected PDF is prepared from the latest saved document using the same Presentation Language contract as preview.
+8. The user selects one Presentation Language. When a Cover Letter exists, it applies to the complete CV + Cover Letter package. When no Cover Letter exists, it applies to the Optimized CV only.
+9. Export Preview prepares each included saved document under that Presentation Language. If no Cover Letter exists, Cover Letter is not previewed, selected, or loaded.
+10. The user selects documents that exist: Optimized CV only when no Cover Letter exists; Optimized CV, Cover Letter, or both when a Cover Letter has been saved. The user then explicitly downloads.
+11. Each selected PDF is prepared from the latest saved document using the same Presentation Language contract as preview. CV-only export must not call Cover Letter generation or Cover Letter presentation/adaptation AI.
 
 Normal Optimized CV and Cover Letter workspaces continue to show the saved working documents. They do not switch to Presentation Language.
 
@@ -269,15 +269,15 @@ Presentation Language must appear only in the Export step.
 - It must not appear in the global language selector.
 - It must not be required while reviewing or editing Optimized CV or Cover Letter.
 - The control offers exactly Español (`es`), English (`en`), and Français (`fr`).
-- The UI must state that the selection applies to both Optimized CV and Cover Letter.
-- Both selected download requests must use the same value.
+- The UI must state that the selection applies to every document included in the current Export. When a Cover Letter exists, that is both Optimized CV and Cover Letter. When no Cover Letter exists, that is the Optimized CV only.
+- Selected download requests must use the same value.
 - Changing the preview tab must not change Presentation Language.
 - Changing Presentation Language shows that language's preview, fetching on cache miss. It does not wipe other cached languages. Multiple `es`, `en`, and `fr` previews may coexist in the same Application Workspace.
 - The UI may default the selection to a validated browser-stored preference. If none exists, it may use the current UI locale as an initial convenience only; this default is not an inference and must remain visibly user-selectable.
 - UI chrome around Export follows UI locale. Document content and document chrome inside Export Preview follow Presentation Language.
 - While a presentation preview is being prepared, the UI must not show the saved working-language body under target-language chrome as if it were final.
 - Preview is read-only.
-- Existing document selection, visual design, layout, profile-photo behavior, project-link behavior, and explicit Download action remain unchanged.
+- Existing document selection, visual design, layout, profile-photo behavior, project-link behavior, and explicit Download action remain unchanged, except that Cover Letter is shown as selectable or previewable only when a Cover Letter has been saved.
 
 ## Export API contract
 
@@ -345,7 +345,7 @@ AI output is not guaranteed to be byte-identical across separate preview and PDF
 
 - Validate `document` and `presentationLanguage` before loading documents or calling AI.
 - Invalid `document`, missing Presentation Language, or unsupported Presentation Language returns HTTP `400`.
-- The frontend must never issue separate Presentation Languages for the two package documents in one download operation.
+- The frontend must never issue separate Presentation Languages for selected documents in one download operation.
 - The backend validates each request independently and must not trust frontend storage.
 
 ## Presentation preparation pipeline
@@ -355,20 +355,22 @@ Both preview and PDF must use this pipeline:
 ```text
 Validate request
   → authorize Application
-  → load latest saved Optimized CV and Cover Letter
-  → validate stored document shapes
+  → load the latest saved Optimized CV
+  → if the requested document is cover-letter, load the latest saved Cover Letter
+  → do not load a Cover Letter for CV-only preview or export
+  → validate stored document shapes for the loaded document(s)
   → select requested saved document
   → compare Presentation Language with that document's Working Language
       ├── equal and non-null: use saved content directly
       └── different or null: adapt saved narrative fields in memory
   → merge validated narrative output into a deep copy of saved content
   → resolve deterministic document chrome
-  → deterministically format Cover Letter date
+  → deterministically format Cover Letter date only when a Cover Letter is requested
   → deterministically localize known Language + Proficiency labels
   → return preview view model OR render PDF
 ```
 
-Loading both saved documents remains a prerequisite under the current Export specification, even when only one document is requested.
+The pipeline must not require or load a Cover Letter for CV-only output. Cover Letter presentation/adaptation AI runs only when a saved Cover Letter is the requested document and adaptation is required.
 
 The pipeline must not invoke:
 
@@ -646,11 +648,10 @@ All failures must leave saved working documents unchanged.
 
 ### Missing saved documents
 
-Preserve the existing Export prerequisite:
-
-- If either saved Optimized CV or saved Cover Letter is missing, preview/export returns HTTP `400`.
-- No AI call or PDF render occurs.
-- The UI explains that both saved documents are required.
+- If the saved Optimized CV is missing, preview/export returns HTTP `400`.
+- If a Cover Letter document is requested and no saved Cover Letter exists, preview/export returns HTTP `400`.
+- If no Cover Letter exists, Optimized CV preview/export remains allowed. No Cover Letter is loaded. No Cover Letter generation or Cover Letter presentation/adaptation AI call occurs.
+- The UI explains which saved document is required.
 
 ### Malformed stored document data
 
@@ -709,7 +710,7 @@ Across the two independent PDF requests:
 - UI locale, original job language, Working Language, and Presentation Language are independently represented and cannot override one another implicitly.
 - `JobOffer.originalDescription` remains unchanged through all generation, preview, and export flows.
 - Changing UI locale does not mutate or regenerate saved Optimized CV or Cover Letter data.
-- One Presentation Language applies to every selected document in the application package.
+- One Presentation Language applies to every selected document in the current Export. When a Cover Letter exists, that remains Optimized CV + Cover Letter. When no Cover Letter exists, that is the Optimized CV only.
 
 ### Generation and persistence
 
@@ -722,7 +723,7 @@ Across the two independent PDF requests:
 
 ### Export
 
-- Export loads the latest saved documents.
+- Export loads the latest saved Optimized CV. Export loads a Cover Letter only when a Cover Letter document is requested and a Cover Letter exists.
 - Export never invokes Optimized CV or Cover Letter generation.
 - Export never uses Master CV as body-content source.
 - Equal, non-null Working Language and Presentation Language skips adaptation AI.
@@ -789,7 +790,8 @@ Prove:
 - protected values are unchanged after merge;
 - malformed or structurally different AI output fails atomically;
 - adaptation failure does not render or persist;
-- missing documents prevent adaptation and rendering;
+- missing Optimized CV prevents adaptation and rendering;
+- missing Cover Letter prevents Cover Letter preview/export, but does not prevent CV-only preview/export;
 - invalid Presentation Language prevents loading, adaptation, and rendering.
 
 ### Field-contract tests
@@ -957,12 +959,12 @@ Persist the known language of saved working documents without guessing legacy ro
 
 **Objective**
 
-Introduce one export-time Presentation Language for the complete package and establish preview/PDF request contracts.
+Introduce one export-time Presentation Language for the documents included in Export and establish preview/PDF request contracts.
 
 **Scope**
 
 - Export language selector.
-- Clear complete-package explanation.
+- Clear explanation that one Presentation Language applies to every document included in the current Export.
 - PDF and preview request validation.
 - Frontend propagation of one selection to both document requests.
 - Preview loading/error states.
@@ -985,7 +987,7 @@ Introduce one export-time Presentation Language for the complete package and est
 
 - Presentation Language appears only in Export.
 - All supported language combinations can be selected.
-- The same value is used for CV and Cover Letter.
+- The same value is used for every selected document. When a Cover Letter exists, that includes CV and Cover Letter.
 - Invalid values fail before document preparation.
 - Selection does not mutate saved data.
 
@@ -1142,7 +1144,7 @@ Complete the end-to-end package flow and verify consistency, failure isolation, 
 **Acceptance criteria**
 
 - Preview and PDFs use Presentation Language.
-- Both documents share one Presentation Language.
+- Selected documents share one Presentation Language. When no Cover Letter exists, that is the Optimized CV only.
 - User edits remain authoritative.
 - Re-export does not create translation chains.
 - Failed operations do not mutate data.
@@ -1208,7 +1210,7 @@ Implementation of locale changes for already persisted Job Analysis must wait fo
 - [x] Original job content remains unchanged.
 - [x] Export never regenerates from Master CV.
 - [x] Latest saved user edits are authoritative.
-- [x] One Presentation Language applies to Optimized CV + Cover Letter.
+- [x] One Presentation Language applies to every document included in the current Export. When a Cover Letter exists, that is Optimized CV + Cover Letter. When no Cover Letter exists, that is Optimized CV only.
 - [x] Adapted exports are request-scoped and never persisted.
 - [x] Every target export starts from the saved working document.
 - [x] Exact adaptable and protected fields are defined.

@@ -272,6 +272,27 @@ describe("translate", () => {
     expect(translate("fr", "export.presentationLanguageHelp")).toBe(
       "Cette langue s'applique à la fois au CV optimisé et à la lettre de motivation.",
     );
+    expect(translate("es", "export.presentationLanguageHelpCvOnly")).toBe(
+      "Este idioma se aplica al CV optimizado.",
+    );
+    expect(translate("en", "export.presentationLanguageHelpCvOnly")).toBe(
+      "This language applies to the Optimized CV.",
+    );
+    expect(translate("fr", "export.presentationLanguageHelpCvOnly")).toBe(
+      "Cette langue s'applique au CV optimisé.",
+    );
+    expect(translate("es", "export.requiresDocuments")).toBe(
+      "Se necesita un CV optimizado guardado antes de previsualizar los documentos.",
+    );
+    expect(translate("en", "export.requiresDocuments")).toBe(
+      "A saved Optimized CV is required before documents can be previewed.",
+    );
+    expect(translate("fr", "export.requiresDocuments")).toBe(
+      "Un CV optimisé enregistré est requis avant de prévisualiser les documents.",
+    );
+    expect(translate("es", "optimizedCv.exportCv")).toBe("Exportar CV");
+    expect(translate("en", "optimizedCv.exportCv")).toBe("Export CV");
+    expect(translate("fr", "optimizedCv.exportCv")).toBe("Exporter le CV");
     expect(translate("es", "export.packageIncomplete")).toBe(
       "El paquete está incompleto.",
     );
@@ -600,6 +621,7 @@ describe("translate", () => {
       "optimizedCv.saved",
       "optimizedCv.generateAgain",
       "optimizedCv.continueToCoverLetter",
+      "optimizedCv.exportCv",
       "optimizedCv.unexpectedError",
       "optimizedCv.saveFailed",
       "optimizedCv.editable",
@@ -671,6 +693,7 @@ describe("translate", () => {
       "export.requiresDocuments",
       "export.presentationLanguage",
       "export.presentationLanguageHelp",
+      "export.presentationLanguageHelpCvOnly",
       "export.previewLoading",
       "export.previewFailed",
     ];

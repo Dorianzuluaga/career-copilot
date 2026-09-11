@@ -6,9 +6,9 @@ This Epic implements the Export functionality described in:
 
 - docs/product/09-export.md
 
-The purpose of this Epic is to allow users to preview and download the final application documents after they have completed the Application Workspace.
+The purpose of this Epic is to allow users to preview and download the final application documents after they have saved an Optimized CV.
 
-Export never creates, modifies, or regenerates application documents.
+A Cover Letter is included only when one has been saved. Export never creates, modifies, or regenerates application documents.
 
 Export only renders the latest saved application documents into downloadable PDF files.
 
@@ -20,10 +20,11 @@ The Export section is accessed from the Application Workspace.
 
 It is not a standalone page.
 
-Users can access Export only after both:
+Users can access Export after:
 
 - A saved Optimized CV exists.
-- A saved Cover Letter exists.
+
+A saved Cover Letter is not required.
 
 No additional routes should be introduced during this Epic.
 
@@ -52,22 +53,21 @@ so that I can confidently submit them to employers.
 ```text
 Saved Optimized CV
         │
-Saved Cover Letter
+        ├── no Cover Letter ──► Export (Optimized CV only)
         │
-        ▼
-Export
-        │
-        ▼
-Select Documents
-        │
-        ▼
-Preview Selected Document
-        │
-        ▼
-Export PDF(s)
-        │
-        ▼
-Download
+        └── saved Cover Letter ──► Export (Optimized CV and Cover Letter)
+                │
+                ▼
+            Select Documents
+                │
+                ▼
+            Preview Selected Document
+                │
+                ▼
+            Export PDF(s)
+                │
+                ▼
+            Download
 ```
 
 ---
@@ -76,9 +76,11 @@ Download
 
 ## Phase 1 — Preview Documents
 
-Display the latest saved application documents.
+Display the latest saved application documents that exist.
 
-The preview must:
+When no Cover Letter exists, preview Optimized CV only. Cover Letter must not be shown as a selectable or previewable document.
+
+When a Cover Letter has been saved, the preview must:
 
 - Show one document at a time. Users may switch between document previews. This preview switcher is independent from    the document selection introduced in Phase 2.
 
@@ -99,9 +101,11 @@ No downloading.
 
 ## Phase 2 — Document Selection
 
-Allow users to choose which documents will be downloaded.
+Allow users to choose which documents will be downloaded from the documents that exist.
 
-Supported selections:
+When no Cover Letter exists, Optimized CV is the only selectable and downloadable document.
+
+When a Cover Letter has been saved, supported selections remain:
 
 - Optimized CV
 - Cover Letter
@@ -126,7 +130,7 @@ The frontend is responsible for requesting the export and handling the download.
 PDF generation must never modify:
 
 - Optimized CV
-- Cover Letter
+- Cover Letter, when one exists
 - Application data
 
 PDF files are temporary renderings.
@@ -147,6 +151,8 @@ Content-Type: application/json
 Each request returns one `application/pdf` response with a `Content-Disposition` filename.
 
 The frontend performs one request per selected document.
+
+A `document` value of `"cover-letter"` is valid only when a saved Cover Letter exists. CV-only preview and export must not send a Cover Letter request and must not load a Cover Letter.
 
 ### Filename Rules
 
@@ -183,12 +189,15 @@ Cover Letter:
 
 # Export Validation
 
-Before generating any PDF, the backend must verify that:
+Before generating an Optimized CV PDF, the backend must verify that a saved Optimized CV exists.
 
-- A saved Optimized CV exists.
-- A saved Cover Letter exists.
+The CV-only pipeline must not require or load a Cover Letter. It must not call Cover Letter generation or Cover Letter presentation/adaptation AI.
 
-If any required document is missing, PDF generation must be rejected.
+Before generating a Cover Letter PDF, the backend must verify that a saved Cover Letter exists.
+
+If the requested document is missing, PDF generation must be rejected.
+
+A missing Cover Letter must not reject Optimized CV preview or PDF generation.
 
 The frontend should display the corresponding error state.
 
@@ -200,6 +209,7 @@ The Export section must:
 
 - Preserve the current Application context.
 - Display one document preview at a time.
+- Show Cover Letter as a previewable or selectable document only when a Cover Letter has been saved.
 - Clearly indicate the currently selected document.
 - Clearly indicate which documents will be downloaded.
 - Keep the preview read-only.
@@ -238,7 +248,7 @@ The Export workflow must never depend on a specific PDF rendering library implem
 PDF generation must:
 
 - Use the latest saved Optimized CV.
-- Use the latest saved Cover Letter.
+- Use the latest saved Cover Letter only when a Cover Letter exists and that document is requested.
 - Match the preview shown to the user.
 - Preserve document formatting.
 - Produce professional printable documents.
@@ -319,18 +329,26 @@ This Epic does NOT include:
 - User-defined filenames.
 - Reading the live Master CV photo for Optimized CV preview or PDF.
 - Cover Letter profile photo.
+- A `wantsCoverLetter`, `skipCoverLetter`, or equivalent database field.
+- A new application completion status.
 
 ---
 
 ## Acceptance Criteria
 
-Users can preview the latest saved application documents.
+Users can preview the latest saved Optimized CV after it has been saved.
 
-Users can switch between document previews.
+When no Cover Letter exists, Cover Letter is not shown as a selectable or previewable document.
 
-Users can choose which documents to download.
+When a Cover Letter has been saved, users can switch between document previews.
 
-Users can download one or both documents as independent PDF files.
+Users can choose which existing documents to download.
+
+Users can download Optimized CV only, or both documents as independent PDF files when a Cover Letter has been saved.
+
+Users can export after saving an Optimized CV without generating a Cover Letter.
+
+Users can return later and generate or save a Cover Letter after a previous CV-only export.
 
 Generated PDFs exactly match the latest saved application documents.
 

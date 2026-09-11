@@ -587,6 +587,9 @@ export function ApplicationWorkspacePage() {
               ? () => changeSection("cover-letter")
               : undefined
           }
+          onExportCv={
+            hasSavedOptimizedCv ? () => changeSection("export") : undefined
+          }
           onGenerate={() => void runOptimizedCvGeneration()}
           onSave={() => void runOptimizedCvSave()}
           masterCvPersonalProjects={masterCvPersonalProjects}

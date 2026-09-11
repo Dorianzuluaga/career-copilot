@@ -47,9 +47,7 @@ export function WorkspaceNavigation({
       ? t("workspace.sections.profileMatch")
       : !isOptimizedCvCompleted
         ? t("workspace.sections.optimizedCv")
-        : !isCoverLetterCompleted
-          ? t("workspace.sections.coverLetter")
-          : t("workspace.sections.export");
+        : t("workspace.sections.export");
 
   const stepItemClassName =
     "flex min-h-16 h-full w-full min-w-0 flex-wrap items-center justify-between gap-x-2 gap-y-1 rounded-lg px-4 py-3 text-left text-sm font-semibold lg:flex-col lg:items-stretch lg:justify-center lg:px-3";
@@ -66,7 +64,7 @@ export function WorkspaceNavigation({
         {workspaceSections.map((section) => {
           const isCurrent = section.id === activeSection;
           const isCoverLetterAvailable = isOptimizedCvCompleted;
-          const isExportAvailable = isCoverLetterCompleted;
+          const isExportAvailable = isOptimizedCvCompleted;
           const isAvailable =
             section.id === "overview" ||
             section.id === "job-analysis" ||

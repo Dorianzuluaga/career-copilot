@@ -63,12 +63,18 @@ Profile Match
       ▼
 Optimized CV
       │
-      ▼
-Cover Letter
+      ├──► Cover Letter (optional)
       │
-      ▼
-Export
+      └──► Export
 ```
+
+Cover Letter remains a workspace section. It is an optional output, not a required stage.
+
+After a saved Optimized CV exists:
+
+- Cover Letter becomes accessible.
+- Export becomes available, including when no Cover Letter exists.
+- Cover Letter generation is not required to leave Optimized CV.
 
 ---
 
@@ -164,11 +170,11 @@ Document generation will be implemented in a future Epic.
 
 Create the Cover Letter section.
 
-Only the user interface structure should be implemented.
-
-Placeholder content should clearly communicate that this functionality will be implemented in a future Epic.
+The Cover Letter section is optional. Placeholder content should clearly communicate that this functionality will be implemented in a future Epic.
 
 The placeholder must not simulate AI-generated cover letters.
+
+The section must not auto-generate a Cover Letter.
 
 No AI generation is required.
 
@@ -185,6 +191,8 @@ Placeholder content should clearly communicate that export functionality will be
 The placeholder must not simulate downloadable documents or PDF generation.
 
 PDF generation is outside the scope of this Epic.
+
+Export is available after a saved Optimized CV exists. A Cover Letter is not required to access Export.
 
 ---
 

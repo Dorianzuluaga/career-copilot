@@ -6,7 +6,9 @@ The Cover Letter is an application-specific document generated for a single Appl
 
 Its purpose is to help users present their motivation, relevant experience, and professional value in a concise and professional way while preserving factual accuracy.
 
-The Cover Letter belongs exclusively to one Application Workspace and is intended to complement the Optimized CV during the Fast Apply workflow.
+The Cover Letter belongs exclusively to one Application Workspace and, when the user chooses to generate one, complements the Optimized CV during the Fast Apply workflow.
+
+The Cover Letter is an optional output. Fast Apply can be exported with a saved Optimized CV even when no Cover Letter exists.
 
 ---
 
@@ -22,17 +24,49 @@ Instead, it connects the user's real experience with the requirements identified
 
 The Cover Letter complements the Optimized CV instead of repeating it.
 
-Users always remain in control through manual review and editing before export.
+Users always remain in control through an explicit Generate action, then manual review and editing before a Cover Letter can be included in Export.
 
 ---
 
 ## Workspace Position
 
-The Cover Letter is the fifth stage of the Application Workspace.
+The Cover Letter is the fifth section of the Application Workspace.
 
 It becomes available only after a valid Optimized CV has been saved.
 
-Its output becomes one of the documents included during the Export workflow.
+It is an optional output, not a required stage. After a saved Optimized CV exists, users may continue to Cover Letter or go directly to Export.
+
+If a Cover Letter is saved, it becomes one of the documents included during Export. If no Cover Letter exists, Export remains available as Optimized CV only.
+
+Users may return later and generate or save a Cover Letter after previously exporting Optimized CV only.
+
+---
+
+## Document States
+
+The product distinguishes these Cover Letter states:
+
+- **Does not exist.** There is no saved Cover Letter record. No Cover Letter generation AI call has been required. Export is CV-only. Cover Letter is not shown as a selectable or previewable export document.
+- **Exists and is saved.** A Cover Letter record is associated with the application. Existing generate, edit, save, preview, and download behavior applies. Export may include Optimized CV + Cover Letter.
+- **Draft exists but is unsaved.** A generated or edited version exists only during the current workspace session. It is not included in Export and does not change whether a Cover Letter exists for the application.
+
+Absence of the Cover Letter record is sufficient to represent that no Cover Letter is included. The product does not add a `wantsCoverLetter`, `skipCoverLetter`, or equivalent field.
+
+---
+
+## Generation
+
+Cover Letter generation is explicitly user-triggered.
+
+The AI generation call occurs only when the user chooses **Generate**, **Try again**, or **Generate again**.
+
+Cover Letter generation must never run automatically when:
+
+- the Application Workspace loads;
+- the user opens the Cover Letter section;
+- the user saves an Optimized CV;
+- the user opens Export;
+- the user previews or downloads documents.
 
 ---
 
@@ -139,8 +173,9 @@ The Cover Letter follows these principles:
 - Complement the Optimized CV instead of repeating it.
 - Use a professional, confident, and natural tone.
 - Avoid exaggerated or overly emotional language.
-- Keep the user in control through manual editing.
-- Generate one Cover Letter per application.
+- Keep the user in control through explicit generation and manual editing.
+- Generate at most one Cover Letter per application, and only when the user chooses to generate one.
+- Never require a Cover Letter before Export.
 
 ---
 
@@ -157,6 +192,7 @@ The AI may:
 
 The AI must never:
 
+- Generate a Cover Letter automatically.
 - Invent professional experience.
 - Invent personal motivations.
 - Invent company information.

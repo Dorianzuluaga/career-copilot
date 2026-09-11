@@ -92,22 +92,33 @@ function validateExportRequest(
   };
 }
 
-async function requireExportDocuments(
+async function requireSavedOptimizedCv(
   applicationId: string,
   userId: string,
-): Promise<{ optimizedCv: OptimizedCv; coverLetter: CoverLetter }> {
+): Promise<OptimizedCv> {
   try {
-    const optimizedCv = await getOptimizedCv(applicationId, userId);
-    const coverLetter = await getCoverLetter(applicationId, userId);
-    return { optimizedCv, coverLetter };
+    return await getOptimizedCv(applicationId, userId);
   } catch (error) {
-    if (
-      (error instanceof OptimizedCvError ||
-        error instanceof CoverLetterError) &&
-      error.statusCode === 404
-    ) {
+    if (error instanceof OptimizedCvError && error.statusCode === 404) {
       throw new ExportError(
-        "A saved Optimized CV and Cover Letter are required before export.",
+        "A saved Optimized CV is required before export.",
+        400,
+      );
+    }
+    toExportError(error);
+  }
+}
+
+async function requireSavedCoverLetter(
+  applicationId: string,
+  userId: string,
+): Promise<CoverLetter> {
+  try {
+    return await getCoverLetter(applicationId, userId);
+  } catch (error) {
+    if (error instanceof CoverLetterError && error.statusCode === 404) {
+      throw new ExportError(
+        "A saved Cover Letter is required for this document.",
         400,
       );
     }
@@ -123,8 +134,22 @@ async function loadExportContext(
 ) {
   const request = validateExportRequest(documentType, presentationLanguage);
   await getOwnedApplication(applicationId, userId);
-  const documents = await requireExportDocuments(applicationId, userId);
-  return { ...request, ...documents };
+
+  if (request.documentType === "optimized-cv") {
+    const optimizedCv = await requireSavedOptimizedCv(applicationId, userId);
+    return {
+      documentType: "optimized-cv" as const,
+      presentationLanguage: request.presentationLanguage,
+      optimizedCv,
+    };
+  }
+
+  const coverLetter = await requireSavedCoverLetter(applicationId, userId);
+  return {
+    documentType: "cover-letter" as const,
+    presentationLanguage: request.presentationLanguage,
+    coverLetter,
+  };
 }
 
 async function loadOptimizedCvPhotoBytes(
@@ -153,13 +178,18 @@ export async function previewExportDocument(
       presentationLanguage,
     );
 
+    if (context.documentType === "optimized-cv") {
+      return preparePresentationDocument(
+        "optimized-cv",
+        context.presentationLanguage,
+        { optimizedCv: context.optimizedCv },
+      );
+    }
+
     return preparePresentationDocument(
-      context.documentType,
+      "cover-letter",
       context.presentationLanguage,
-      {
-        optimizedCv: context.optimizedCv,
-        coverLetter: context.coverLetter,
-      },
+      { coverLetter: context.coverLetter },
     );
   } catch (error) {
     toExportError(error);
@@ -179,14 +209,18 @@ export async function exportApplicationDocument(
       documentType,
       presentationLanguage,
     );
-    const presentation = await preparePresentationDocument(
-      context.documentType,
-      context.presentationLanguage,
-      {
-        optimizedCv: context.optimizedCv,
-        coverLetter: context.coverLetter,
-      },
-    );
+    const presentation =
+      context.documentType === "optimized-cv"
+        ? await preparePresentationDocument(
+            "optimized-cv",
+            context.presentationLanguage,
+            { optimizedCv: context.optimizedCv },
+          )
+        : await preparePresentationDocument(
+            "cover-letter",
+            context.presentationLanguage,
+            { coverLetter: context.coverLetter },
+          );
     const masterCv = await getMasterCv(userId);
     const professionalTitle = readOptionalProfessionalTitle(masterCv);
     const filename =

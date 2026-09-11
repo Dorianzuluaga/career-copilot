@@ -59,6 +59,17 @@ export function updateDocumentSelection(
   return next;
 }
 
+export function effectiveExportSelection(
+  selection: ExportDocumentSelection,
+  hasSavedCoverLetter: boolean,
+): ExportDocumentSelection {
+  if (!hasSavedCoverLetter) {
+    return { optimizedCv: true, coverLetter: false };
+  }
+
+  return selection;
+}
+
 export function selectedExportDocuments(
   selection: ExportDocumentSelection,
 ): ExportDocumentType[] {
@@ -273,7 +284,16 @@ export function ApplicationExport({
   const [presentationLanguage, setPresentationLanguage] = useState<Locale>(() =>
     resolvePresentationLanguage(readStoredPresentationLanguage(), locale),
   );
-  const hasPreviewDocuments = optimizedCv !== null && coverLetter !== null;
+  const hasSavedOptimizedCv = optimizedCv !== null;
+  const hasSavedCoverLetter = coverLetter !== null;
+  const hasPreviewDocuments = hasSavedOptimizedCv;
+  const visibleSelection = effectiveExportSelection(
+    selectedDocuments,
+    hasSavedCoverLetter,
+  );
+  const previewDocument: PreviewDocument = hasSavedCoverLetter
+    ? activePreview
+    : "optimized-cv";
   const [preview, setPreview] = useState<ExportPreviewResponse | null>(null);
   const [previewError, setPreviewError] = useState<string | null>(null);
   const [isPreviewLoading, setIsPreviewLoading] = useState(hasPreviewDocuments);
@@ -282,9 +302,9 @@ export function ApplicationExport({
   const previewCacheScopeRef = useRef<ExportPreviewCacheScope | null>(null);
 
   const isOptimizedCvSelectionLocked =
-    selectedDocuments.optimizedCv && !selectedDocuments.coverLetter;
+    visibleSelection.optimizedCv && !visibleSelection.coverLetter;
   const isCoverLetterSelectionLocked =
-    selectedDocuments.coverLetter && !selectedDocuments.optimizedCv;
+    visibleSelection.coverLetter && !visibleSelection.optimizedCv;
 
   useEffect(() => {
     if (!hasPreviewDocuments) {
@@ -300,7 +320,7 @@ export function ApplicationExport({
       previewCache,
       previewCacheScopeRef.current,
       scope,
-      activePreview,
+      previewDocument,
     );
     previewCacheScopeRef.current = scope;
 
@@ -318,13 +338,13 @@ export function ApplicationExport({
 
     void previewExportDocument(
       applicationId,
-      activePreview,
+      previewDocument,
       presentationLanguage,
     )
       .then((result) => {
         previewCache.set(
           applicationId,
-          activePreview,
+          previewDocument,
           presentationLanguage,
           result,
         );
@@ -340,7 +360,7 @@ export function ApplicationExport({
         }
         setPreviewError(
           exportDownloadFailureKind(error) === "adaptation"
-            ? formatExportDownloadFailure(t, activePreview, 1, error)
+            ? formatExportDownloadFailure(t, previewDocument, 1, error)
             : t("export.previewFailed"),
         );
         setIsPreviewLoading(false);
@@ -350,11 +370,11 @@ export function ApplicationExport({
       cancelled = true;
     };
   }, [
-    activePreview,
     applicationId,
     hasPreviewDocuments,
     presentationLanguage,
     previewCache,
+    previewDocument,
     t,
   ]);
 
@@ -368,7 +388,7 @@ export function ApplicationExport({
 
   async function handleDownload() {
     const requests = exportRequestsForSelection(
-      selectedDocuments,
+      visibleSelection,
       presentationLanguage,
     );
     if (requests.length === 0 || isDownloading) {
@@ -422,7 +442,11 @@ export function ApplicationExport({
                 {t("export.presentationLanguage")}
               </legend>
               <p className="mt-1 text-sm leading-6 text-muted">
-                {t("export.presentationLanguageHelp")}
+                {t(
+                  hasSavedCoverLetter
+                    ? "export.presentationLanguageHelp"
+                    : "export.presentationLanguageHelpCvOnly",
+                )}
               </p>
               <label className="mt-3 block max-w-xs text-sm font-medium text-ink">
                 <span className="sr-only">
@@ -467,23 +491,25 @@ export function ApplicationExport({
                   />
                   {t("export.optimizedCv")}
                 </label>
-                <label className="flex items-center gap-2 text-sm font-medium text-ink">
-                  <input
-                    type="checkbox"
-                    checked={selectedDocuments.coverLetter}
-                    disabled={isCoverLetterSelectionLocked || isDownloading}
-                    onChange={(event) =>
-                      setSelectedDocuments((current) =>
-                        updateDocumentSelection(
-                          current,
-                          "coverLetter",
-                          event.target.checked,
-                        ),
-                      )
-                    }
-                  />
-                  {t("export.coverLetter")}
-                </label>
+                {hasSavedCoverLetter ? (
+                  <label className="flex items-center gap-2 text-sm font-medium text-ink">
+                    <input
+                      type="checkbox"
+                      checked={selectedDocuments.coverLetter}
+                      disabled={isCoverLetterSelectionLocked || isDownloading}
+                      onChange={(event) =>
+                        setSelectedDocuments((current) =>
+                          updateDocumentSelection(
+                            current,
+                            "coverLetter",
+                            event.target.checked,
+                          ),
+                        )
+                      }
+                    />
+                    {t("export.coverLetter")}
+                  </label>
+                ) : null}
               </div>
             </fieldset>
 
@@ -503,28 +529,30 @@ export function ApplicationExport({
               ) : null}
             </div>
 
-            <div
-              role="tablist"
-              aria-label={t("export.previewAria")}
-              className="mt-6 flex flex-wrap gap-2"
-            >
-              {previewDocuments.map((document) => {
-                const isActive = document.id === activePreview;
+            {hasSavedCoverLetter ? (
+              <div
+                role="tablist"
+                aria-label={t("export.previewAria")}
+                className="mt-6 flex flex-wrap gap-2"
+              >
+                {previewDocuments.map((document) => {
+                  const isActive = document.id === activePreview;
 
-                return (
-                  <button
-                    key={document.id}
-                    type="button"
-                    role="tab"
-                    aria-selected={isActive}
-                    onClick={() => setActivePreview(document.id)}
-                    className={isActive ? "cc-tab-active" : "cc-tab"}
-                  >
-                    {t(document.labelKey)}
-                  </button>
-                );
-              })}
-            </div>
+                  return (
+                    <button
+                      key={document.id}
+                      type="button"
+                      role="tab"
+                      aria-selected={isActive}
+                      onClick={() => setActivePreview(document.id)}
+                      className={isActive ? "cc-tab-active" : "cc-tab"}
+                    >
+                      {t(document.labelKey)}
+                    </button>
+                  );
+                })}
+              </div>
+            ) : null}
           </>
         ) : null}
       </section>

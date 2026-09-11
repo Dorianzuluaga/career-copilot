@@ -20,6 +20,7 @@ import {
 import {
   ApplicationExport,
   createExportPreviewCache,
+  effectiveExportSelection,
   ExportPreviewPanel,
   exportDownloadFailureKind,
   exportDownloadFailureMessageKeys,
@@ -139,6 +140,18 @@ describe("export presentation language UX", () => {
         "en",
       ),
     ).toEqual([{ document: "optimized-cv", presentationLanguage: "en" }]);
+  });
+
+  it("downloads only Optimized CV when no saved Cover Letter exists", () => {
+    expect(
+      exportRequestsForSelection(
+        effectiveExportSelection(
+          { optimizedCv: true, coverLetter: true },
+          false,
+        ),
+        "es",
+      ),
+    ).toEqual([{ document: "optimized-cv", presentationLanguage: "es" }]);
   });
 
   it("renders the Presentation Language selector only in Export", () => {
@@ -1039,11 +1052,38 @@ describe("export UI/Working/Presentation Language matrix", () => {
       />,
     );
 
+    expect(savedOnlyMarkup).toContain("Idioma de presentación");
     expect(savedOnlyMarkup).toContain(
-      "Se necesita un CV optimizado y una carta de presentación guardados antes de previsualizar los documentos.",
+      "Este idioma se aplica al CV optimizado.",
     );
-    expect(savedOnlyMarkup).not.toContain("TypeScript engineer building APIs.");
-    expect(savedOnlyMarkup).not.toContain(">Descargar</button>");
+    expect(savedOnlyMarkup).toContain(">CV optimizado</label>");
+    expect(savedOnlyMarkup).toContain(">Descargar</button>");
+    expect(savedOnlyMarkup).not.toContain(">Carta de presentación</label>");
+    expect(savedOnlyMarkup).not.toContain('role="tablist"');
+    expect(savedOnlyMarkup).not.toContain("Dear Hiring Manager,");
     expect(savedOnlyMarkup).not.toContain("<textarea");
+    expect(savedOnlyMarkup).not.toContain(
+      "Se necesita un CV optimizado guardado antes de previsualizar los documentos.",
+    );
+  });
+
+  it("shows Cover Letter selection after a Cover Letter is saved in the same workspace", () => {
+    const withCoverLetterMarkup = renderExport(
+      <ApplicationExport
+        applicationId="application-id"
+        coverLetter={coverLetter}
+        optimizedCv={optimizedCv}
+        previewCache={createExportPreviewCache()}
+      />,
+    );
+
+    expect(withCoverLetterMarkup).toContain(">Carta de presentación</label>");
+    expect(withCoverLetterMarkup).toContain('role="tablist"');
+    expect(withCoverLetterMarkup).toContain(
+      "Este idioma se aplica tanto al CV optimizado como a la carta de presentación.",
+    );
+    expect(withCoverLetterMarkup).not.toContain(
+      "Este idioma se aplica al CV optimizado.</p>",
+    );
   });
 });

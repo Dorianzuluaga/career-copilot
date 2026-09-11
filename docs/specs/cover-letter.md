@@ -6,11 +6,13 @@ This Epic implements the Cover Letter described in:
 
 - docs/product/08-cover-letter.md
 
-The goal of this Epic is to generate an editable, application-specific Cover Letter for a single Application Workspace.
+The goal of this Epic is to generate an editable, application-specific Cover Letter for a single Application Workspace when the user chooses to include one.
+
+The Cover Letter is an optional output, not a required stage for Export.
 
 The implementation uses the completed Job Analysis, Profile Match, and the saved Optimized CV to generate a professional Cover Letter while preserving factual accuracy.
 
-The generated document always remains under the user's control through review and manual editing before export.
+The generated document always remains under the user's control through review and manual editing before it can be included in Export.
 
 ---
 
@@ -21,6 +23,8 @@ The Cover Letter is accessed from the Application Workspace.
 It is not a standalone page.
 
 Users can access the Cover Letter only after a valid Optimized CV has been saved.
+
+Cover Letter generation is not required to leave Optimized CV or to reach Export.
 
 No additional routes should be introduced during this Epic.
 
@@ -50,23 +54,40 @@ so that I can present my motivation and professional value without rewriting a n
 Application Workspace
         │
         ▼
-Cover Letter
+Optimized CV Saved
         │
-        ▼
-Generate Cover Letter
+        ├──► Export without Cover Letter
         │
-        ▼
-Review Generated Version
-        │
-        ▼
-Manual Editing
-        │
-        ▼
-Save Cover Letter
-        │
-        ▼
-Continue to Export
+        └──► Cover Letter
+                │
+                ▼
+            Generate Cover Letter
+            (explicit user action only)
+                │
+                ▼
+            Review Generated Version
+                │
+                ▼
+            Manual Editing
+                │
+                ▼
+            Save Cover Letter
+                │
+                ▼
+            Continue to Export
 ```
+
+---
+
+# Document States
+
+The Cover Letter has three product states:
+
+- **Does not exist.** No Cover Letter record is stored. Export is available as Optimized CV only. No Cover Letter generation or Cover Letter presentation/adaptation AI call occurs.
+- **Exists and is saved.** One Cover Letter record is associated with the application. Existing generate, review, edit, save, preview, and download behavior remains.
+- **Draft exists but is unsaved.** The generated or edited version exists only during the current workspace session. Generating a new Cover Letter does not automatically replace a previously saved Cover Letter. Only Save persists a version. Unsaved drafts are not included in Export.
+
+Absence of the Cover Letter record is sufficient. Do not add a `wantsCoverLetter`, `skipCoverLetter`, or equivalent database field.
 
 ---
 
@@ -75,6 +96,10 @@ Continue to Export
 ## Phase 1 — Generate Cover Letter
 
 Generate the first version of the Cover Letter.
+
+Generation is explicitly user-triggered. It must never run automatically.
+
+The AI generation call occurs only when the user chooses Generate, Try again, or Generate again.
 
 The generation must use:
 
@@ -151,13 +176,17 @@ When reopening the same Application Workspace, the previously saved Cover Letter
 
 Unsaved Cover Letter versions exist only during the current workspace session.
 
+An unsaved draft does not create a Cover Letter record and is not included in Export.
+
 ---
 
 ## Phase 5 — Continue Workflow
 
-After a valid saved Cover Letter exists, allow users to continue toward the Export section.
+Export is available after a valid saved Optimized CV exists, including when no Cover Letter exists.
 
-This phase only updates the workflow progression.
+If a Cover Letter has been saved, users may continue toward Export with Optimized CV + Cover Letter.
+
+This phase only updates the workflow progression. It must not make Cover Letter generation mandatory.
 
 No Export functionality is implemented.
 
@@ -168,7 +197,8 @@ No Export functionality is implemented.
 The Cover Letter section must:
 
 - Preserve the current Application context.
-- Present one editable Cover Letter document.
+- Present one editable Cover Letter document when a generated or saved Cover Letter exists.
+- Present an explicit Generate action when no Cover Letter exists, without auto-generating.
 - Organize the document according to the defined Cover Letter structure.
 - Support a review-first workflow before editing.
 - Behave as a document editor rather than a form.
@@ -181,7 +211,9 @@ The Cover Letter section must:
 
 # AI Requirements
 
-The AI generates the initial Cover Letter.
+The AI generates the initial Cover Letter only after an explicit Generate, Try again, or Generate again action.
+
+The AI must never generate a Cover Letter automatically.
 
 The AI may:
 
@@ -223,7 +255,9 @@ The Cover Letter should normally remain between 200 and 400 words.
 
 This Epic does NOT include:
 
-- PDF generation.
+- Automatic Cover Letter generation.
+- A `wantsCoverLetter`, `skipCoverLetter`, or equivalent database field.
+- A new application completion status.
 - Export functionality.
 - AI regeneration during manual editing.
 - Multiple Cover Letter versions.
@@ -238,7 +272,9 @@ This Epic does NOT include:
 
 # Acceptance Criteria
 
-Users can generate a Cover Letter.
+Users can generate a Cover Letter through an explicit Generate, Try again, or Generate again action.
+
+Cover Letter generation never runs automatically.
 
 Users can review the generated document.
 
@@ -252,13 +288,21 @@ The saved Cover Letter remains associated with the current Application.
 
 Reopening the same Application Workspace restores the previously saved Cover Letter.
 
+If no Cover Letter has been saved, reopening the Application Workspace does not generate one.
+
 Saving a new Cover Letter replaces the previously saved version.
 
-Only one Cover Letter exists per Application.
+Only one Cover Letter exists per Application when the user chooses to save one.
+
+Absence of a Cover Letter record means no Cover Letter is included. No `wantsCoverLetter`, `skipCoverLetter`, or equivalent field is introduced.
+
+An unsaved Cover Letter draft is session-only and is not included in Export.
 
 The Optimized CV remains unchanged.
 
-The workflow can continue toward Export.
+Users can continue toward Export with or without a saved Cover Letter.
+
+Users can return later and generate or save a Cover Letter after a previous CV-only export.
 
 Users can continue working inside the Application Workspace without losing the current application context.
 

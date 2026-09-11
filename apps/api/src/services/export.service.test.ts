@@ -47,6 +47,10 @@ vi.mock("./cover-letter.service.js", () => ({
   saveCoverLetter: vi.fn(),
 }));
 
+vi.mock("./cover-letter-ai.service.js", () => ({
+  generateCoverLetterDraft: vi.fn(),
+}));
+
 vi.mock("./master-cv.service.js", async (importOriginal) => {
   const actual =
     await importOriginal<typeof import("./master-cv.service.js")>();
@@ -80,11 +84,12 @@ vi.mock("./export-adaptation.service.js", async (importOriginal) => {
 
 import { getOwnedApplication } from "./application.service.js";
 import {
-  getCoverLetter,
-  generateCoverLetter,
-  saveCoverLetter,
   CoverLetterError,
+  generateCoverLetter,
+  getCoverLetter,
+  saveCoverLetter,
 } from "./cover-letter.service.js";
+import { generateCoverLetterDraft } from "./cover-letter-ai.service.js";
 import {
   resolveCoverLetterDocumentChrome,
   resolveOptimizedCvDocumentChrome,
@@ -174,8 +179,15 @@ function adaptedCoverLetter(locale: "es" | "en" | "fr") {
 function expectNoGenerationOrPersistence() {
   expect(generateOptimizedCv).not.toHaveBeenCalled();
   expect(generateCoverLetter).not.toHaveBeenCalled();
+  expect(generateCoverLetterDraft).not.toHaveBeenCalled();
   expect(saveOptimizedCv).not.toHaveBeenCalled();
   expect(saveCoverLetter).not.toHaveBeenCalled();
+}
+
+function expectNoCoverLetterAi() {
+  expect(generateCoverLetter).not.toHaveBeenCalled();
+  expect(generateCoverLetterDraft).not.toHaveBeenCalled();
+  expect(adaptCoverLetterNarrative).not.toHaveBeenCalled();
 }
 
 beforeEach(() => {
@@ -283,6 +295,8 @@ describe("exportApplicationDocument", () => {
       filename: "juan-perez_cv.pdf",
       contentType: "application/pdf",
     });
+    expect(getCoverLetter).not.toHaveBeenCalled();
+    expectNoCoverLetterAi();
     expectNoGenerationOrPersistence();
   });
 
@@ -295,9 +309,9 @@ describe("exportApplicationDocument", () => {
     );
 
     expect(getOptimizedCv).toHaveBeenCalledWith(applicationId, userId);
-    expect(getCoverLetter).toHaveBeenCalledWith(applicationId, userId);
+    expect(getCoverLetter).not.toHaveBeenCalled();
     expect(adaptOptimizedCvNarrative).toHaveBeenCalledWith(optimizedCv, "fr");
-    expect(adaptCoverLetterNarrative).not.toHaveBeenCalled();
+    expectNoCoverLetterAi();
     expect(renderDocument).toHaveBeenCalledWith(
       {
         type: "optimized-cv",
@@ -384,6 +398,8 @@ describe("exportApplicationDocument", () => {
 
     expect(adaptCoverLetterNarrative).toHaveBeenCalledWith(coverLetter, "es");
     expect(adaptOptimizedCvNarrative).not.toHaveBeenCalled();
+    expect(getOptimizedCv).not.toHaveBeenCalled();
+    expect(getCoverLetter).toHaveBeenCalledWith(applicationId, userId);
     expect(renderDocument).toHaveBeenCalledWith(
       {
         type: "cover-letter",
@@ -522,37 +538,82 @@ describe("exportApplicationDocument", () => {
     expectNoGenerationOrPersistence();
   });
 
-  it("rejects export when a required saved document is missing", async () => {
+  it("exports Optimized CV without loading Cover Letter when none exists", async () => {
     vi.mocked(getCoverLetter).mockRejectedValue(
       new CoverLetterError("Cover Letter not found.", 404),
     );
 
-    await expect(
-      exportApplicationDocument(applicationId, userId, "optimized-cv", "es"),
-    ).rejects.toMatchObject({
-      message:
-        "A saved Optimized CV and Cover Letter are required before export.",
-      statusCode: 400,
-    });
-    expect(renderDocument).not.toHaveBeenCalled();
-    expect(adaptOptimizedCvNarrative).not.toHaveBeenCalled();
+    const result = await exportApplicationDocument(
+      applicationId,
+      userId,
+      "optimized-cv",
+      "es",
+    );
+
+    expect(getOptimizedCv).toHaveBeenCalledWith(applicationId, userId);
+    expect(getCoverLetter).not.toHaveBeenCalled();
+    expect(result.filename).toBe("juan-perez_cv.pdf");
+    expect(renderDocument).toHaveBeenCalledWith(
+      {
+        type: "optimized-cv",
+        data: optimizedCv,
+        chrome: resolveOptimizedCvDocumentChrome("es"),
+        profilePhotoBytes: null,
+      },
+      "pdf",
+    );
+    expectNoCoverLetterAi();
     expectNoGenerationOrPersistence();
   });
 
-  it("rejects export when the optimized CV is missing", async () => {
+  it("does not call Cover Letter AI for Optimized CV even when a Cover Letter exists", async () => {
+    await previewExportDocument(applicationId, userId, "optimized-cv", "fr");
+    await exportApplicationDocument(
+      applicationId,
+      userId,
+      "optimized-cv",
+      "fr",
+    );
+
+    expect(getCoverLetter).not.toHaveBeenCalled();
+    expectNoCoverLetterAi();
+    expect(adaptOptimizedCvNarrative).toHaveBeenCalledWith(optimizedCv, "fr");
+    expectNoGenerationOrPersistence();
+  });
+
+  it("rejects Optimized CV export when the Optimized CV is missing", async () => {
     vi.mocked(getOptimizedCv).mockRejectedValue(
       new OptimizedCvError("Optimized CV not found.", 404),
     );
 
     await expect(
-      exportApplicationDocument(applicationId, userId, "cover-letter", "en"),
+      exportApplicationDocument(applicationId, userId, "optimized-cv", "es"),
     ).rejects.toMatchObject({
-      message:
-        "A saved Optimized CV and Cover Letter are required before export.",
+      message: "A saved Optimized CV is required before export.",
       statusCode: 400,
     });
+    expect(getCoverLetter).not.toHaveBeenCalled();
+    expect(renderDocument).not.toHaveBeenCalled();
+    expectNoCoverLetterAi();
+    expectNoGenerationOrPersistence();
+  });
+
+  it("rejects Cover Letter export when the Cover Letter is missing", async () => {
+    vi.mocked(getCoverLetter).mockRejectedValue(
+      new CoverLetterError("Cover Letter not found.", 404),
+    );
+
+    await expect(
+      exportApplicationDocument(applicationId, userId, "cover-letter", "en"),
+    ).rejects.toMatchObject({
+      message: "A saved Cover Letter is required for this document.",
+      statusCode: 400,
+    });
+    expect(getOptimizedCv).not.toHaveBeenCalled();
     expect(renderDocument).not.toHaveBeenCalled();
     expect(adaptCoverLetterNarrative).not.toHaveBeenCalled();
+    expectNoCoverLetterAi();
+    expectNoGenerationOrPersistence();
   });
 });
 
@@ -573,9 +634,10 @@ describe("previewExportDocument", () => {
     });
     expect(adaptOptimizedCvNarrative).not.toHaveBeenCalled();
     expect(getOptimizedCv).toHaveBeenCalledWith(applicationId, userId);
-    expect(getCoverLetter).toHaveBeenCalledWith(applicationId, userId);
+    expect(getCoverLetter).not.toHaveBeenCalled();
     expect(renderDocument).not.toHaveBeenCalled();
     expect(getMasterCv).not.toHaveBeenCalled();
+    expectNoCoverLetterAi();
     expectNoGenerationOrPersistence();
   });
 
@@ -698,19 +760,59 @@ describe("previewExportDocument", () => {
     expectNoGenerationOrPersistence();
   });
 
-  it("rejects preview when a required saved document is missing", async () => {
-    vi.mocked(getOptimizedCv).mockRejectedValue(
-      new OptimizedCvError("Optimized CV not found.", 404),
+  it("previews Optimized CV without loading Cover Letter when none exists", async () => {
+    vi.mocked(getCoverLetter).mockRejectedValue(
+      new CoverLetterError("Cover Letter not found.", 404),
+    );
+
+    const preview = await previewExportDocument(
+      applicationId,
+      userId,
+      "optimized-cv",
+      "es",
+    );
+
+    expect(preview).toEqual({
+      document: "optimized-cv",
+      presentationLanguage: "es",
+      data: optimizedCv,
+      chrome: resolveOptimizedCvDocumentChrome("es"),
+    });
+    expect(getCoverLetter).not.toHaveBeenCalled();
+    expectNoCoverLetterAi();
+    expectNoGenerationOrPersistence();
+  });
+
+  it("rejects Cover Letter preview when the Cover Letter is missing", async () => {
+    vi.mocked(getCoverLetter).mockRejectedValue(
+      new CoverLetterError("Cover Letter not found.", 404),
     );
 
     await expect(
       previewExportDocument(applicationId, userId, "cover-letter", "es"),
     ).rejects.toMatchObject({
-      message:
-        "A saved Optimized CV and Cover Letter are required before export.",
+      message: "A saved Cover Letter is required for this document.",
       statusCode: 400,
     });
+    expect(getOptimizedCv).not.toHaveBeenCalled();
     expect(adaptCoverLetterNarrative).not.toHaveBeenCalled();
+    expectNoCoverLetterAi();
+    expectNoGenerationOrPersistence();
+  });
+
+  it("rejects Optimized CV preview when the Optimized CV is missing", async () => {
+    vi.mocked(getOptimizedCv).mockRejectedValue(
+      new OptimizedCvError("Optimized CV not found.", 404),
+    );
+
+    await expect(
+      previewExportDocument(applicationId, userId, "optimized-cv", "es"),
+    ).rejects.toMatchObject({
+      message: "A saved Optimized CV is required before export.",
+      statusCode: 400,
+    });
+    expect(getCoverLetter).not.toHaveBeenCalled();
+    expectNoCoverLetterAi();
     expectNoGenerationOrPersistence();
   });
 });
@@ -885,8 +987,9 @@ describe("export Phase 6 preview/PDF integration", () => {
     );
 
     expect(getOptimizedCv).toHaveBeenCalledWith(applicationId, userId);
-    expect(getCoverLetter).toHaveBeenCalledWith(applicationId, userId);
+    expect(getCoverLetter).not.toHaveBeenCalled();
     expect(adaptOptimizedCvNarrative).toHaveBeenCalledWith(savedCv, "fr");
+    expectNoCoverLetterAi();
     expect(preview).toMatchObject({
       document: "optimized-cv",
       data: { professionalSummary: "Latest saved summary [fr]" },
