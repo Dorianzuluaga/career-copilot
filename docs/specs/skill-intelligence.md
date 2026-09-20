@@ -1,11 +1,13 @@
 # Skill Intelligence Specification
 
 Document: docs/specs/skill-intelligence.md
-Status: Approved Implementation-Ready Specification — QA Amendment
-Scope: Skill Intelligence / Skill Profile foundation, plus Optimized CV consumption corrections
-Implementation status: Skill Intelligence V1 is implemented. Professional Summary factuality and visible Skills-section category grouping are specified here and are not yet implemented.
+Status: Approved Implementation-Ready Specification — Evidence-Based Claims Amendment
+Scope: Skill Intelligence / Skill Profile foundation, Optimized CV consumption corrections, and Evidence-Based Claims
+Implementation status: Skill Intelligence V1 is implemented. Professional Summary factuality, visible Skills-section category grouping, and Evidence-Based Claims are specified here and are not yet implemented.
 
-This amendment does not change the Skill Profile contract, cache, Profile Match, Job Analysis, Cover Letter product behavior, Prisma schema, or Master CV source-of-truth principle. It corrects how Optimized CV consumes an already computed Skill Profile.
+This amendment records the approved product/architecture decision Evidence-Based Claims. It does not change the Skill Profile contract, cache, Profile Match, Job Analysis, Cover Letter product behavior, Prisma schema, Master CV source-of-truth principle, or Skill Intelligence architecture. It does not introduce new database models, new agents, LangGraph, RAG, MCP, a new Skill Profile, or a semantic skill scanner.
+
+The prior QA amendment remains: it does not change those contracts, and it corrects how Optimized CV consumes an already computed Skill Profile.
 
 ## 1. Purpose
 
@@ -34,6 +36,12 @@ Skill Profile: classify every existing Master CV skill and attach professionalWe
 Document consumption: Professional Summary and Cover Letter use those fields as emphasis signals for a subset of existing skills. The Optimized CV Skills section uses category, sourceSkill, and priority to present the complete inventory.
 
 Emphasis guides which existing Master CV facts may be mentioned more prominently. It does not authorize omitting a Master CV skill from the Optimized CV Skills section. It does not authorize unsupported proficiency, seniority, expertise, fluency, communication ability, or other personal-attribute claims.
+
+Evidence-Based Claims governs that emphasis:
+
+Relevance determines whether a capability may be emphasized.
+
+Evidence determines the maximum strength of the claim.
 
 The layer must not create candidate capabilities. It must not strengthen, upgrade, or rewrite the factual meaning of existing Master CV claims.
 
@@ -75,11 +83,79 @@ transform a skill mention into an unsupported proficiency, seniority, expertise,
 
 infer language ability beyond what the Master CV explicitly states;
 
+upgrade language proficiency;
+
+infer candidate seniority from Job Analysis experienceLevel;
+
+turn Job Analysis requiredSkills or atsKeywords into candidate skills;
+
+turn Profile Match matchingSkills or missingSkills into candidate evidence;
+
+use evidence to justify a stronger claim than the evidence supports;
+
 invent certifications, responsibilities, achievements, seniority, communication abilities, domain expertise, or other qualifications.
 
 Every Skill Profile item must map to a Master CV skill. Skill Intelligence may reason about skills, but it cannot introduce new candidate skills or stronger personal claims than the Master CV supports.
 
-Document generators may rewrite and synthesize existing facts. They must preserve the factual meaning of those facts. Relevance, weight, priority, and evidence are not permission to invent a stronger claim.
+Document generators may rewrite and synthesize existing facts. They must preserve the factual meaning of those facts. Relevance, weight, priority, and evidence are not permission to invent a stronger claim. Evidence supports a claim but does not authorize a stronger claim.
+
+### 2.1 Evidence-Based Claims
+
+This is an approved product/architecture decision. It preserves the existing Skill Intelligence architecture. It does not introduce a new Skill Profile, new database models, new agents, LangGraph, RAG, MCP, or a semantic skill scanner.
+
+Core principle:
+
+Relevance determines whether a capability may be emphasized.
+
+Evidence determines the maximum strength of the claim.
+
+Source of truth:
+
+The Master CV remains the candidate evidence and the sole source of truth for candidate capabilities.
+
+Job Analysis, Profile Match, professionalWeight, priority, and jobRelevance are not evidence of candidate experience, proficiency, expertise, or seniority.
+
+They may inform whether an existing Master CV skill is relevant enough to emphasize. They must not be treated as proof that the candidate possesses, practices, or has mastered a capability.
+
+Claim strength:
+
+Professional Summary and Cover Letter may present an existing Master CV skill at one of these conceptual levels, and must not exceed the level that Master CV evidence supports:
+
+- demonstrated professional experience
+- project experience
+- documented knowledge/education
+- interest or development area
+
+These levels are consumption guidance. They are not a new Skill Profile field, enum, or scanner.
+
+If a capability is relevant to the job but lacks sufficient Master CV evidence, it may be framed as interest or development but must not be presented as demonstrated experience.
+
+If it has no evidence and no meaningful relevance, Professional Summary and Cover Letter must not mention it. This omission rule does not apply to the Optimized CV Skills section, which remains a complete inventory as defined in §19.3.
+
+Explicit prohibitions:
+
+The system must not:
+
+- turn relevance into expertise
+- turn professionalWeight into seniority
+- turn priority into proficiency
+- infer candidate seniority from Job Analysis experienceLevel
+- turn Job Analysis requiredSkills/atsKeywords into candidate skills
+- turn Profile Match matchingSkills/missingSkills into candidate evidence
+- upgrade language proficiency
+- use evidence to justify a stronger claim than the evidence supports
+
+Evidence rule:
+
+Evidence supports a claim but does not authorize a stronger claim.
+
+Example:
+
+"Built interfaces using React" may support experience with React, but not "expert in React".
+
+Consumers:
+
+Professional Summary and Cover Letter apply the same Evidence-Based Claims principle so they can emphasize relevant skills consistently without overstating the candidate's experience. Claim-strength application is defined with Evidence in §12 and with those consumers in §19.2 and §19.4.
 
 ## 3. Problem Being Solved
 
@@ -107,11 +183,13 @@ no structural tie between narrative claims and the Master CV skill set;
 
 unsupported proficiency or expertise claims in Professional Summary when Skill Profile emphasis is treated as a stronger personal attribute;
 
+relevance, professionalWeight, priority, or Job Analysis/Profile Match signals treated as candidate evidence;
+
 a flat Optimized CV Skills section that cannot show Skill Profile categories.
 
 Skill Intelligence addresses the shared skill-reasoning problem. It does not replace document generation, Job Analysis, or Profile Match.
 
-Optimized CV consumption must preserve that reasoning: Professional Summary may emphasize a subset of existing skills without upgrading their factual meaning, and the Skills section must present the complete inventory in visible Skill Profile categories.
+Optimized CV consumption must preserve that reasoning: Professional Summary may emphasize a subset of existing skills without upgrading their factual meaning, and the Skills section must present the complete inventory in visible Skill Profile categories. Cover Letter and Professional Summary apply Evidence-Based Claims so relevant skills can be emphasized without overstating the candidate's experience.
 
 ## 4. Scope
 
@@ -171,6 +249,12 @@ External market research or labor-market data.
 
 Automatic Master CV modification.
 
+New database models.
+
+A new Skill Profile or Skill Profile contract.
+
+A semantic skill scanner.
+
 ## 5. Inputs
 
 Skill Intelligence operates on:
@@ -220,6 +304,16 @@ summary
 
 Job Analysis must never become a source of candidate capabilities.
 
+Job Analysis is not evidence of candidate experience, proficiency, expertise, or seniority.
+
+The system must not:
+
+turn Job Analysis requiredSkills or atsKeywords into candidate skills;
+
+infer candidate seniority from Job Analysis experienceLevel.
+
+experienceLevel is not a Skill Intelligence input. If it is present on Job Analysis, it describes the job, not the candidate. It must not be used to claim that the candidate is junior, mid, senior, or any other seniority.
+
 ### 5.3 Profile Match
 
 Provides application-level signals only:
@@ -234,7 +328,11 @@ recommendation
 
 matchingSkills is a signal, not an authoritative candidate skill inventory.
 
+Profile Match is not evidence of candidate experience, proficiency, expertise, or seniority.
+
 The implementation must never copy a Profile Match matchingSkills value into sourceSkill.
+
+The system must not turn Profile Match matchingSkills or missingSkills into candidate evidence.
 
 The existing Profile Match strings remain unstructured signals. Skill Intelligence may use them to determine jobRelevance. The backend then derives priority from the resulting semantic fields.
 
@@ -312,10 +410,12 @@ If equivalence is ambiguous, preserve the Master CV skills as separate items. Di
 
 Skill Intelligence fields have intended downstream consumers. These responsibilities do not change the Skill Profile contract or weaken the Master CV source-of-truth rule.
 
-professionalWeight, jobRelevance, evidence, and priority are emphasis signals. They are not permission to invent stronger claims.
+professionalWeight, jobRelevance, evidence, and priority are emphasis signals. They are not permission to invent stronger claims. They are not candidate evidence.
+
+Under Evidence-Based Claims, jobRelevance may determine whether an existing skill may be emphasized. Master CV evidence determines the maximum strength of the claim. professionalWeight and priority must not be converted into seniority or proficiency.
 
 professionalWeight, jobRelevance, and evidence:
-primarily guide Professional Summary and Cover Letter emphasis. They identify which existing Master CV skills have stronger professional weight and job relevance, and they ground selected skills in existing Master CV content. They must never determine whether a Master CV skill is included in the Optimized CV Skills section. They must never be converted into unsupported proficiency, seniority, expertise, fluency, communication ability, or other personal-attribute claims.
+primarily guide Professional Summary and Cover Letter emphasis. They identify which existing Master CV skills have stronger professional weight and job relevance, and they ground selected skills in existing Master CV content. They must never determine whether a Master CV skill is included in the Optimized CV Skills section. They must never be converted into unsupported proficiency, seniority, expertise, fluency, communication ability, or other personal-attribute claims. Evidence supports a selected mention; it does not authorize a stronger claim than the referenced Master CV text supports.
 
 category:
 primarily structures the complete Optimized CV Skills section. It infers the professional nature/category of each existing skill so the complete skill inventory can be organized into visible professional categories. Category labels must be visible in that section. Categories remain extensible and profile-dependent as defined in §8. Category is not a filter.
@@ -407,6 +507,8 @@ Professional Weight is candidate/profile-oriented and distinct from application 
 
 Professional Weight does not imply expertise, seniority, or proficiency. A core_professional or specialized skill may be mentioned with greater emphasis. The document must not call the candidate an expert, senior, or specialist in that skill unless the Master CV explicitly supports that claim.
 
+The system must not turn professionalWeight into seniority. professionalWeight is not evidence of candidate experience, proficiency, expertise, or seniority.
+
 ## 10. Job Relevance
 
 Job Relevance answers:
@@ -440,7 +542,13 @@ A skill with jobRelevance "none" remains in the Skill Profile. Low or absent app
 
 Job Relevance does not imply proficiency. A skill with very_high or high jobRelevance may be emphasized. The document must not upgrade that skill into expertise, fluency, or another unsupported personal attribute.
 
-Professional Summary and Cover Letter may omit a skill with low or absent job relevance. They must still use only Master CV source skills. They must not convert the selected skills into stronger claims than the Master CV supports.
+The system must not turn relevance into expertise. jobRelevance is not evidence of candidate experience, proficiency, expertise, or seniority.
+
+Relevance determines whether a capability may be emphasized. Evidence determines the maximum strength of the claim.
+
+A skill with very_high or high jobRelevance and insufficient Master CV evidence may be framed as interest or development. It must not be presented as demonstrated experience.
+
+Professional Summary and Cover Letter may omit a skill with low or absent job relevance. They must still use only Master CV source skills. They must not convert the selected skills into stronger claims than the Master CV supports. If a skill has no evidence and no meaningful relevance, they must not mention it.
 
 ## 11. Priority
 
@@ -480,7 +588,9 @@ only existing Master CV skills may receive priority.
 
 Priority is an ordering and selection signal, not an absolute quality score. It is not an inclusion filter. It is not a proficiency score.
 
-Professional Summary and Cover Letter may use priority, together with professionalWeight, jobRelevance, and evidence, to select which existing skills to emphasize. They do not need to mention every Master CV skill. Those signals must not be converted into unsupported proficiency or expertise claims.
+The system must not turn priority into proficiency. priority is not evidence of candidate experience, proficiency, expertise, or seniority.
+
+Professional Summary and Cover Letter may use priority, together with professionalWeight, jobRelevance, and evidence, to select which existing skills to emphasize. They do not need to mention every Master CV skill. Those signals must not be converted into unsupported proficiency or expertise claims. Selection for emphasis does not raise claim strength. Evidence still determines the maximum strength of the claim.
 
 The Optimized CV Skills section must include every distinct Master CV skill represented in the Skill Profile. Priority may order skills within a category. Priority, professionalWeight, and jobRelevance must never exclude a skill from that section.
 
@@ -527,6 +637,18 @@ Evidence may be an empty array. A Master CV skill that appears only in masterCv.
 
 Evidence primarily grounds Professional Summary and Cover Letter emphasis in existing Master CV content. Evidence may be used to ground a skill mention. Evidence does not create skills, does not authorize omitting a skill from the Optimized CV Skills section, and does not authorize unsupported claims. If the referenced Master CV text does not establish a proficiency, seniority, fluency, or other attribute, the generated document must not invent that attribute.
 
+Evidence supports a claim but does not authorize a stronger claim.
+
+The system must not use evidence to justify a stronger claim than the evidence supports.
+
+Example:
+
+"Built interfaces using React" may support experience with React, but not "expert in React".
+
+Job Analysis, Profile Match, professionalWeight, priority, and jobRelevance do not raise claim strength.
+
+Claim strength for Professional Summary and Cover Letter is defined in §12.3.
+
 ### 12.1 Closed reference grammar
 
 V1 evidence references use only these structural references:
@@ -570,6 +692,27 @@ Semantic determination of whether the referenced content genuinely supports the 
 
 Evidence must never be fabricated as a Skill Profile item or as a reference to a non-existent structure.
 
+### 12.3 Claim strength
+
+Claim strength is conceptual consumption guidance for Professional Summary and Cover Letter. It is not a Skill Profile field, enum, agent, or scanner.
+
+Master CV evidence determines the maximum strength of a claim about an existing skill. Approved conceptual levels, strongest to weakest:
+
+- demonstrated professional experience
+- project experience
+- documented knowledge/education
+- interest or development area
+
+Application of those levels:
+
+- Evidence from professional experience may support a claim of demonstrated professional experience, and only at the strength the referenced text supports.
+- Evidence from personal projects may support project experience. It must not be presented as demonstrated professional experience unless professional-experience evidence also supports that stronger claim.
+- Evidence from education or certifications may support documented knowledge or education. It must not be presented as demonstrated professional or project experience unless corresponding evidence also supports that stronger claim.
+- If a capability is relevant to the job but lacks sufficient Master CV evidence for a stronger level, it may be framed as interest or development but must not be presented as demonstrated experience.
+- If it has no evidence and no meaningful relevance, Professional Summary and Cover Letter must not mention it.
+
+Language proficiency remains a separate fidelity rule: the system must not upgrade language proficiency beyond what the Master CV explicitly states.
+
 ## 13. Evidence Semantics
 
 Evidence is not itself a new skill source.
@@ -580,11 +723,15 @@ Master CV skill: React
 Experience[0]: "Developed interfaces using React."
 → React evidence = {"source":"experience","reference":"experience[0]"}
 
+That evidence may support demonstrated professional experience with React. It does not support "expert in React".
+
 Also valid:
 
 Master CV skill: Git
 Git appears only in masterCv.skills
 → Git evidence = []
+
+Empty evidence does not create a skill and does not authorize a demonstrated-experience claim. If Git is relevant to the job, Professional Summary and Cover Letter may frame it as interest or development. If it has no meaningful relevance, they must not mention it. The Optimized CV Skills section must still include Git.
 
 Invalid:
 
@@ -664,6 +811,8 @@ Skill Intelligence
 Profile Match matchingSkills may inform jobRelevance, but cannot authorize a skill absent from the Master CV.
 
 The implementation must never copy matchingSkills into sourceSkill.
+
+The system must not turn Profile Match matchingSkills or missingSkills into candidate evidence.
 
 missingSkills may identify unsupported job requirements but must never become candidate skills.
 
@@ -763,6 +912,8 @@ Profile Match signals from §5.3.
 
 It must not receive Optimized CV data.
 
+It must not receive Job Analysis experienceLevel. Skill Intelligence must not infer candidate seniority from that field.
+
 ### 18.2 AI output
 
 The AI returns structured semantic Skill Profile data only:
@@ -852,6 +1003,12 @@ Skill Profile determines:
 
 Professional Summary uses those signals to decide which existing Master CV skills deserve emphasis.
 
+Professional Summary applies Evidence-Based Claims:
+
+Relevance determines whether a capability may be emphasized.
+
+Evidence determines the maximum strength of the claim.
+
 The Summary:
 
 - may mention only a subset of Master CV skills;
@@ -860,9 +1017,11 @@ The Summary:
 - must not mention every skill;
 - must never introduce a skill outside the Master CV / Skill Profile;
 - must not convert relevance into unsupported proficiency or expertise;
-- must not independently re-evaluate the raw skill inventory in a way that contradicts the Skill Profile.
+- must not independently re-evaluate the raw skill inventory in a way that contradicts the Skill Profile;
+- must not present a relevant skill as demonstrated experience when Master CV evidence is insufficient; it may frame that skill as interest or development;
+- must not mention a skill that has no evidence and no meaningful relevance.
 
-professionalWeight + jobRelevance + evidence + priority are emphasis signals. They are not permission to invent stronger claims.
+professionalWeight + jobRelevance + evidence + priority are emphasis signals. They are not candidate evidence. They are not permission to invent stronger claims.
 
 #### 19.2.2 Factuality
 
@@ -873,14 +1032,24 @@ Skill Profile relevance or professional weight must never imply unsupported prof
 Explicit rules:
 
 - Skill relevance does not imply proficiency level.
+- The system must not turn relevance into expertise.
 - Professional weight does not imply expertise or seniority.
+- The system must not turn professionalWeight into seniority.
 - Priority does not imply proficiency.
+- The system must not turn priority into proficiency.
 - The model must not transform a skill into an unsupported proficiency claim.
 - The model must not infer language abilities beyond what the Master CV explicitly states.
+- The system must not upgrade language proficiency.
 - If a language is mentioned, its proficiency must remain faithful to the Master CV.
 - "English — Intermediate" must not become "conversational English", "fluent English", "advanced English", or any other upgraded formulation.
 - The model must not invent certifications, responsibilities, achievements, seniority, communication abilities, domain expertise, or other qualifications.
+- The model must not infer candidate seniority from Job Analysis experienceLevel.
+- The model must not turn Job Analysis requiredSkills/atsKeywords into candidate skills.
+- The model must not turn Profile Match matchingSkills/missingSkills into candidate evidence.
 - Evidence from Skill Profile may be used to ground a skill mention. Evidence does not authorize unsupported claims.
+- Evidence supports a claim but does not authorize a stronger claim.
+- The system must not use evidence to justify a stronger claim than the evidence supports.
+- Claim strength must not exceed the conceptual level defined in §12.3.
 
 The goal is not to make the Summary mechanically copy the Master CV. The model may rewrite and synthesize existing facts. It must preserve their factual meaning.
 
@@ -895,6 +1064,8 @@ Not allowed:
 "Expert in React and TypeScript."
 
 unless the Master CV explicitly supports that proficiency.
+
+"Built interfaces using React" may support experience with React, but not "expert in React".
 
 Allowed:
 
@@ -1005,13 +1176,46 @@ Existing saved documents without grouping metadata must render as today's flat S
 
 Cover Letter consumes the same Skill Profile that Professional Summary consumes. It remains responsible for greeting, introduction, professional value, motivation, closing, factual narrative, and complementarity with the Optimized CV.
 
+Cover Letter applies the same Evidence-Based Claims principle as Professional Summary so both consumers can emphasize relevant skills consistently without overstating the candidate's experience.
+
+Relevance determines whether a capability may be emphasized.
+
+Evidence determines the maximum strength of the claim.
+
 Cover Letter should emphasize relevant, high-priority existing skills identified by Skill Intelligence. It must not independently re-evaluate the raw Master CV skill inventory to decide which skills to emphasize.
 
 The Cover Letter does not need to mention every Master CV skill.
 
 Only Master CV source skills may be used. Cover Letter must use sourceSkill and must never replace it with canonicalSkill.
 
-Cover Letter uses professionalWeight, jobRelevance, evidence, and priority as the shared emphasis signals defined in §7.3. Those signals remain emphasis signals. They do not authorize unsupported proficiency, seniority, expertise, fluency, or other personal-attribute claims. This does not change Cover Letter product behavior; it restates the Master CV source-of-truth rule already required of Cover Letter narrative.
+Cover Letter uses professionalWeight, jobRelevance, evidence, and priority as the shared emphasis signals defined in §7.3. Those signals remain emphasis signals. They are not candidate evidence. They do not authorize unsupported proficiency, seniority, expertise, fluency, or other personal-attribute claims.
+
+Claim strength must follow §12.3:
+
+- a relevant skill with sufficient professional-experience evidence may be presented as demonstrated professional experience, only at the strength the Master CV text supports;
+- a relevant skill supported only by personal projects may be presented as project experience, not demonstrated professional experience;
+- a relevant skill supported only by education or certifications may be presented as documented knowledge or education;
+- a relevant skill that lacks sufficient Master CV evidence may be framed as interest or development but must not be presented as demonstrated experience;
+- a skill with no evidence and no meaningful relevance must not be mentioned.
+
+Cover Letter must not:
+
+- turn relevance into expertise;
+- turn professionalWeight into seniority;
+- turn priority into proficiency;
+- infer candidate seniority from Job Analysis experienceLevel;
+- turn Job Analysis requiredSkills/atsKeywords into candidate skills;
+- turn Profile Match matchingSkills/missingSkills into candidate evidence;
+- upgrade language proficiency;
+- use evidence to justify a stronger claim than the evidence supports.
+
+Evidence supports a claim but does not authorize a stronger claim.
+
+Example:
+
+"Built interfaces using React" may support experience with React, but not "expert in React".
+
+This does not change Cover Letter product behavior; it restates the Master CV source-of-truth rule already required of Cover Letter narrative and applies Evidence-Based Claims to the same Skill Profile consumed by Professional Summary.
 
 ### 19.5 Manual Optimized CV skill edits
 
@@ -1043,6 +1247,8 @@ Regeneration is the path by which an existing application receives grouped Skill
 The same Skill Profile is reusable by Optimized CV and Cover Letter so that skill priority does not diverge due to independent LLM interpretation.
 
 Cover Letter uses the same Skill Profile as Professional Summary. Emphasis must not diverge because Cover Letter independently re-evaluates the raw skill inventory.
+
+Professional Summary and Cover Letter apply the same Evidence-Based Claims principle. Relevance may select the same existing skills for emphasis. Master CV evidence must cap claim strength the same way in both documents. Claim strength must not diverge because one consumer treats jobRelevance, professionalWeight, priority, Job Analysis, or Profile Match as candidate evidence.
 
 Priority cannot diverge because of LLM ordering: both consumers receive the backend-assigned priority from one Skill Profile.
 
@@ -1109,6 +1315,8 @@ Profile Match matchingSkills, missingSkills, strengths, weaknesses, alignmentSco
 skillProfileContractVersion.
 
 Do not include email, phone, location, links, profile photo, or other excluded personal fields in the fingerprint.
+
+Do not include Job Analysis experienceLevel. It is not a Skill Intelligence input and must not be used to infer candidate seniority.
 
 skillProfileContractVersion is an implementation constant. V1 starts at 1. Increment it when the Skill Intelligence contract, AI schema, prompt, normalization, priority algorithm, or fingerprint input set changes.
 
@@ -1197,7 +1405,7 @@ PostgreSQL → core_professional or supporting depending on candidate context
 
 The value is determined from candidate context, not a universal hard-coded ranking.
 
-Professional Weight must not be interpreted as market popularity. It must not be interpreted as expertise, seniority, or a license to make stronger claims than the Master CV supports.
+Professional Weight must not be interpreted as market popularity. It must not be interpreted as expertise, seniority, or a license to make stronger claims than the Master CV supports. The system must not turn professionalWeight into seniority.
 
 ## 28. Job Relevance vs Market Value
 
@@ -1212,6 +1420,8 @@ from:
 jobRelevance
 
 It must not claim that a skill has higher market demand unless a future feature explicitly introduces an external data source.
+
+jobRelevance is application relevance, not candidate evidence. It must not be turned into expertise.
 
 ## 29. No RAG
 
@@ -1294,7 +1504,7 @@ Optimized CV Cover Letter Future Features
 
 Future consumers are not V1 implementation scope.
 
-LangGraph, RAG, MCP, and multi-agent orchestration remain future evolution only. They are not part of this implementation.
+LangGraph, RAG, MCP, and multi-agent orchestration remain future evolution only. They are not part of this implementation. Evidence-Based Claims does not introduce them, a new Skill Profile, a semantic skill scanner, or new database models.
 
 ## 34. Example
 
@@ -1420,9 +1630,9 @@ none + general: Git → 7
 
 Git remains in the Skill Profile. The Optimized CV Skills section must still include Git, grouped under its category, even though jobRelevance is none.
 
-Professional Summary and Cover Letter may emphasize higher-priority skills such as React, TypeScript, Node.js, LLM Integration, and Prompt Engineering. They do not need to mention Git.
+Professional Summary and Cover Letter may emphasize higher-priority skills such as React, TypeScript, Node.js, LLM Integration, and Prompt Engineering. They do not need to mention Git. Git has jobRelevance none and empty evidence, so those consumers must not mention it.
 
-The Summary may say "Experience with React and TypeScript" when Master CV evidence supports those skills. It must not say "Expert in React and TypeScript" unless the Master CV explicitly supports that proficiency. If Master CV languages state "English · Intermediate", the Summary must not say "conversational English" or "fluent English".
+The Summary may say "Experience with React and TypeScript" when Master CV evidence supports those skills. It must not say "Expert in React and TypeScript" unless the Master CV explicitly supports that proficiency. "Built interfaces using React" may support experience with React, but not "expert in React". If LLM Integration is evidenced only by a personal project, Cover Letter and Professional Summary may present project experience; they must not present it as demonstrated professional experience. If Master CV languages state "English · Intermediate", the Summary must not say "conversational English" or "fluent English".
 
 The Skills section must display sourceSkill values under visible category labels. canonicalSkill must not replace them and must never be shown.
 
@@ -1545,7 +1755,7 @@ Job Analysis and Profile Match payloads are limited to the fields listed in §5.
 
 ## 39. Implementation Boundary
 
-Implementation must be divided into explicit phases. Each phase includes tests. No phase introduces LangGraph, RAG, MCP, or multi-agent orchestration.
+Implementation must be divided into explicit phases. Each phase includes tests. No phase introduces LangGraph, RAG, MCP, multi-agent orchestration, a new Skill Profile, a semantic skill scanner, or new database models.
 
 Phase 1 — Contract
 
@@ -1597,7 +1807,7 @@ Provide Skill Profile to Optimized CV generation.
 
 Professional Summary generation receives the Skill Profile and uses professionalWeight, jobRelevance, evidence, and priority to guide emphasis. It does not need to mention every Master CV skill. Only Master CV source skills may be used.
 
-Those fields are emphasis signals only. Professional Summary must preserve Master CV factual meaning. It must not convert relevance, weight, priority, or evidence into unsupported proficiency, seniority, expertise, fluency, communication ability, or other personal-attribute claims. Language proficiency in the Summary must remain faithful to the Master CV.
+Those fields are emphasis signals only. They are not candidate evidence. Professional Summary must apply Evidence-Based Claims: relevance determines whether a capability may be emphasized, and Master CV evidence determines the maximum strength of the claim. It must preserve Master CV factual meaning. It must not convert relevance, weight, priority, or evidence into unsupported proficiency, seniority, expertise, fluency, communication ability, or other personal-attribute claims. Language proficiency in the Summary must remain faithful to the Master CV. Claim strength must follow §12.3.
 
 The Skills section includes every distinct Master CV sourceSkill, organized into visible Skill Profile categories. Priority may order skills within a category but must not filter them.
 
@@ -1623,11 +1833,21 @@ Phases 1–3 are not restarted. This amendment corrects Optimized CV consumption
 4. Preview and PDF rendering of category labels.
 5. Regression coverage for generation, saved documents, Preview, PDF, Export, and localization.
 
+Evidence-Based Claims after Phase 4
+
+Phases 1–3 are not restarted. This amendment does not change the Skill Profile contract, cache, or architecture. It adds Evidence-Based Claims consumption rules:
+
+1. Relevance determines whether a capability may be emphasized.
+2. Evidence determines the maximum strength of the claim.
+3. Conceptual claim-strength levels in §12.3.
+4. Explicit prohibitions in §2.1.
+5. Professional Summary and Cover Letter apply the same principle.
+
 Phase 5 — Cover Letter integration
 
 Provide the same Skill Profile to Cover Letter generation.
 
-Cover Letter uses the same Skill Profile as Professional Summary. It emphasizes relevant, high-priority existing skills and must not reconstruct priority from raw lists. It does not need to mention every Master CV skill.
+Cover Letter uses the same Skill Profile as Professional Summary. It applies the same Evidence-Based Claims principle. It emphasizes relevant, high-priority existing skills and must not reconstruct priority from raw lists. It does not need to mention every Master CV skill. Claim strength must follow §12.3. It must not overstate the candidate's experience.
 
 Tests.
 
@@ -1639,7 +1859,7 @@ Locale, export, and Profile Match isolation checks.
 
 Manual QA.
 
-Confirm no Prisma model, no public SI API, no frontend SI cache, and no LangGraph/RAG/MCP dependency.
+Confirm no Prisma model, no public SI API, no frontend SI cache, no LangGraph/RAG/MCP dependency, no new Skill Profile, and no semantic skill scanner.
 
 ## 40. Definition of Done
 
@@ -1691,11 +1911,15 @@ the generated Optimized CV document can represent category → ordered sourceSki
 
 existing saved Optimized CVs with a flat `skills: string[]` continue to load and may render as a flat list until regenerated;
 
-Professional Summary uses Skill Intelligence to emphasize relevant existing Master CV skills, is grounded in evidence, does not need to mention every skill, and must not convert emphasis signals into unsupported proficiency, seniority, expertise, fluency, or other personal-attribute claims;
+Professional Summary uses Skill Intelligence to emphasize relevant existing Master CV skills, is grounded in evidence, does not need to mention every skill, applies Evidence-Based Claims, must not convert emphasis signals into unsupported proficiency, seniority, expertise, fluency, or other personal-attribute claims, and must not exceed the claim strength that Master CV evidence supports;
 
 language proficiency mentioned in Professional Summary remains faithful to the Master CV;
 
-Cover Letter consumes the same Skill Profile as Professional Summary and emphasizes relevant high-priority existing skills without independently re-evaluating the raw skill inventory;
+Cover Letter consumes the same Skill Profile as Professional Summary, applies the same Evidence-Based Claims principle, and emphasizes relevant high-priority existing skills without independently re-evaluating the raw skill inventory and without overstating the candidate's experience;
+
+Evidence-Based Claims is applied: relevance determines whether a capability may be emphasized, and Master CV evidence determines the maximum strength of the claim;
+
+Job Analysis, Profile Match, professionalWeight, priority, and jobRelevance are never treated as candidate evidence;
 
 Skill Intelligence is a required generation dependency after integration;
 
@@ -1713,7 +1937,7 @@ existing save/edit behavior remains compatible;
 
 tests and type checking pass;
 
-no LangGraph, RAG, MCP, or multi-agent dependency is introduced.
+no LangGraph, RAG, MCP, multi-agent, new Skill Profile, semantic skill scanner, or new database-model dependency is introduced.
 
 ## 41. Architectural Principle
 
@@ -1741,6 +1965,6 @@ Deterministic application code provides source-of-truth enforcement, validation,
 
 Document generators consume the resulting structured context and display sourceSkill.
 
-Professional Summary and Cover Letter use the Skill Profile for emphasis of existing Master CV skills. Emphasis never authorizes unsupported personal-attribute claims. The Optimized CV Skills section uses the Skill Profile to categorize the complete Master CV skill inventory into visible groups assembled deterministically at generation time.
+Professional Summary and Cover Letter use the Skill Profile for emphasis of existing Master CV skills. They apply Evidence-Based Claims: relevance determines whether a capability may be emphasized, and Master CV evidence determines the maximum strength of the claim. Emphasis never authorizes unsupported personal-attribute claims. The Optimized CV Skills section uses the Skill Profile to categorize the complete Master CV skill inventory into visible groups assembled deterministically at generation time.
 
 Workflow orchestration technologies are introduced only when actual workflow complexity requires them. They are not required for V1.

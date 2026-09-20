@@ -127,6 +127,20 @@ const input: CoverLetterGenerationInput = {
   },
 };
 
+const validDraft = {
+  greeting: "Dear Hiring Manager,",
+  introduction: "I am writing to apply for the Software Engineer role.",
+  professionalValue:
+    "My TypeScript API experience matches the role requirements.",
+  motivation:
+    "I am interested in contributing to Acme based on the role summary.",
+  closing: "Thank you for your consideration. I am available for an interview.",
+};
+
+function lastPrompt(): string {
+  return createResponse.mock.calls[0][0].input[0].content[0].text as string;
+}
+
 beforeEach(() => {
   vi.clearAllMocks();
   process.env.OPENAI_API_KEY = "test-api-key";
@@ -178,21 +192,55 @@ describe("assembleCoverLetter", () => {
       workingLanguage: "fr",
     });
   });
+
+  it("omits the candidate name from closing and keeps Master CV fullName as the only signature", () => {
+    const coverLetter = assembleCoverLetter(
+      input,
+      {
+        greeting: "Estimado equipo de contratación,",
+        introduction: "Me presento para el puesto de Software Engineer.",
+        professionalValue: "He desarrollado APIs con TypeScript.",
+        motivation: "Quiero contribuir al producto de Acme.",
+        closing:
+          "Gracias por su consideración. Un cordial saludo, Taylor Smith.",
+      },
+      "es",
+    );
+
+    expect(coverLetter.closing).toBe(
+      "Gracias por su consideración. Un cordial saludo.",
+    );
+    expect(coverLetter.closing).not.toMatch(/Taylor Smith/i);
+    expect(coverLetter.signature).toBe("Taylor Smith");
+    expect(coverLetter.signature).toBe(input.masterCv.fullName);
+  });
+
+  it("strips a trailing signature-block name without changing Master CV signature", () => {
+    const coverLetter = assembleCoverLetter(
+      input,
+      {
+        greeting: "Dear Hiring Manager,",
+        introduction: "I am applying for the Software Engineer role.",
+        professionalValue: "I have built TypeScript APIs.",
+        motivation: "I want to contribute to Acme's product work.",
+        closing:
+          "Thank you for your consideration. I am available for an interview.\n\nTaylor Smith",
+      },
+      "en",
+    );
+
+    expect(coverLetter.closing).toBe(
+      "Thank you for your consideration. I am available for an interview.",
+    );
+    expect(coverLetter.closing).not.toContain("Taylor Smith");
+    expect(coverLetter.signature).toBe("Taylor Smith");
+  });
 });
 
 describe("generateCoverLetterDraft", () => {
   it("returns an assembled Cover Letter from the AI draft", async () => {
     createResponse.mockResolvedValue({
-      output_text: JSON.stringify({
-        greeting: "Dear Hiring Manager,",
-        introduction: "I am writing to apply for the Software Engineer role.",
-        professionalValue:
-          "My TypeScript API experience matches the role requirements.",
-        motivation:
-          "I am interested in contributing to Acme based on the role summary.",
-        closing:
-          "Thank you for your consideration. I am available for an interview.",
-      }),
+      output_text: JSON.stringify(validDraft),
     });
 
     await expect(
@@ -220,15 +268,12 @@ describe("generateCoverLetterDraft", () => {
     });
 
     expect(createResponse).toHaveBeenCalledOnce();
-    expect(createResponse.mock.calls[0][0].input[0].content[0].text).toContain(
-      "Spanish (es)",
-    );
+    expect(lastPrompt()).toContain("Spanish (es)");
     const payload = JSON.parse(
       createResponse.mock.calls[0][0].input[1].content[0].text as string,
     ) as CoverLetterGenerationInput;
     expect(payload.skillProfile).toEqual(input.skillProfile);
-    const prompt = createResponse.mock.calls[0][0].input[0].content[0]
-      .text as string;
+    const prompt = lastPrompt();
     expect(prompt).toContain(
       "Use the provided Skill Profile as the shared skill-reasoning context.",
     );
@@ -236,10 +281,10 @@ describe("generateCoverLetterDraft", () => {
       "Do not independently reconstruct skill priority from raw Master CV, Job Analysis, Profile Match, or Optimized CV skill lists.",
     );
     expect(prompt).toContain(
-      "Emphasize existing professional skills with higher Skill Profile priority and jobRelevance.",
+      "Use Skill Profile professionalWeight, jobRelevance, evidence, and priority to guide which existing Master CV skills receive emphasis.",
     );
     expect(prompt).toContain(
-      "Use Skill Profile evidence only to ground those existing skills in Master CV sections that already support them.",
+      "Use evidence only to ground selected skills in existing Master CV content.",
     );
     expect(prompt).toContain(
       "Document-facing skill strings must be sourceSkill.",
@@ -269,6 +314,202 @@ describe("generateCoverLetterDraft", () => {
     expect(prompt).toContain(
       "Complement the Optimized CV instead of repeating it.",
     );
+  });
+
+  it("includes professionalWeight with the other Skill Profile emphasis signals", async () => {
+    createResponse.mockResolvedValue({
+      output_text: JSON.stringify(validDraft),
+    });
+
+    await generateCoverLetterDraft(input, "en");
+
+    const prompt = lastPrompt();
+    expect(prompt).toContain("professionalWeight");
+    expect(prompt).toContain(
+      "Use Skill Profile professionalWeight, jobRelevance, evidence, and priority to guide which existing Master CV skills receive emphasis.",
+    );
+    expect(prompt).toContain(
+      "Use these signals only to emphasize existing Master CV skills.",
+    );
+    expect(prompt).toContain("must not list every skill");
+    expect(prompt).toContain(
+      "Do not independently reconstruct skill priority from raw Master CV, Job Analysis, Profile Match, or Optimized CV skill lists.",
+    );
+    expect(prompt).toContain(
+      "Document-facing skill strings must be sourceSkill.",
+    );
+    expect(prompt).toContain("Never use canonicalSkill in Cover Letter prose.");
+  });
+
+  it("includes Optimized CV factuality rules in the Cover Letter prompt", async () => {
+    createResponse.mockResolvedValue({
+      output_text: JSON.stringify(validDraft),
+    });
+
+    await generateCoverLetterDraft(input, "en");
+
+    const prompt = lastPrompt();
+    expect(prompt).toContain("Relevance does not imply expertise.");
+    expect(prompt).toContain("professionalWeight does not imply seniority.");
+    expect(prompt).toContain("Priority does not imply proficiency.");
+    expect(prompt).toContain("Evidence does not authorize stronger claims.");
+    expect(prompt).toContain("Do not turn relevance into expertise.");
+    expect(prompt).toContain("Do not turn professional weight into seniority.");
+    expect(prompt).toContain(
+      "Do not infer language ability beyond what the Master CV explicitly states.",
+    );
+    expect(prompt).toContain(
+      "Do not change English — Intermediate into Conversational English, fluent English, advanced English, or any other upgraded formulation.",
+    );
+    expect(prompt).toContain(
+      "Job Analysis experienceLevel is a job requirement, not candidate seniority.",
+    );
+    expect(prompt).toContain(
+      "Job Analysis requiredSkills and atsKeywords, and Profile Match matchingSkills and missingSkills, are not candidate skills.",
+    );
+    expect(prompt).toContain(
+      "Do not invent technologies, professional experience, achievements, certifications, or responsibilities.",
+    );
+  });
+
+  it("instructs the model not to put the candidate name in closing", async () => {
+    createResponse.mockResolvedValue({
+      output_text: JSON.stringify(validDraft),
+    });
+
+    await generateCoverLetterDraft(input, "en");
+
+    const prompt = lastPrompt();
+    expect(prompt).toContain(
+      "The closing must contain only thanks and availability or an invitation to continue the conversation.",
+    );
+    expect(prompt).toContain(
+      "The closing must not contain the candidate name, a signature, a signature block, or phrases such as Un cordial saludo followed by the candidate name.",
+    );
+    expect(prompt).toContain(
+      "Do not include a signature in closing. The backend adds signature from Master CV fullName as the only signature.",
+    );
+  });
+
+  it("strips a candidate name from the LLM closing and keeps Master CV fullName as signature", async () => {
+    createResponse.mockResolvedValue({
+      output_text: JSON.stringify({
+        ...validDraft,
+        closing:
+          "Thank you for your consideration. Un cordial saludo, Taylor Smith.",
+      }),
+    });
+
+    await expect(generateCoverLetterDraft(input, "es")).resolves.toEqual(
+      expect.objectContaining({
+        closing: "Thank you for your consideration. Un cordial saludo.",
+        signature: "Taylor Smith",
+        candidateName: "Taylor Smith",
+      }),
+    );
+  });
+
+  describe("Evidence-Based Claims prompt contract", () => {
+    beforeEach(() => {
+      createResponse.mockResolvedValue({
+        output_text: JSON.stringify(validDraft),
+      });
+    });
+
+    it("uses relevance for emphasis and evidence for maximum claim strength", async () => {
+      await generateCoverLetterDraft(input, "en");
+
+      const prompt = lastPrompt();
+      expect(prompt).toContain(
+        "Relevance determines whether a capability may be emphasized.",
+      );
+      expect(prompt).toContain(
+        "Evidence determines the maximum strength of the claim.",
+      );
+      expect(prompt).toContain(
+        "The Master CV is the only candidate evidence and the sole source of truth for candidate capabilities.",
+      );
+      expect(prompt).toContain(
+        "If a capability has no evidence and no meaningful relevance, do not mention it.",
+      );
+    });
+
+    it("does not treat professionalWeight, priority, or jobRelevance as expertise, seniority, or proficiency", async () => {
+      await generateCoverLetterDraft(input, "en");
+
+      const prompt = lastPrompt();
+      expect(prompt).toContain(
+        "professionalWeight, priority, and jobRelevance must never imply expertise, seniority, or proficiency.",
+      );
+      expect(prompt).toContain("Do not turn relevance into expertise.");
+      expect(prompt).toContain(
+        "Do not turn professional weight into seniority.",
+      );
+      expect(prompt).toContain("Do not turn priority into proficiency.");
+      expect(prompt).toContain("Relevance does not imply expertise.");
+      expect(prompt).toContain("professionalWeight does not imply seniority.");
+      expect(prompt).toContain("Priority does not imply proficiency.");
+    });
+
+    it("treats Job Analysis and Profile Match as context, never as candidate evidence", async () => {
+      await generateCoverLetterDraft(input, "en");
+
+      const prompt = lastPrompt();
+      expect(prompt).toContain(
+        "Job Analysis and Profile Match are relevance and context signals only. They are never candidate evidence.",
+      );
+      expect(prompt).toContain(
+        "Job Analysis requiredSkills, atsKeywords, and Profile Match matchingSkills and missingSkills must never become candidate skills or experience.",
+      );
+      expect(prompt).toContain(
+        "Do not turn Profile Match matchingSkills or missingSkills into candidate evidence.",
+      );
+      expect(prompt).toContain(
+        "Job Analysis experienceLevel must never become candidate seniority.",
+      );
+    });
+
+    it("requires language proficiency to remain faithful to the Master CV", async () => {
+      await generateCoverLetterDraft(input, "en");
+
+      const prompt = lastPrompt();
+      expect(prompt).toContain(
+        "If a language is mentioned, its proficiency must remain faithful to the Master CV.",
+      );
+      expect(prompt).toContain("Do not upgrade language proficiency.");
+      expect(prompt).toContain(
+        "Do not change English — Intermediate into Conversational English, fluent English, advanced English, or any other upgraded formulation.",
+      );
+    });
+
+    it("allows a relevant unsupported capability as interest or development, never as demonstrated experience", async () => {
+      await generateCoverLetterDraft(input, "en");
+
+      const prompt = lastPrompt();
+      expect(prompt).toContain(
+        "If a capability is relevant to the job but lacks sufficient Master CV evidence, it may be framed as interest or development but must not be presented as demonstrated experience.",
+      );
+      expect(prompt).toContain("demonstrated professional experience");
+      expect(prompt).toContain("project experience");
+      expect(prompt).toContain("documented knowledge or education");
+      expect(prompt).toContain("interest or development area");
+      expect(prompt).toContain(
+        "Claim strength is conceptual guidance only and is not a Skill Profile field.",
+      );
+    });
+
+    it("does not let evidence authorize a stronger claim than it supports", async () => {
+      await generateCoverLetterDraft(input, "en");
+
+      const prompt = lastPrompt();
+      expect(prompt).toContain(
+        "Do not use evidence to justify a stronger claim than the evidence supports.",
+      );
+      expect(prompt).toContain(
+        "Built interfaces using React may support experience with React, but not expert in React.",
+      );
+      expect(prompt).toContain("Evidence does not authorize stronger claims.");
+    });
   });
 
   it("rejects invalid AI responses", async () => {
