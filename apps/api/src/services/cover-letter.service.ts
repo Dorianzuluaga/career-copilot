@@ -23,6 +23,8 @@ import {
   prepareProfileComparisonInput,
   ProfileComparisonError,
 } from "./profile-comparison.service.js";
+import { getOrComputeSkillProfile } from "./skill-intelligence-cache.js";
+import { SkillIntelligenceError } from "./skill-intelligence.js";
 
 export { CoverLetterError, validateCoverLetterInput };
 
@@ -64,12 +66,22 @@ export async function generateCoverLetter(
     const input = await prepareProfileComparisonInput(applicationId, userId);
     const optimizedCv = await requireSavedOptimizedCv(applicationId, userId);
     const profileMatch = await getProfileComparison(applicationId, userId);
+    const skillProfile = await getOrComputeSkillProfile({
+      userId,
+      applicationId,
+      input: {
+        masterCv: input.masterCv,
+        jobAnalysis: input.jobAnalysis,
+        profileMatch,
+      },
+    });
     return generateCoverLetterDraft(
       {
         masterCv: input.masterCv,
         jobAnalysis: input.jobAnalysis,
         profileMatch,
         optimizedCv,
+        skillProfile,
       },
       locale,
     );
@@ -78,6 +90,9 @@ export async function generateCoverLetter(
       throw error;
     }
     if (error instanceof ProfileComparisonError) {
+      throw new CoverLetterError(error.message, error.statusCode);
+    }
+    if (error instanceof SkillIntelligenceError) {
       throw new CoverLetterError(error.message, error.statusCode);
     }
     if (

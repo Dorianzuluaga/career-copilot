@@ -68,6 +68,10 @@ vi.mock("./profile-photo-storage.service.js", () => ({
   deleteUnreferencedProfilePhotoObjects: vi.fn(),
 }));
 
+vi.mock("./skill-intelligence-cache.js", () => ({
+  getOrComputeSkillProfile: vi.fn(),
+}));
+
 import { findMasterCvByUserId } from "../repositories/master-cv.repository.js";
 import {
   findOptimizedCvByApplicationId,
@@ -95,6 +99,8 @@ import {
   prepareProfileComparisonInput,
   ProfileComparisonError,
 } from "./profile-comparison.service.js";
+import { getOrComputeSkillProfile } from "./skill-intelligence-cache.js";
+import { SkillIntelligenceError } from "./skill-intelligence.js";
 
 const applicationId = "8e9c843b-5c3d-4e65-8514-7de898b2aca6";
 const userId = "4e9c843b-5c3d-4e65-8514-7de898b2aca6";
@@ -150,6 +156,20 @@ const profileMatch = {
   workingLanguage: "es" as const,
 };
 
+const skillProfile = {
+  skills: [
+    {
+      sourceSkill: "TypeScript",
+      canonicalSkill: "TypeScript",
+      category: "Front-End",
+      professionalWeight: "core_professional" as const,
+      jobRelevance: "very_high" as const,
+      priority: 1,
+      evidence: [],
+    },
+  ],
+};
+
 const optimizedCv = {
   ...masterCv,
   professionalSummary: "TypeScript engineer building APIs.",
@@ -173,6 +193,7 @@ beforeEach(() => {
     jobAnalysis,
   });
   vi.mocked(getProfileComparison).mockResolvedValue(profileMatch);
+  vi.mocked(getOrComputeSkillProfile).mockResolvedValue(skillProfile);
   vi.mocked(generateOptimizedCvDraft).mockResolvedValue({
     ...optimizedCv,
     workingLanguage: "fr",
@@ -226,11 +247,26 @@ describe("generateOptimizedCv", () => {
       userId,
     );
     expect(getProfileComparison).toHaveBeenCalledWith(applicationId, userId);
+    expect(getOrComputeSkillProfile).toHaveBeenCalledWith({
+      userId,
+      applicationId,
+      input: {
+        masterCv,
+        jobAnalysis,
+        profileMatch,
+      },
+    });
+    expect(
+      vi.mocked(getOrComputeSkillProfile).mock.invocationCallOrder[0],
+    ).toBeLessThan(
+      vi.mocked(generateOptimizedCvDraft).mock.invocationCallOrder[0]!,
+    );
     expect(generateOptimizedCvDraft).toHaveBeenCalledWith(
       {
         masterCv,
         jobAnalysis,
         profileMatch,
+        skillProfile,
       },
       "fr",
       null,
@@ -249,11 +285,21 @@ describe("generateOptimizedCv", () => {
     await generateOptimizedCv(applicationId, userId, "fr");
 
     expect(getProfileComparison).toHaveBeenCalledWith(applicationId, userId);
+    expect(getOrComputeSkillProfile).toHaveBeenCalledWith({
+      userId,
+      applicationId,
+      input: {
+        masterCv,
+        jobAnalysis,
+        profileMatch: persistedProfileMatch,
+      },
+    });
     expect(generateOptimizedCvDraft).toHaveBeenCalledWith(
       {
         masterCv,
         jobAnalysis,
         profileMatch: persistedProfileMatch,
+        skillProfile,
       },
       "fr",
       null,
@@ -312,6 +358,7 @@ describe("generateOptimizedCv", () => {
       generateOptimizedCv(applicationId, userId, "fr"),
     ).rejects.toEqual(new OptimizedCvError("Job analysis not found.", 404));
     expect(getProfileComparison).not.toHaveBeenCalled();
+    expect(getOrComputeSkillProfile).not.toHaveBeenCalled();
     expect(generateOptimizedCvDraft).not.toHaveBeenCalled();
   });
 
@@ -323,7 +370,31 @@ describe("generateOptimizedCv", () => {
     await expect(
       generateOptimizedCv(applicationId, userId, "fr"),
     ).rejects.toEqual(new OptimizedCvError("Profile Match not found.", 404));
+    expect(getOrComputeSkillProfile).not.toHaveBeenCalled();
     expect(generateOptimizedCvDraft).not.toHaveBeenCalled();
+  });
+
+  it("fails closed when Skill Intelligence fails and does not generate a draft", async () => {
+    vi.mocked(getOrComputeSkillProfile).mockRejectedValue(
+      new SkillIntelligenceError("Invalid Skill Intelligence response.", 502),
+    );
+
+    await expect(
+      generateOptimizedCv(applicationId, userId, "fr"),
+    ).rejects.toEqual(
+      new OptimizedCvError("Invalid Skill Intelligence response.", 502),
+    );
+    expect(getOrComputeSkillProfile).toHaveBeenCalledWith({
+      userId,
+      applicationId,
+      input: {
+        masterCv,
+        jobAnalysis,
+        profileMatch,
+      },
+    });
+    expect(generateOptimizedCvDraft).not.toHaveBeenCalled();
+    expect(snapshotMasterCvPhoto).not.toHaveBeenCalled();
   });
 });
 
@@ -371,6 +442,36 @@ describe("getOptimizedCv", () => {
       new OptimizedCvError("Application not found.", 404),
     );
     expect(findOptimizedCvByApplicationId).not.toHaveBeenCalled();
+  });
+
+  it("loads legacy string[] Optimized CV documents without Skill Intelligence", async () => {
+    vi.mocked(findOptimizedCvByApplicationId).mockResolvedValue(
+      persistedOptimizedCv as never,
+    );
+
+    await expect(getOptimizedCv(applicationId, userId)).resolves.toEqual({
+      ...optimizedCv,
+      workingLanguage: null,
+    });
+    expect(getOrComputeSkillProfile).not.toHaveBeenCalled();
+  });
+
+  it("loads persisted grouped skills without recomputing Skill Intelligence", async () => {
+    vi.mocked(findOptimizedCvByApplicationId).mockResolvedValue({
+      ...persistedOptimizedCv,
+      skills: {
+        groups: [{ category: "Front-End", skills: ["TypeScript"] }],
+        additionalSkills: ["Excel"],
+      },
+    } as never);
+
+    await expect(getOptimizedCv(applicationId, userId)).resolves.toEqual({
+      ...optimizedCv,
+      skills: ["TypeScript", "Excel"],
+      skillGroups: [{ category: "Front-End", skills: ["TypeScript"] }],
+      workingLanguage: null,
+    });
+    expect(getOrComputeSkillProfile).not.toHaveBeenCalled();
   });
 });
 
@@ -598,5 +699,94 @@ describe("saveOptimizedCv", () => {
       saveOptimizedCv(applicationId, userId, optimizedCv),
     ).rejects.toEqual(new OptimizedCvError("Application not found.", 404));
     expect(upsertOptimizedCv).not.toHaveBeenCalled();
+  });
+
+  it("does not invent categories for user-added skills", async () => {
+    vi.mocked(findOptimizedCvByApplicationId).mockResolvedValue(
+      persistedOptimizedCv as never,
+    );
+    vi.mocked(upsertOptimizedCv).mockResolvedValue({
+      ...persistedOptimizedCv,
+      skills: {
+        groups: [{ category: "Front-End", skills: ["TypeScript"] }],
+        additionalSkills: ["Excel"],
+      },
+      workingLanguage: "en",
+    } as never);
+
+    await expect(
+      saveOptimizedCv(applicationId, userId, {
+        ...optimizedCv,
+        skills: ["TypeScript", "Excel"],
+        skillGroups: [{ category: "Front-End", skills: ["TypeScript"] }],
+        workingLanguage: "en",
+      }),
+    ).resolves.toEqual({
+      ...optimizedCv,
+      skills: ["TypeScript", "Excel"],
+      skillGroups: [{ category: "Front-End", skills: ["TypeScript"] }],
+      workingLanguage: "en",
+    });
+    expect(upsertOptimizedCv).toHaveBeenCalledWith(
+      applicationId,
+      expect.objectContaining({
+        skills: ["TypeScript", "Excel"],
+        skillGroups: [{ category: "Front-End", skills: ["TypeScript"] }],
+      }),
+      null,
+      null,
+      null,
+      "en",
+    );
+    expect(getOrComputeSkillProfile).not.toHaveBeenCalled();
+  });
+
+  it("preserves skillGroups when an unrelated Optimized CV field is saved", async () => {
+    vi.mocked(findOptimizedCvByApplicationId).mockResolvedValue({
+      ...persistedOptimizedCv,
+      skills: {
+        groups: [{ category: "Front-End", skills: ["TypeScript"] }],
+        additionalSkills: ["Excel"],
+      },
+      workingLanguage: "en",
+    } as never);
+    vi.mocked(upsertOptimizedCv).mockResolvedValue({
+      ...persistedOptimizedCv,
+      professionalSummary: "Updated summary.",
+      skills: {
+        groups: [{ category: "Front-End", skills: ["TypeScript"] }],
+        additionalSkills: ["Excel"],
+      },
+      workingLanguage: "en",
+    } as never);
+
+    await expect(
+      saveOptimizedCv(applicationId, userId, {
+        ...optimizedCv,
+        professionalSummary: "Updated summary.",
+        skills: ["TypeScript", "Excel"],
+        skillGroups: [{ category: "Front-End", skills: ["TypeScript"] }],
+        workingLanguage: "en",
+      }),
+    ).resolves.toEqual({
+      ...optimizedCv,
+      professionalSummary: "Updated summary.",
+      skills: ["TypeScript", "Excel"],
+      skillGroups: [{ category: "Front-End", skills: ["TypeScript"] }],
+      workingLanguage: "en",
+    });
+    expect(upsertOptimizedCv).toHaveBeenCalledWith(
+      applicationId,
+      expect.objectContaining({
+        professionalSummary: "Updated summary.",
+        skills: ["TypeScript", "Excel"],
+        skillGroups: [{ category: "Front-End", skills: ["TypeScript"] }],
+      }),
+      null,
+      null,
+      null,
+      "en",
+    );
+    expect(getOrComputeSkillProfile).not.toHaveBeenCalled();
   });
 });

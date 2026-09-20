@@ -103,7 +103,111 @@ const input: OptimizedCvGenerationInput = {
     recommendation: "Strong opportunity. Continue with the application.",
     workingLanguage: "es",
   },
+  skillProfile: {
+    skills: [
+      {
+        sourceSkill: "TypeScript",
+        canonicalSkill: "TS",
+        category: "Front-End",
+        professionalWeight: "core_professional",
+        jobRelevance: "very_high",
+        priority: 1,
+        evidence: [{ source: "experience", reference: "experience[0]" }],
+      },
+      {
+        sourceSkill: "REST APIs",
+        canonicalSkill: "REST",
+        category: "Back-End",
+        professionalWeight: "core_professional",
+        jobRelevance: "very_high",
+        priority: 2,
+        evidence: [{ source: "experience", reference: "experience[0]" }],
+      },
+      {
+        sourceSkill: "PostgreSQL",
+        canonicalSkill: "Postgres",
+        category: "Databases",
+        professionalWeight: "general",
+        jobRelevance: "none",
+        priority: 3,
+        evidence: [],
+      },
+    ],
+  },
 };
+
+const groupedSkillMasterCv = {
+  ...input.masterCv,
+  skills: ["React", "Node.js", "TypeScript", "Git", "PostgreSQL"],
+};
+
+const groupedSkillProfile = {
+  skills: [
+    {
+      sourceSkill: "React",
+      canonicalSkill: "React.js",
+      category: "Front-End",
+      professionalWeight: "core_professional" as const,
+      jobRelevance: "very_high" as const,
+      priority: 1,
+      evidence: [{ source: "experience" as const, reference: "experience[0]" }],
+    },
+    {
+      sourceSkill: "Node.js",
+      canonicalSkill: "Node",
+      category: "Back-End",
+      professionalWeight: "core_professional" as const,
+      jobRelevance: "very_high" as const,
+      priority: 2,
+      evidence: [],
+    },
+    {
+      sourceSkill: "TypeScript",
+      canonicalSkill: "TS",
+      category: "Front-End",
+      professionalWeight: "core_professional" as const,
+      jobRelevance: "high" as const,
+      priority: 3,
+      evidence: [{ source: "experience" as const, reference: "experience[0]" }],
+    },
+    {
+      sourceSkill: "Git",
+      canonicalSkill: "Git SCM",
+      category: "Development Tools",
+      professionalWeight: "general" as const,
+      jobRelevance: "none" as const,
+      priority: 4,
+      evidence: [],
+    },
+    {
+      sourceSkill: "PostgreSQL",
+      canonicalSkill: "Postgres",
+      category: "Back-End",
+      professionalWeight: "supporting" as const,
+      jobRelevance: "low" as const,
+      priority: 5,
+      evidence: [],
+    },
+  ],
+};
+
+function groupedSkills(
+  generatedSkills: string[],
+  professionalSummary = groupedSkillMasterCv.professionalSummary,
+) {
+  return enforceMasterCvIntegrity(
+    groupedSkillMasterCv,
+    {
+      ...groupedSkillMasterCv,
+      professionalSummary,
+      skills: generatedSkills,
+    },
+    null,
+    null,
+    null,
+    groupedSkillProfile,
+  );
+}
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -343,6 +447,146 @@ describe("enforceMasterCvIntegrity", () => {
       }),
     );
   });
+
+  it("keeps every Master CV skill in the Skills section", () => {
+    expect(groupedSkills(["React"]).skills).toEqual([
+      "React",
+      "TypeScript",
+      "Node.js",
+      "PostgreSQL",
+      "Git",
+    ]);
+    expect(groupedSkills(["React"]).skillGroups).toEqual([
+      { category: "Front-End", skills: ["React", "TypeScript"] },
+      { category: "Back-End", skills: ["Node.js", "PostgreSQL"] },
+      { category: "Development Tools", skills: ["Git"] },
+    ]);
+  });
+
+  it("groups Skills-section values by Skill Profile category", () => {
+    expect(
+      groupedSkills(["Git", "PostgreSQL", "Node.js", "TypeScript", "React"])
+        .skillGroups,
+    ).toEqual([
+      { category: "Front-End", skills: ["React", "TypeScript"] },
+      { category: "Back-End", skills: ["Node.js", "PostgreSQL"] },
+      { category: "Development Tools", skills: ["Git"] },
+    ]);
+    expect(groupedSkills(["React"]).skills).toEqual([
+      "React",
+      "TypeScript",
+      "Node.js",
+      "PostgreSQL",
+      "Git",
+    ]);
+    expect(groupedSkills(["React"]).skills).not.toEqual([
+      "React",
+      "Node.js",
+      "TypeScript",
+      "Git",
+      "PostgreSQL",
+    ]);
+  });
+
+  it("renders sourceSkill rather than canonicalSkill", () => {
+    const result = groupedSkills([
+      "React.js",
+      "Node",
+      "TS",
+      "Git SCM",
+      "Postgres",
+    ]);
+    expect(result.skills).toEqual([
+      "React",
+      "TypeScript",
+      "Node.js",
+      "PostgreSQL",
+      "Git",
+    ]);
+    expect(result.skillGroups?.flatMap((group) => group.skills)).toEqual(
+      result.skills,
+    );
+  });
+
+  it("never renders canonicalSkill in the Skills section", () => {
+    const result = groupedSkills([
+      "React.js",
+      "Node",
+      "TS",
+      "Git SCM",
+      "Postgres",
+    ]);
+    const documentFacing = [
+      ...result.skills,
+      ...(result.skillGroups ?? []).flatMap((group) => group.skills),
+    ];
+
+    expect(documentFacing).not.toContain("React.js");
+    expect(documentFacing).not.toContain("Node");
+    expect(documentFacing).not.toContain("TS");
+    expect(documentFacing).not.toContain("Git SCM");
+    expect(documentFacing).not.toContain("Postgres");
+  });
+
+  it("does not remove a skill because jobRelevance is low or none", () => {
+    const result = groupedSkills(["React", "TypeScript", "Node.js"]);
+    expect(result.skills).toEqual(
+      expect.arrayContaining(["PostgreSQL", "Git"]),
+    );
+    expect(
+      result.skillGroups?.some((group) => group.skills.includes("Git")),
+    ).toBe(true);
+    expect(
+      result.skillGroups?.some((group) => group.skills.includes("PostgreSQL")),
+    ).toBe(true);
+  });
+
+  it("does not filter skills by Skill Profile priority", () => {
+    expect(groupedSkills(["React"]).skills).toEqual(
+      expect.arrayContaining(["TypeScript", "Node.js", "PostgreSQL", "Git"]),
+    );
+    expect(groupedSkills(["React"]).skills).toHaveLength(
+      groupedSkillMasterCv.skills.length,
+    );
+  });
+
+  it("keeps a Professional Summary that emphasizes a Skill Profile subset", () => {
+    const result = groupedSkills(
+      ["Invented Skill"],
+      "React and TypeScript engineer building Node.js APIs.",
+    );
+
+    expect(result.professionalSummary).toBe(
+      "React and TypeScript engineer building Node.js APIs.",
+    );
+    expect(result.skills).toEqual([
+      "React",
+      "TypeScript",
+      "Node.js",
+      "PostgreSQL",
+      "Git",
+    ]);
+    expect(result.skillGroups).toEqual([
+      { category: "Front-End", skills: ["React", "TypeScript"] },
+      { category: "Back-End", skills: ["Node.js", "PostgreSQL"] },
+      { category: "Development Tools", skills: ["Git"] },
+    ]);
+  });
+
+  it("drops invented skills and does not replace sourceSkill with canonicalSkill", () => {
+    expect(
+      groupedSkills(["TS", "REST", "Postgres", "Invented Skill", "Docker"])
+        .skills,
+    ).toEqual(["React", "TypeScript", "Node.js", "PostgreSQL", "Git"]);
+    expect(
+      groupedSkills(["TS", "REST", "Postgres", "Invented Skill", "Docker"])
+        .skillGroups,
+    ).toEqual([
+      { category: "Front-End", skills: ["React", "TypeScript"] },
+      { category: "Back-End", skills: ["Node.js", "PostgreSQL"] },
+      { category: "Development Tools", skills: ["Git"] },
+    ]);
+  });
 });
 
 describe("generateOptimizedCvDraft", () => {
@@ -359,7 +603,7 @@ describe("generateOptimizedCvDraft", () => {
             description: "Delivered TypeScript REST APIs for product teams.",
           },
         ],
-        skills: ["TypeScript", "REST APIs", "PostgreSQL"],
+        skills: ["Postgres", "Invented Skill", "REST APIs", "TS"],
         personalProjects: [
           {
             name: "Career Copilot",
@@ -400,12 +644,21 @@ describe("generateOptimizedCvDraft", () => {
           url: null,
         },
       ],
+      skillGroups: [
+        { category: "Front-End", skills: ["TypeScript"] },
+        { category: "Back-End", skills: ["REST APIs"] },
+        { category: "Databases", skills: ["PostgreSQL"] },
+      ],
       profilePhotoAssetId: null,
       profilePhotoPositionX: null,
       profilePhotoPositionY: null,
       workingLanguage: "es",
     });
     expect(createResponse).toHaveBeenCalledOnce();
+    const payload = JSON.parse(
+      createResponse.mock.calls[0][0].input[1].content[0].text as string,
+    ) as OptimizedCvGenerationInput;
+    expect(payload.skillProfile).toEqual(input.skillProfile);
     const prompt = createResponse.mock.calls[0][0].input[0].content[0]
       .text as string;
     expect(prompt).toContain("single A4 page");
@@ -429,6 +682,113 @@ describe("generateOptimizedCvDraft", () => {
       "Do not control fonts, margins, spacing, columns, or visual layout.",
     );
     expect(prompt).toContain("Spanish (es)");
+    expect(prompt).toContain(
+      "Use the provided Skill Profile as the shared skill-reasoning context.",
+    );
+    expect(prompt).toContain(
+      "Do not independently reconstruct skill priority from raw Master CV, Job Analysis, or Profile Match skill lists.",
+    );
+    expect(prompt).toContain(
+      "Document-facing skill strings must be sourceSkill.",
+    );
+    expect(prompt).toContain(
+      "Use Skill Profile professionalWeight, jobRelevance, evidence, and priority to guide which existing Master CV skills receive emphasis in the professional summary.",
+    );
+    expect(prompt).toContain(
+      "The professional summary may mention a subset of Master CV skills.",
+    );
+    expect(prompt).toContain(
+      "Never introduce a skill that is absent from the Skill Profile.",
+    );
+    expect(prompt).toContain(
+      "Skill Profile signals may guide emphasis but never authorize unsupported claims.",
+    );
+    expect(prompt).toContain(
+      "Do not turn relevance into expertise. Do not turn professional weight into seniority. Do not infer proficiency levels. Do not infer fluency or communication ability.",
+    );
+    expect(prompt).toContain(
+      "Do not transform a skill mention into an unsupported proficiency claim. Do not change React into expert in React unless the Master CV explicitly supports that claim.",
+    );
+    expect(prompt).toContain(
+      "Do not change English — Intermediate into Conversational English, fluent English, advanced English, or any other upgraded formulation.",
+    );
+    expect(prompt).toContain(
+      "The backend will assemble the Skills section deterministically from the Skill Profile. Do not invent, decide, or re-derive the final Skills-section grouping.",
+    );
+    expect(prompt).toContain(
+      "Do not omit a Master CV skill from the Skills section because jobRelevance is low or none, professionalWeight is lower, priority is lower, or one-page fit is required.",
+    );
+    expect(prompt).not.toContain(
+      "Group the skills array by Skill Profile category.",
+    );
+    expect(prompt).not.toContain(
+      "You may reorder existing skills to emphasize relevance, but only use skills already present in the Master CV.",
+    );
+    expect(prompt).not.toContain(
+      "Order the skills array by Skill Profile priority. Lower priority numbers receive earlier placement.",
+    );
+  });
+
+  it("reconstructs grouped sourceSkill values even when the draft omits or flattens skills", async () => {
+    const generationInput: OptimizedCvGenerationInput = {
+      ...input,
+      masterCv: groupedSkillMasterCv,
+      skillProfile: groupedSkillProfile,
+    };
+    createResponse.mockResolvedValue({
+      output_text: JSON.stringify({
+        ...groupedSkillMasterCv,
+        professionalSummary: "React and TypeScript engineer.",
+        skills: ["Postgres", "Git SCM", "Invented Skill", "Node"],
+      }),
+    });
+
+    await expect(
+      generateOptimizedCvDraft(generationInput, "en"),
+    ).resolves.toEqual(
+      expect.objectContaining({
+        professionalSummary: "React and TypeScript engineer.",
+        skills: ["React", "TypeScript", "Node.js", "PostgreSQL", "Git"],
+        skillGroups: [
+          { category: "Front-End", skills: ["React", "TypeScript"] },
+          { category: "Back-End", skills: ["Node.js", "PostgreSQL"] },
+          { category: "Development Tools", skills: ["Git"] },
+        ],
+        workingLanguage: "en",
+      }),
+    );
+  });
+
+  it("instructs the Summary not to claim unsupported expertise", () => {
+    createResponse.mockResolvedValue({
+      output_text: JSON.stringify(input.masterCv),
+    });
+
+    return generateOptimizedCvDraft(input, "en").then(() => {
+      const prompt = createResponse.mock.calls[0][0].input[0].content[0]
+        .text as string;
+      expect(prompt).toContain("Do not turn relevance into expertise.");
+      expect(prompt).toContain(
+        "Do not change React into expert in React unless the Master CV explicitly supports that claim.",
+      );
+    });
+  });
+
+  it("instructs the Summary not to transform Intermediate English into Conversational English", () => {
+    createResponse.mockResolvedValue({
+      output_text: JSON.stringify(input.masterCv),
+    });
+
+    return generateOptimizedCvDraft(input, "en").then(() => {
+      const prompt = createResponse.mock.calls[0][0].input[0].content[0]
+        .text as string;
+      expect(prompt).toContain(
+        "Do not infer language ability beyond what the Master CV explicitly states.",
+      );
+      expect(prompt).toContain(
+        "Do not change English — Intermediate into Conversational English, fluent English, advanced English, or any other upgraded formulation.",
+      );
+    });
   });
 
   it("throws when OpenAI is not configured", async () => {

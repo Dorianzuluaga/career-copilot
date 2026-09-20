@@ -10,6 +10,7 @@ import {
   View,
 } from "@react-pdf/renderer";
 import type { ReactNode } from "react";
+import { presentOptimizedCvSkills } from "../lib/optimized-cv-skills.js";
 import type { OptimizedCvDocumentChrome } from "../types/export.js";
 import type { OptimizedCv } from "../types/optimized-cv.js";
 import { formatDateRange, hasText } from "./document-helpers.js";
@@ -177,6 +178,15 @@ const styles = StyleSheet.create({
     textAlign: "left",
     color: "#334155",
   },
+  skillGroup: {
+    marginBottom: 6,
+  },
+  skillCategory: {
+    fontSize: 9,
+    fontFamily: "Helvetica-Bold",
+    color: "#020617",
+    marginBottom: 2,
+  },
   language: {
     fontSize: 10,
     lineHeight: 1.35,
@@ -249,6 +259,49 @@ function HeaderContactRow({
           <Text style={styles.contactValue}>{item.value}</Text>
         </View>
       ))}
+    </View>
+  );
+}
+
+function keepWholeWord(word: string): string[] {
+  return [word];
+}
+
+function SkillsContent({ cv }: { cv: OptimizedCv }) {
+  const presentation = presentOptimizedCvSkills(cv.skills, cv.skillGroups);
+
+  if (presentation.mode === "flat") {
+    return (
+      <Text style={styles.skills} hyphenationCallback={keepWholeWord}>
+        {presentation.skills.join(" · ")}
+      </Text>
+    );
+  }
+
+  return (
+    <View>
+      {presentation.groups.map((group, index) => (
+        <View
+          key={`${group.category}-${index}`}
+          style={styles.skillGroup}
+          wrap={false}
+        >
+          <Text
+            style={styles.skillCategory}
+            hyphenationCallback={keepWholeWord}
+          >
+            {group.category}
+          </Text>
+          <Text style={styles.skills} hyphenationCallback={keepWholeWord}>
+            {group.skills.join(" · ")}
+          </Text>
+        </View>
+      ))}
+      {presentation.additionalSkills.length > 0 ? (
+        <Text style={styles.skills} hyphenationCallback={keepWholeWord}>
+          {presentation.additionalSkills.join(" · ")}
+        </Text>
+      ) : null}
     </View>
   );
 }
@@ -336,7 +389,7 @@ export function OptimizedCvPdfDocument({
         </View>
 
         {showLeft || showRight ? (
-          <View style={styles.columns} wrap={false}>
+          <View style={styles.columns}>
             {showLeft ? (
               <View style={styles.leftColumn}>
                 {showProfessionalSummary ? (
@@ -441,9 +494,7 @@ export function OptimizedCvPdfDocument({
                     title={chrome.skills}
                     first={rightFirst === "skills"}
                   >
-                    <Text style={styles.skills}>
-                      {cv.skills.filter(hasText).join(" · ")}
-                    </Text>
+                    <SkillsContent cv={cv} />
                   </Section>
                 ) : null}
 

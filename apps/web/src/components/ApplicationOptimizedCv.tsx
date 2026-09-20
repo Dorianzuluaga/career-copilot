@@ -25,6 +25,10 @@ import type {
   LanguageItem,
   PersonalProjectItem,
 } from "../types/master-cv";
+import {
+  applyOptimizedCvSkillEdits,
+  presentOptimizedCvSkills,
+} from "../lib/optimized-cv-skills";
 import type { OptimizedCvDocumentChrome } from "../types/export";
 import type { OptimizedCv } from "../types/optimized-cv";
 import { optimizedCvPhotoUrl } from "../services/optimized-cv";
@@ -804,14 +808,52 @@ function PersonalProjectEntries({
   );
 }
 
+function SkillsPreview({
+  skills,
+  skillGroups,
+}: {
+  skills: string[];
+  skillGroups?: OptimizedCv["skillGroups"];
+}) {
+  const presentation = presentOptimizedCvSkills(skills, skillGroups);
+
+  if (presentation.mode === "flat") {
+    return (
+      <p className="text-left text-sm leading-6 text-ink">
+        {presentation.skills.join(" · ")}
+      </p>
+    );
+  }
+
+  return (
+    <div className="space-y-2">
+      {presentation.groups.map((group, index) => (
+        <div key={`${group.category}-${index}`}>
+          <p className="text-sm font-semibold text-ink">{group.category}</p>
+          <p className="text-left text-sm leading-6 text-ink">
+            {group.skills.join(" · ")}
+          </p>
+        </div>
+      ))}
+      {presentation.additionalSkills.length > 0 ? (
+        <p className="text-left text-sm leading-6 text-ink">
+          {presentation.additionalSkills.join(" · ")}
+        </p>
+      ) : null}
+    </div>
+  );
+}
+
 function SkillsSection({
   skills,
+  skillGroups,
   isEditing,
   error,
   onAddSkill,
   onRemoveSkill,
 }: {
   skills: string[];
+  skillGroups?: OptimizedCv["skillGroups"];
   isEditing: boolean;
   error?: string;
   onAddSkill?: (skill: string) => void;
@@ -820,14 +862,9 @@ function SkillsSection({
   const { t } = useLocale();
   const [newSkill, setNewSkill] = useState("");
   const [addError, setAddError] = useState<string | null>(null);
-  const visibleSkills = skills.filter(hasText);
 
   if (!isEditing) {
-    return (
-      <p className="text-left text-sm leading-6 text-ink">
-        {visibleSkills.join(" · ")}
-      </p>
-    );
+    return <SkillsPreview skills={skills} skillGroups={skillGroups} />;
   }
 
   function handleAdd() {
@@ -1096,26 +1133,31 @@ export function OptimizedCvDocument({
                 >
                   <SkillsSection
                     skills={cv.skills}
+                    skillGroups={cv.skillGroups}
                     isEditing={isEditing}
                     error={fieldErrors.skills}
                     onAddSkill={
                       isEditing && onChange
                         ? (skill) =>
-                            onChange({
-                              ...cv,
-                              skills: [...cv.skills, skill],
-                            })
+                            onChange(
+                              applyOptimizedCvSkillEdits(cv, [
+                                ...cv.skills,
+                                skill,
+                              ]),
+                            )
                         : undefined
                     }
                     onRemoveSkill={
                       isEditing && onChange
                         ? (index) =>
-                            onChange({
-                              ...cv,
-                              skills: cv.skills.filter(
-                                (_, skillIndex) => skillIndex !== index,
+                            onChange(
+                              applyOptimizedCvSkillEdits(
+                                cv,
+                                cv.skills.filter(
+                                  (_, skillIndex) => skillIndex !== index,
+                                ),
                               ),
-                            })
+                            )
                         : undefined
                     }
                   />

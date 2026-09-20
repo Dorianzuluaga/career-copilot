@@ -21,6 +21,10 @@ vi.mock("./cover-letter-ai.service.js", () => ({
   generateCoverLetterDraft: vi.fn(),
 }));
 
+vi.mock("./skill-intelligence-cache.js", () => ({
+  getOrComputeSkillProfile: vi.fn(),
+}));
+
 vi.mock("./optimized-cv.service.js", () => ({
   OptimizedCvError: class OptimizedCvError extends Error {
     constructor(
@@ -67,6 +71,8 @@ import {
   prepareProfileComparisonInput,
   ProfileComparisonError,
 } from "./profile-comparison.service.js";
+import { getOrComputeSkillProfile } from "./skill-intelligence-cache.js";
+import { SkillIntelligenceError } from "./skill-intelligence.js";
 
 const applicationId = "8e9c843b-5c3d-4e65-8514-7de898b2aca6";
 const userId = "4e9c843b-5c3d-4e65-8514-7de898b2aca6";
@@ -122,6 +128,20 @@ const profileMatch = {
   workingLanguage: "es" as const,
 };
 
+const skillProfile = {
+  skills: [
+    {
+      sourceSkill: "TypeScript",
+      canonicalSkill: "TS",
+      category: "Front-End",
+      professionalWeight: "core_professional" as const,
+      jobRelevance: "very_high" as const,
+      priority: 1,
+      evidence: [{ source: "experience" as const, reference: "experience[0]" }],
+    },
+  ],
+};
+
 const optimizedCv = {
   ...masterCv,
   professionalSummary: "TypeScript engineer building APIs.",
@@ -165,6 +185,7 @@ beforeEach(() => {
   });
   vi.mocked(getOptimizedCv).mockResolvedValue(optimizedCv);
   vi.mocked(getProfileComparison).mockResolvedValue(profileMatch);
+  vi.mocked(getOrComputeSkillProfile).mockResolvedValue(skillProfile);
   vi.mocked(generateCoverLetterDraft).mockResolvedValue({
     ...coverLetter,
     workingLanguage: "en",
@@ -172,7 +193,7 @@ beforeEach(() => {
 });
 
 describe("generateCoverLetter", () => {
-  it("generates a Cover Letter from Master CV, Job Analysis, saved Profile Match, and saved Optimized CV", async () => {
+  it("generates a Cover Letter from Master CV, Job Analysis, saved Profile Match, saved Optimized CV, and Skill Profile", async () => {
     await expect(
       generateCoverLetter(applicationId, userId, "en"),
     ).resolves.toEqual({
@@ -186,12 +207,27 @@ describe("generateCoverLetter", () => {
     );
     expect(getOptimizedCv).toHaveBeenCalledWith(applicationId, userId);
     expect(getProfileComparison).toHaveBeenCalledWith(applicationId, userId);
+    expect(getOrComputeSkillProfile).toHaveBeenCalledWith({
+      userId,
+      applicationId,
+      input: {
+        masterCv,
+        jobAnalysis,
+        profileMatch,
+      },
+    });
+    expect(
+      vi.mocked(getOrComputeSkillProfile).mock.invocationCallOrder[0],
+    ).toBeLessThan(
+      vi.mocked(generateCoverLetterDraft).mock.invocationCallOrder[0]!,
+    );
     expect(generateCoverLetterDraft).toHaveBeenCalledWith(
       {
         masterCv,
         jobAnalysis,
         profileMatch,
         optimizedCv,
+        skillProfile,
       },
       "en",
     );
@@ -207,12 +243,22 @@ describe("generateCoverLetter", () => {
     await generateCoverLetter(applicationId, userId, "fr");
 
     expect(getProfileComparison).toHaveBeenCalledWith(applicationId, userId);
+    expect(getOrComputeSkillProfile).toHaveBeenCalledWith({
+      userId,
+      applicationId,
+      input: {
+        masterCv,
+        jobAnalysis,
+        profileMatch: persistedProfileMatch,
+      },
+    });
     expect(generateCoverLetterDraft).toHaveBeenCalledWith(
       {
         masterCv,
         jobAnalysis,
         profileMatch: persistedProfileMatch,
         optimizedCv,
+        skillProfile,
       },
       "fr",
     );
@@ -227,6 +273,7 @@ describe("generateCoverLetter", () => {
       generateCoverLetter(applicationId, userId, "en"),
     ).rejects.toEqual(new CoverLetterError("Optimized CV not found.", 404));
     expect(getProfileComparison).not.toHaveBeenCalled();
+    expect(getOrComputeSkillProfile).not.toHaveBeenCalled();
     expect(generateCoverLetterDraft).not.toHaveBeenCalled();
   });
 
@@ -238,6 +285,7 @@ describe("generateCoverLetter", () => {
     await expect(
       generateCoverLetter(applicationId, userId, "en"),
     ).rejects.toEqual(new CoverLetterError("Profile Match not found.", 404));
+    expect(getOrComputeSkillProfile).not.toHaveBeenCalled();
     expect(generateCoverLetterDraft).not.toHaveBeenCalled();
   });
 
@@ -251,6 +299,29 @@ describe("generateCoverLetter", () => {
     ).rejects.toEqual(new CoverLetterError("Job analysis not found.", 404));
     expect(getOptimizedCv).not.toHaveBeenCalled();
     expect(getProfileComparison).not.toHaveBeenCalled();
+    expect(getOrComputeSkillProfile).not.toHaveBeenCalled();
+    expect(generateCoverLetterDraft).not.toHaveBeenCalled();
+  });
+
+  it("fails closed when Skill Intelligence fails and does not generate a draft", async () => {
+    vi.mocked(getOrComputeSkillProfile).mockRejectedValue(
+      new SkillIntelligenceError("Invalid Skill Intelligence response.", 502),
+    );
+
+    await expect(
+      generateCoverLetter(applicationId, userId, "en"),
+    ).rejects.toEqual(
+      new CoverLetterError("Invalid Skill Intelligence response.", 502),
+    );
+    expect(getOrComputeSkillProfile).toHaveBeenCalledWith({
+      userId,
+      applicationId,
+      input: {
+        masterCv,
+        jobAnalysis,
+        profileMatch,
+      },
+    });
     expect(generateCoverLetterDraft).not.toHaveBeenCalled();
   });
 });

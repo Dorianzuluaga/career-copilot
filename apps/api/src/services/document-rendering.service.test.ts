@@ -497,6 +497,132 @@ describe("document rendering service", () => {
   });
 });
 
+describe("Optimized CV Skills PDF presentation", () => {
+  const groupedCv: OptimizedCv = {
+    ...sampleOptimizedCv,
+    professionalSummary: "Engineer building APIs.",
+    experience: [
+      {
+        ...sampleOptimizedCv.experience[0]!,
+        description: "Built REST APIs.",
+      },
+    ],
+    skills: [
+      "React",
+      "TypeScript",
+      "JavaScript",
+      "Node.js",
+      "Python",
+      "Flask",
+      "Excel",
+    ],
+    skillGroups: [
+      {
+        category: "Frontend",
+        skills: ["React", "TypeScript", "JavaScript"],
+      },
+      {
+        category: "Backend",
+        skills: ["Node.js", "Python", "Flask"],
+      },
+    ],
+  };
+
+  it("renders persisted category labels and sourceSkill values", async () => {
+    const text = extractPdfText(
+      await renderDocument({
+        type: "optimized-cv",
+        chrome: englishCvChrome,
+        data: groupedCv,
+      }),
+    );
+
+    expect(text).toContain("Frontend");
+    expect(text).toContain("Backend");
+    expect(text).toContain("React");
+    expect(text).toContain("TypeScript");
+    expect(text).toContain("JavaScript");
+    expect(text).toContain("Node.js");
+    expect(text).toContain("Python");
+    expect(text).toContain("Flask");
+    expect(text).toContain("Excel");
+    expect(text.indexOf("Frontend")).toBeLessThan(text.indexOf("Backend"));
+    expect(text.indexOf("React")).toBeLessThan(text.indexOf("TypeScript"));
+    expect(text.indexOf("TypeScript")).toBeLessThan(text.indexOf("JavaScript"));
+    expect(text.indexOf("Node.js")).toBeLessThan(text.indexOf("Python"));
+    expect(text.indexOf("Python")).toBeLessThan(text.indexOf("Flask"));
+    expect(text.indexOf("Frontend")).toBeLessThan(text.indexOf("React"));
+    expect(text.indexOf("Backend")).toBeLessThan(text.indexOf("Node.js"));
+  });
+
+  it("never renders canonicalSkill in the Skills section", async () => {
+    const text = extractPdfText(
+      await renderDocument({
+        type: "optimized-cv",
+        chrome: englishCvChrome,
+        data: groupedCv,
+      }),
+    );
+
+    expect(text).not.toContain("React.js");
+    expect(text).not.toContain("Typescript Language");
+    expect(text).not.toContain("CanonicalFlask");
+  });
+
+  it("keeps the complete skill inventory present under layout pressure", async () => {
+    const groups = [
+      {
+        category: "Frontend",
+        skills: Array.from({ length: 12 }, (_, index) => `UiSkill${index + 1}`),
+      },
+      {
+        category: "Backend",
+        skills: Array.from(
+          { length: 12 },
+          (_, index) => `ApiSkill${index + 1}`,
+        ),
+      },
+      {
+        category: "Databases",
+        skills: Array.from({ length: 12 }, (_, index) => `DbSkill${index + 1}`),
+      },
+    ];
+    const skills = groups.flatMap((group) => group.skills);
+    const text = extractPdfText(
+      await renderDocument({
+        type: "optimized-cv",
+        chrome: englishCvChrome,
+        data: {
+          ...groupedCv,
+          skills,
+          skillGroups: groups,
+        },
+      }),
+    );
+
+    expect(text).toContain("Frontend");
+    expect(text).toContain("Backend");
+    expect(text).toContain("Databases");
+    for (const skill of skills) {
+      expect(text).toContain(skill);
+    }
+  });
+
+  it("renders legacy flat skills without inventing categories", async () => {
+    const text = extractPdfText(
+      await renderDocument({
+        type: "optimized-cv",
+        chrome: englishCvChrome,
+        data: sampleOptimizedCv,
+      }),
+    );
+
+    expect(text).toContain("TypeScript · React");
+    expect(text).not.toContain("Front-End");
+    expect(text).not.toContain("Frontend");
+  });
+});
+
 describe("document presentation localization", () => {
   it.each([
     {

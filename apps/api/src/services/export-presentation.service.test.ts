@@ -55,6 +55,7 @@ const optimizedCv: OptimizedCv = {
   ],
   education: [],
   skills: ["TypeScript"],
+  skillGroups: [{ category: "Front-End", skills: ["TypeScript"] }],
   languages: [],
   certifications: [],
   workingLanguage: "es",
@@ -114,6 +115,19 @@ describe("preparePresentationDocument", () => {
       chrome: resolveOptimizedCvDocumentChrome("es"),
     });
     expect(preview.data).not.toBe(optimizedCv);
+  });
+
+  it("does not translate Skill Profile category labels during presentation", async () => {
+    const preview = await preparePresentationDocument("optimized-cv", "fr", {
+      optimizedCv,
+    });
+
+    expect(preview.data).toMatchObject({
+      skills: ["TypeScript"],
+      skillGroups: [{ category: "Front-End", skills: ["TypeScript"] }],
+    });
+    expect(JSON.stringify(preview.data)).not.toContain("Front-end");
+    expect(JSON.stringify(preview.chrome)).not.toContain("Front-End");
   });
 
   it("adapts only the requested document from the saved source", async () => {
