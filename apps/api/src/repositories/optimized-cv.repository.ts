@@ -1,23 +1,28 @@
 import type { Prisma } from "../../generated/prisma/index.js";
+import { encodePersistedOptimizedCvSkills } from "../lib/optimized-cv-skills.js";
 import { prisma } from "../lib/prisma.js";
-import type { MasterCvInput } from "../types/master-cv.js";
+import type { OptimizedCvText } from "../types/optimized-cv.js";
 import type { SupportedLocale } from "../types/supported-locale.js";
 
 function toData(
-  input: MasterCvInput,
+  input: OptimizedCvText,
   profilePhotoObjectKey?: string | null,
   profilePhotoPositionX?: number | null,
   profilePhotoPositionY?: number | null,
   workingLanguage?: SupportedLocale | null,
 ) {
+  const { skillGroups, ...text } = input;
   return {
-    ...input,
-    experience: input.experience as unknown as Prisma.InputJsonValue,
-    education: input.education as unknown as Prisma.InputJsonValue,
-    skills: input.skills,
-    languages: input.languages as unknown as Prisma.InputJsonValue,
-    certifications: input.certifications as unknown as Prisma.InputJsonValue,
-    personalProjects: (input.personalProjects ??
+    ...text,
+    experience: text.experience as unknown as Prisma.InputJsonValue,
+    education: text.education as unknown as Prisma.InputJsonValue,
+    skills: encodePersistedOptimizedCvSkills(
+      text.skills,
+      skillGroups,
+    ) as unknown as Prisma.InputJsonValue,
+    languages: text.languages as unknown as Prisma.InputJsonValue,
+    certifications: text.certifications as unknown as Prisma.InputJsonValue,
+    personalProjects: (text.personalProjects ??
       []) as unknown as Prisma.InputJsonValue,
     ...(profilePhotoObjectKey === undefined ? {} : { profilePhotoObjectKey }),
     ...(profilePhotoPositionX === undefined ? {} : { profilePhotoPositionX }),
@@ -32,7 +37,7 @@ export function findOptimizedCvByApplicationId(applicationId: string) {
 
 export function upsertOptimizedCv(
   applicationId: string,
-  input: MasterCvInput,
+  input: OptimizedCvText,
   profilePhotoObjectKey: string | null,
   profilePhotoPositionX: number | null,
   profilePhotoPositionY: number | null,

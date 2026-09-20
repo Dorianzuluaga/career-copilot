@@ -1,9 +1,11 @@
 # Skill Intelligence Specification
 
 Document: docs/specs/skill-intelligence.md
-Status: Approved Implementation-Ready Specification
-Scope: Skill Intelligence / Skill Profile foundation
-Implementation status: Not implemented
+Status: Approved Implementation-Ready Specification — QA Amendment
+Scope: Skill Intelligence / Skill Profile foundation, plus Optimized CV consumption corrections
+Implementation status: Skill Intelligence V1 is implemented. Professional Summary factuality and visible Skills-section category grouping are specified here and are not yet implemented.
+
+This amendment does not change the Skill Profile contract, cache, Profile Match, Job Analysis, Cover Letter product behavior, Prisma schema, or Master CV source-of-truth principle. It corrects how Optimized CV consumes an already computed Skill Profile.
 
 ## 1. Purpose
 
@@ -25,7 +27,15 @@ which existing skills should receive greater emphasis.
 
 Emphasis is expressed as semantic fields. The backend, not the LLM, assigns the final numeric priority.
 
-The layer must not create candidate capabilities.
+Skill Intelligence has two different downstream responsibilities:
+
+Skill Profile: classify every existing Master CV skill and attach professionalWeight, jobRelevance, evidence, priority, and category.
+
+Document consumption: Professional Summary and Cover Letter use those fields as emphasis signals for a subset of existing skills. The Optimized CV Skills section uses category, sourceSkill, and priority to present the complete inventory.
+
+Emphasis guides which existing Master CV facts may be mentioned more prominently. It does not authorize omitting a Master CV skill from the Optimized CV Skills section. It does not authorize unsupported proficiency, seniority, expertise, fluency, communication ability, or other personal-attribute claims.
+
+The layer must not create candidate capabilities. It must not strengthen, upgrade, or rewrite the factual meaning of existing Master CV claims.
 
 ## 2. Core Principle — Master CV as Source of Truth
 
@@ -53,9 +63,23 @@ fabricate evidence;
 
 modify the Master CV;
 
-replace a Master CV skill in generated documents with canonicalSkill.
+replace a Master CV skill in generated documents with canonicalSkill;
 
-Every Skill Profile item must map to a Master CV skill. Skill Intelligence may reason about skills, but it cannot introduce new candidate skills.
+treat skill relevance as proficiency;
+
+treat professional weight as expertise or seniority;
+
+treat priority as proficiency;
+
+transform a skill mention into an unsupported proficiency, seniority, expertise, fluency, or communication-ability claim;
+
+infer language ability beyond what the Master CV explicitly states;
+
+invent certifications, responsibilities, achievements, seniority, communication abilities, domain expertise, or other qualifications.
+
+Every Skill Profile item must map to a Master CV skill. Skill Intelligence may reason about skills, but it cannot introduce new candidate skills or stronger personal claims than the Master CV supports.
+
+Document generators may rewrite and synthesize existing facts. They must preserve the factual meaning of those facts. Relevance, weight, priority, and evidence are not permission to invent a stronger claim.
 
 ## 3. Problem Being Solved
 
@@ -79,9 +103,15 @@ no dedicated skill-priority context for Cover Letter;
 
 inconsistent semantic skill representations;
 
-no structural tie between narrative claims and the Master CV skill set.
+no structural tie between narrative claims and the Master CV skill set;
+
+unsupported proficiency or expertise claims in Professional Summary when Skill Profile emphasis is treated as a stronger personal attribute;
+
+a flat Optimized CV Skills section that cannot show Skill Profile categories.
 
 Skill Intelligence addresses the shared skill-reasoning problem. It does not replace document generation, Job Analysis, or Profile Match.
+
+Optimized CV consumption must preserve that reasoning: Professional Summary may emphasize a subset of existing skills without upgrading their factual meaning, and the Skills section must present the complete inventory in visible Skill Profile categories.
 
 ## 4. Scope
 
@@ -118,6 +148,8 @@ Public Skill Intelligence HTTP API.
 Frontend Skill Intelligence cache.
 
 Prisma / PostgreSQL Skill Profile persistence.
+
+Prisma migration for Optimized CV skills grouping. `OptimizedCv.skills` is already Json. A compatibility/read adapter is required if the document-facing shape changes. A schema migration is not part of this amendment.
 
 Locale, workingLanguage, presentation language, or translation of Skill Intelligence fields.
 
@@ -224,6 +256,8 @@ Each item represents exactly one distinct existing Master CV skill after the app
 
 The Skill Profile is complete only when its distinct source skills are exactly the distinct Master CV skills. A subset is invalid.
 
+Professional Summary and Cover Letter may mention a subset of those skills. The Skill Profile itself must never be a subset. The Optimized CV Skills section must include every Skill Profile item, rendered under visible Skill Profile categories.
+
 ## 7. SkillProfileItem Contract
 
 type SkillProfileItem = {
@@ -250,13 +284,13 @@ it is the first trimmed occurrence of that distinct skill in Master CV order;
 
 it is immutable within the Skill Profile;
 
-it is the only user-facing and document-facing skill string.
+it is the authoritative user-facing and document-facing skill string.
 
 Generated Optimized CV and Cover Letter content must use sourceSkill. The system must never replace a Master CV skill in generated documents with canonicalSkill.
 
 ### 7.2 canonicalSkill
 
-Internal Skill Intelligence metadata only.
+Internal semantic metadata only.
 
 The LLM may supply AI-derived canonical terminology for internal semantic reasoning. This may normalize casing, punctuation, pluralization, common formatting variants, or confidently equivalent representations.
 
@@ -274,6 +308,27 @@ be used as the Optimized CV or Cover Letter skill list.
 
 If equivalence is ambiguous, preserve the Master CV skills as separate items. Distinctness is determined only by §14.
 
+### 7.3 Field consumption
+
+Skill Intelligence fields have intended downstream consumers. These responsibilities do not change the Skill Profile contract or weaken the Master CV source-of-truth rule.
+
+professionalWeight, jobRelevance, evidence, and priority are emphasis signals. They are not permission to invent stronger claims.
+
+professionalWeight, jobRelevance, and evidence:
+primarily guide Professional Summary and Cover Letter emphasis. They identify which existing Master CV skills have stronger professional weight and job relevance, and they ground selected skills in existing Master CV content. They must never determine whether a Master CV skill is included in the Optimized CV Skills section. They must never be converted into unsupported proficiency, seniority, expertise, fluency, communication ability, or other personal-attribute claims.
+
+category:
+primarily structures the complete Optimized CV Skills section. It infers the professional nature/category of each existing skill so the complete skill inventory can be organized into visible professional categories. Category labels must be visible in that section. Categories remain extensible and profile-dependent as defined in §8. Category is not a filter.
+
+sourceSkill:
+the authoritative document-facing skill string. Generated Optimized CV and Cover Letter content must use this value. The Skills section must render sourceSkill. canonicalSkill must never be displayed.
+
+canonicalSkill:
+internal semantic metadata only. It must never replace sourceSkill in generated documents. It must never appear in Preview, PDF, or Export.
+
+priority:
+a deterministic ordering and selection signal where emphasis is required. Professional Summary and Cover Letter may use it to decide which existing skills to emphasize. The Optimized CV Skills section may use it as an ordering signal within a category. Priority must never determine whether a Master CV skill is included in the Skills section. Priority does not imply proficiency.
+
 ## 8. Extensible Skill Taxonomy
 
 The taxonomy is extensible and must not assume software development.
@@ -287,6 +342,12 @@ Designer → UX/UI / Visual Design / Design Tools
 These are examples, not a closed taxonomy.
 
 Do not introduce a closed universal category enum.
+
+The Optimized CV Skills section uses category to organize the complete Master CV skill inventory into visible groups. Skill Intelligence infers the professional nature/category of each existing skill. It must not use category to filter skills out of that section.
+
+Do not create a fixed universal developer taxonomy. Example labels such as Frontend, Backend, Databases, Tools & Methodologies, or AI & Automation are examples only. Category names remain extensible strings.
+
+Categories remain extensible and profile-dependent. They must not assume a single profession or a closed list of labels.
 
 V1 requirements:
 
@@ -344,6 +405,8 @@ general: broad/common/foundational capability that should not automatically domi
 
 Professional Weight is candidate/profile-oriented and distinct from application relevance.
 
+Professional Weight does not imply expertise, seniority, or proficiency. A core_professional or specialized skill may be mentioned with greater emphasis. The document must not call the candidate an expert, senior, or specialist in that skill unless the Master CV explicitly supports that claim.
+
 ## 10. Job Relevance
 
 Job Relevance answers:
@@ -373,11 +436,15 @@ none: no meaningful relevance.
 
 A skill may be core_professional + low or general + very_high. These values must not be conflated.
 
-A skill with jobRelevance "none" remains in the Skill Profile and remains available to Optimized CV. Low or absent application relevance is not permission to omit the skill.
+A skill with jobRelevance "none" remains in the Skill Profile. Low or absent application relevance is not permission to omit the skill from the Skill Profile or from the Optimized CV Skills section.
+
+Job Relevance does not imply proficiency. A skill with very_high or high jobRelevance may be emphasized. The document must not upgrade that skill into expertise, fluency, or another unsupported personal attribute.
+
+Professional Summary and Cover Letter may omit a skill with low or absent job relevance. They must still use only Master CV source skills. They must not convert the selected skills into stronger claims than the Master CV supports.
 
 ## 11. Priority
 
-priority determines the order in which existing skills receive attention for the current application.
+priority determines the order in which existing skills receive emphasis for the current application, and may order skills within an Optimized CV Skills-section category.
 
 The LLM must not return the final numeric priority.
 
@@ -411,7 +478,11 @@ application-specific, because jobRelevance is application-specific;
 
 only existing Master CV skills may receive priority.
 
-Priority is an ordering signal, not an absolute quality score.
+Priority is an ordering and selection signal, not an absolute quality score. It is not an inclusion filter. It is not a proficiency score.
+
+Professional Summary and Cover Letter may use priority, together with professionalWeight, jobRelevance, and evidence, to select which existing skills to emphasize. They do not need to mention every Master CV skill. Those signals must not be converted into unsupported proficiency or expertise claims.
+
+The Optimized CV Skills section must include every distinct Master CV skill represented in the Skill Profile. Priority may order skills within a category. Priority, professionalWeight, and jobRelevance must never exclude a skill from that section.
 
 ### 11.1 Deterministic ordering
 
@@ -430,6 +501,8 @@ The original Master CV skill index is the index of the first masterCv.skills ent
 After sorting, assign priority 1..N in that order.
 
 This ordering is the only V1 priority algorithm. Document generators must consume these values and must not independently reconstruct priority from raw skill lists.
+
+Priority consumption follows §7.3. Generators may use priority for emphasis and within-category Skills-section ordering. They must not use it to omit a Master CV skill from the Skills section. They must not use it as a proficiency or expertise signal.
 
 ## 12. Evidence
 
@@ -452,18 +525,20 @@ type SkillEvidenceSource =
 
 Evidence may be an empty array. A Master CV skill that appears only in masterCv.skills and is not referenced elsewhere may have no evidence.
 
+Evidence primarily grounds Professional Summary and Cover Letter emphasis in existing Master CV content. Evidence may be used to ground a skill mention. Evidence does not create skills, does not authorize omitting a skill from the Optimized CV Skills section, and does not authorize unsupported claims. If the referenced Master CV text does not establish a proficiency, seniority, fluency, or other attribute, the generated document must not invent that attribute.
+
 ### 12.1 Closed reference grammar
 
 V1 evidence references use only these structural references:
 
-| source | reference |
-|---|---|
+| source               | reference           |
+| -------------------- | ------------------- |
 | professional_summary | professionalSummary |
-| experience | experience[i] |
-| education | education[i] |
-| certifications | certifications[i] |
-| personal_projects | personalProjects[i] |
-| languages | languages[i] |
+| experience           | experience[i]       |
+| education            | education[i]        |
+| certifications       | certifications[i]   |
+| personal_projects    | personalProjects[i] |
+| languages            | languages[i]        |
 
 i is a non-negative integer.
 
@@ -632,6 +707,8 @@ taxonomy structural validation;
 
 protection against candidate-skill invention;
 
+deterministic Optimized CV Skills-section grouping from the Skill Profile;
+
 fail-closed generation when Skill Intelligence is invalid.
 
 These responsibilities must not be delegated exclusively to the LLM.
@@ -731,47 +808,241 @@ arbitrary additional fields.
 
 ## 19. Downstream Consumers
 
-Optimized CV
-
-Uses Skill Profile to determine:
-
-skills to emphasize;
-
-skills influencing Professional Summary;
-
-skills influencing experience/project descriptions;
-
-skill ordering by the backend-assigned priority.
-
-Optimized CV must continue to include all Master CV source skills represented in the Skill Profile. Skills may be reordered by priority. No distinct Master CV skill may be omitted because its jobRelevance is low or none.
+Once Skill Intelligence is integrated into Optimized CV and Cover Letter generation, both generators must consume the same Skill Profile. They must not independently reconstruct skill priority from raw Master CV skill lists.
 
 Document-facing skill strings must be sourceSkill, never canonicalSkill.
 
 The existing supportedSkills integrity function remains a deterministic Master CV allowlist. It is not a priority fallback and must not be used to invent a Skill Profile when Skill Intelligence fails.
 
+### 19.1 Optimized CV
+
 The Optimized CV generator remains responsible for document structure, narrative, one-page considerations, descriptions, project selection, and final output.
 
-Professional Summary
+The Skill Profile may influence:
 
-Remains part of Optimized CV generation. It is not a separate agent in V1.
+Professional Summary emphasis;
 
-The Optimized CV generation call must receive the Skill Profile so Professional Summary can use the shared skill reasoning. It must not independently reconstruct skill priority from raw lists.
+experience and project descriptions;
 
-Cover Letter
+the complete Skills section.
 
-Consumes the same Skill Profile and remains responsible for greeting, introduction, professional value, motivation, closing, factual narrative, and complementarity with the Optimized CV.
+These consumers use different Skill Intelligence fields as defined in §7.3.
 
-Once Skill Intelligence is integrated into Optimized CV and Cover Letter generation, both generators must consume that Skill Profile. They must not independently reconstruct skill priority from raw lists.
+Optimized CV must continue to include all Master CV source skills represented in the Skill Profile in the Skills section. No distinct Master CV skill may be omitted from that section because its jobRelevance is low or none, or because its professionalWeight or priority is lower than other skills.
+
+One-page considerations and layout pressure must not omit a distinct Master CV skill from the Skills section.
+
+The Skills section must be assembled deterministically from the Skill Profile wherever possible. The Optimized CV LLM must not invent, decide, or re-derive the final category grouping during document generation or rendering. Preview, PDF, and Export must consume the document representation, not recompute Skill Intelligence.
+
+### 19.2 Professional Summary
+
+Professional Summary remains part of Optimized CV generation. It is not a separate agent in V1.
+
+The Optimized CV generation call must receive the Skill Profile so Professional Summary can use the shared skill reasoning. It must not independently reconstruct skill priority from raw lists. It must not independently re-evaluate the raw Master CV skill inventory in a way that contradicts the Skill Profile.
+
+#### 19.2.1 Two responsibilities
+
+Skill Profile determines:
+
+- professionalWeight
+- jobRelevance
+- evidence
+- priority
+- category
+
+Professional Summary uses those signals to decide which existing Master CV skills deserve emphasis.
+
+The Summary:
+
+- may mention only a subset of Master CV skills;
+- should emphasize skills with stronger professional relevance to the target job;
+- should use evidence to ground those mentions;
+- must not mention every skill;
+- must never introduce a skill outside the Master CV / Skill Profile;
+- must not convert relevance into unsupported proficiency or expertise;
+- must not independently re-evaluate the raw skill inventory in a way that contradicts the Skill Profile.
+
+professionalWeight + jobRelevance + evidence + priority are emphasis signals. They are not permission to invent stronger claims.
+
+#### 19.2.2 Factuality
+
+Master CV remains the sole source of truth for candidate facts.
+
+Skill Profile relevance or professional weight must never imply unsupported proficiency, seniority, expertise, fluency, communication ability, or other personal attributes.
+
+Explicit rules:
+
+- Skill relevance does not imply proficiency level.
+- Professional weight does not imply expertise or seniority.
+- Priority does not imply proficiency.
+- The model must not transform a skill into an unsupported proficiency claim.
+- The model must not infer language abilities beyond what the Master CV explicitly states.
+- If a language is mentioned, its proficiency must remain faithful to the Master CV.
+- "English — Intermediate" must not become "conversational English", "fluent English", "advanced English", or any other upgraded formulation.
+- The model must not invent certifications, responsibilities, achievements, seniority, communication abilities, domain expertise, or other qualifications.
+- Evidence from Skill Profile may be used to ground a skill mention. Evidence does not authorize unsupported claims.
+
+The goal is not to make the Summary mechanically copy the Master CV. The model may rewrite and synthesize existing facts. It must preserve their factual meaning.
+
+Allowed:
+
+"Experience with React and TypeScript."
+
+when supported by the Master CV evidence.
+
+Not allowed:
+
+"Expert in React and TypeScript."
+
+unless the Master CV explicitly supports that proficiency.
+
+Allowed:
+
+"English — Intermediate."
+
+Not allowed:
+
+"Conversational English."
+
+when the Master CV only states Intermediate.
+
+Only Master CV source skills may be used. The Summary must use sourceSkill. It must never introduce a skill that is absent from the Skill Profile, and it must never replace sourceSkill with canonicalSkill.
+
+### 19.3 Optimized CV Skills section
+
+The Optimized CV Skills section must include every distinct Master CV skill represented in the Skill Profile.
+
+This is a different responsibility from Professional Summary:
+
+Professional Summary may contain a subset of skills.
+
+The Skills section must contain EVERY distinct Master CV skill represented in the Skill Profile.
+
+Therefore:
+
+- low job relevance does not remove a skill;
+- none job relevance does not remove a skill;
+- supporting/general professional weight does not remove a skill;
+- priority does not filter the inventory;
+- one-page/layout pressure must not remove a Master CV skill;
+- `sourceSkill` is the document-facing value;
+- `canonicalSkill` is internal only and must never be displayed.
+
+The purpose of Skill Intelligence in this section is to infer the professional nature/category of each existing skill and organize the complete skill inventory into visible professional categories.
+
+#### 19.3.1 Visible category grouping
+
+The Skills section must visibly represent the Skill Profile categories.
+
+Document-facing behavior:
+
+- every skill appears exactly once;
+- every skill belongs to exactly one Skill Profile category;
+- category labels are visible;
+- skills are rendered under their corresponding category;
+- `sourceSkill` is rendered;
+- `canonicalSkill` is never rendered;
+- priority may determine ordering within a category;
+- priority must not determine inclusion;
+- job relevance must not determine inclusion.
+
+Category labels written onto the Optimized CV are the Skill Profile category strings. Skill Intelligence remains locale-independent. This amendment does not change Export Presentation Language behavior. Category labels are not added to the existing narrative-adaptation payload in this specification. Whether category labels should later be adapted with presentation language is unspecified and is not invented here.
+
+Example presentation only. Exact category names are not a product taxonomy:
+
+Frontend
+React · TypeScript · JavaScript · HTML · CSS
+
+Backend
+Node.js · Python · Flask · REST APIs
+
+Databases
+PostgreSQL · MySQL
+
+Tools & Methodologies
+Git · GitHub · Jira · Scrum
+
+AI & Automation
+LLM Integration · AI Workflows · Prompt Engineering
+
+Do not create a fixed universal developer taxonomy. Skill Intelligence categories remain extensible strings as defined in §8.
+
+#### 19.3.2 Deterministic assembly
+
+The Skills section grouping must be assembled deterministically from the Skill Profile at Optimized CV generation time.
+
+Walk Skill Profile items in priority order (§11.1). Place each `sourceSkill` under its Skill Profile `category`. Within a category, keep that priority order. Category groups appear in the order their first member is encountered in that walk.
+
+The Optimized CV LLM must not produce the final Skills-section grouping. Existing integrity assembly must consume the Skill Profile rather than recreate category logic from raw skill lists.
+
+Preview, PDF, and Export must not call Skill Intelligence again to regroup skills.
+
+#### 19.3.3 Document representation
+
+The current Optimized CV contract represents skills as `skills: string[]`, inherited from Master CV.
+
+That representation can store a complete ordered inventory. It cannot store visible category labels. A flat `string[]` is therefore not sufficient for the document-facing Skills section specified here.
+
+The generated Optimized CV document must be able to represent:
+
+category → ordered sourceSkill list
+
+without duplicating Skill Intelligence logic and without persisting the Skill Profile.
+
+Master CV `skills` remains `string[]`. The Skill Profile contract does not change. Prisma schema change is not required: `OptimizedCv.skills` is already Json.
+
+The exact TypeScript/JSON shape is an implementation concern, provided it satisfies §19.3.1 and:
+
+- grouping is stored on the Optimized CV document so Preview, PDF, and Export can render it later without the Skill Intelligence cache;
+- existing saved Optimized CVs that contain a flat `string[]` continue to load;
+- a compatibility/read adapter is sufficient for those legacy records;
+- a database migration is not introduced unless a later implementation proves the current Json column cannot store the chosen shape;
+- `canonicalSkill` is never persisted as a document-facing skill value.
+
+Existing saved documents without grouping metadata must render as today's flat Skills list until the user regenerates. They must not fail to load.
+
+### 19.4 Cover Letter
+
+Cover Letter consumes the same Skill Profile that Professional Summary consumes. It remains responsible for greeting, introduction, professional value, motivation, closing, factual narrative, and complementarity with the Optimized CV.
+
+Cover Letter should emphasize relevant, high-priority existing skills identified by Skill Intelligence. It must not independently re-evaluate the raw Master CV skill inventory to decide which skills to emphasize.
+
+The Cover Letter does not need to mention every Master CV skill.
+
+Only Master CV source skills may be used. Cover Letter must use sourceSkill and must never replace it with canonicalSkill.
+
+Cover Letter uses professionalWeight, jobRelevance, evidence, and priority as the shared emphasis signals defined in §7.3. Those signals remain emphasis signals. They do not authorize unsupported proficiency, seniority, expertise, fluency, or other personal-attribute claims. This does not change Cover Letter product behavior; it restates the Master CV source-of-truth rule already required of Cover Letter narrative.
+
+### 19.5 Manual Optimized CV skill edits
 
 User-added or manually edited Optimized CV skills are outside Skill Intelligence V1.
 
-Existing Optimized CV save and edit behavior remains unchanged.
+Existing Optimized CV save and edit behavior remains unchanged. Users may still add or remove skills as application-specific content.
 
 Skill Intelligence operates from Master CV + Job Analysis + Profile Match. It does not read, validate, or reverse-engineer manual Optimized CV skill edits.
+
+User-added skills have no Skill Profile category. Implementation must not invent a Skill Profile category for them. If a saved document has grouping metadata plus additional user-added skills, those added skills may render after the grouped Skill Profile inventory without a fabricated category. If grouping metadata is absent, the section may render as a flat list.
+
+### 19.6 Backward compatibility of saved Optimized CVs
+
+The Skill Profile remains unpersisted. Existing saved Optimized CV records store skills as a JSON string array.
+
+If the document-facing Skills representation gains grouping metadata:
+
+- do not create a Prisma/PostgreSQL migration automatically;
+- keep the existing persisted column;
+- load legacy `string[]` records through a compatibility/read adapter;
+- render legacy records as the current flat Skills section;
+- apply visible category grouping to newly generated Optimized CVs;
+- do not recompute Skill Intelligence on read, Preview, PDF, or Export in order to retrofit categories onto old documents.
+
+Regeneration is the path by which an existing application receives grouped Skills.
 
 ## 20. Shared Skill Reasoning
 
 The same Skill Profile is reusable by Optimized CV and Cover Letter so that skill priority does not diverge due to independent LLM interpretation.
+
+Cover Letter uses the same Skill Profile as Professional Summary. Emphasis must not diverge because Cover Letter independently re-evaluates the raw skill inventory.
 
 Priority cannot diverge because of LLM ordering: both consumers receive the backend-assigned priority from one Skill Profile.
 
@@ -893,7 +1164,7 @@ Use the existing API and domain error-handling conventions: a domain error with 
 
 Skill Intelligence is read-only with respect to Master CV. It must never add, remove, rename, or reorder Master CV skills, or modify experience, projects, education, or certifications.
 
-Reordering skills in the Skill Profile or in a generated Optimized CV does not mutate the Master CV.
+Reordering skills in the Skill Profile or organizing them by category in a generated Optimized CV does not mutate the Master CV.
 
 ## 26. Taxonomy Governance
 
@@ -926,7 +1197,7 @@ PostgreSQL → core_professional or supporting depending on candidate context
 
 The value is determined from candidate context, not a universal hard-coded ranking.
 
-Professional Weight must not be interpreted as market popularity.
+Professional Weight must not be interpreted as market popularity. It must not be interpreted as expertise, seniority, or a license to make stronger claims than the Master CV supports.
 
 ## 28. Job Relevance vs Market Value
 
@@ -1147,7 +1418,34 @@ medium + supporting: PostgreSQL → 6
 
 none + general: Git → 7
 
-Git remains in the Skill Profile and must remain available to Optimized CV.
+Git remains in the Skill Profile. The Optimized CV Skills section must still include Git, grouped under its category, even though jobRelevance is none.
+
+Professional Summary and Cover Letter may emphasize higher-priority skills such as React, TypeScript, Node.js, LLM Integration, and Prompt Engineering. They do not need to mention Git.
+
+The Summary may say "Experience with React and TypeScript" when Master CV evidence supports those skills. It must not say "Expert in React and TypeScript" unless the Master CV explicitly supports that proficiency. If Master CV languages state "English · Intermediate", the Summary must not say "conversational English" or "fluent English".
+
+The Skills section must display sourceSkill values under visible category labels. canonicalSkill must not replace them and must never be shown.
+
+One valid visible Skills-section presentation for this example is:
+
+Front-End
+React · TypeScript
+
+Back-End
+Node.js
+
+AI & Automation
+LLM Integration · Prompt Engineering
+
+Databases
+PostgreSQL
+
+Development Tools
+Git
+
+Category labels are Skill Profile category strings. They are examples, not a closed taxonomy.
+
+Within a category, skills may be ordered by priority. Inclusion is not optional. Git remains visible under Development Tools.
 
 If the Master CV had also contained "react", that string would not produce an eighth item. sourceSkill would remain "React".
 
@@ -1297,9 +1595,17 @@ Phase 4 — Optimized CV integration
 
 Provide Skill Profile to Optimized CV generation.
 
-Priority-aware skill ordering using sourceSkill.
+Professional Summary generation receives the Skill Profile and uses professionalWeight, jobRelevance, evidence, and priority to guide emphasis. It does not need to mention every Master CV skill. Only Master CV source skills may be used.
 
-Professional Summary generation receives the Skill Profile.
+Those fields are emphasis signals only. Professional Summary must preserve Master CV factual meaning. It must not convert relevance, weight, priority, or evidence into unsupported proficiency, seniority, expertise, fluency, communication ability, or other personal-attribute claims. Language proficiency in the Summary must remain faithful to the Master CV.
+
+The Skills section includes every distinct Master CV sourceSkill, organized into visible Skill Profile categories. Priority may order skills within a category but must not filter them.
+
+The Skills section grouping is assembled deterministically from the Skill Profile. The Optimized CV LLM must not decide the final grouping. The document representation must be able to represent category → ordered sourceSkill list so Preview, PDF, and Export can render visible groups without recomputing Skill Intelligence.
+
+canonicalSkill remains internal only and must never replace sourceSkill.
+
+Existing saved Optimized CVs that store a flat skill string array must continue to load. Visible grouping applies to newly generated documents. No Prisma migration is introduced for this correction.
 
 Skill Intelligence is a required dependency of generation.
 
@@ -1307,11 +1613,21 @@ supportedSkills remains an integrity allowlist only.
 
 Tests.
 
+QA correction after Phase 4
+
+Phases 1–3 are not restarted. This amendment corrects Optimized CV consumption only:
+
+1. Professional Summary factuality rules.
+2. Deterministic Skills-section grouping from Skill Profile.
+3. Document representation for visible categories, with a legacy string[] read adapter.
+4. Preview and PDF rendering of category labels.
+5. Regression coverage for generation, saved documents, Preview, PDF, Export, and localization.
+
 Phase 5 — Cover Letter integration
 
 Provide the same Skill Profile to Cover Letter generation.
 
-Cover Letter uses it as shared intelligence and must not reconstruct priority from raw lists.
+Cover Letter uses the same Skill Profile as Professional Summary. It emphasizes relevant, high-priority existing skills and must not reconstruct priority from raw lists. It does not need to mention every Master CV skill.
 
 Tests.
 
@@ -1335,11 +1651,11 @@ the profile contains exactly one item for every distinct Master CV skill after �
 
 every item is grounded in Master CV skills;
 
-sourceSkill is the document-facing skill string;
+sourceSkill is the authoritative document-facing skill string;
 
-canonicalSkill is internal only;
+canonicalSkill is internal semantic metadata only and must never replace sourceSkill;
 
-taxonomy is extensible and validated with the §8 rules;
+taxonomy is extensible, profile-dependent, and validated with the §8 rules;
 
 Professional Weight uses core_professional, specialized, supporting, general;
 
@@ -1353,6 +1669,8 @@ the LLM does not assign priority;
 
 priority is derived with §11.1 and validated;
 
+priority may order skills within a Skills-section category and may guide Summary and Cover Letter emphasis, but must never exclude a skill from the Skills section;
+
 Profile Match is used as a signal and never copied into sourceSkill;
 
 stale persisted Profile Match may be used without regenerating Profile Match;
@@ -1363,9 +1681,21 @@ cache identity includes userId, applicationId, source fingerprint, and skillProf
 
 cache invalidation is defined and tested;
 
-Optimized CV consumes the Skill Profile and still includes all distinct Master CV source skills;
+Optimized CV consumes the Skill Profile;
 
-Cover Letter consumes the same Skill Profile;
+the Optimized CV Skills section includes every distinct Master CV source skill, organized into visible Skill Profile categories, without filtering by jobRelevance, professionalWeight, or priority;
+
+the Skills section grouping is assembled deterministically from the Skill Profile and is not re-decided by the Optimized CV LLM;
+
+the generated Optimized CV document can represent category → ordered sourceSkill list for Preview, PDF, and Export without reading the Skill Intelligence cache;
+
+existing saved Optimized CVs with a flat `skills: string[]` continue to load and may render as a flat list until regenerated;
+
+Professional Summary uses Skill Intelligence to emphasize relevant existing Master CV skills, is grounded in evidence, does not need to mention every skill, and must not convert emphasis signals into unsupported proficiency, seniority, expertise, fluency, or other personal-attribute claims;
+
+language proficiency mentioned in Professional Summary remains faithful to the Master CV;
+
+Cover Letter consumes the same Skill Profile as Professional Summary and emphasizes relevant high-priority existing skills without independently re-evaluating the raw skill inventory;
 
 Skill Intelligence is a required generation dependency after integration;
 
@@ -1410,5 +1740,7 @@ The LLM provides semantic reasoning.
 Deterministic application code provides source-of-truth enforcement, validation, priority, and cache.
 
 Document generators consume the resulting structured context and display sourceSkill.
+
+Professional Summary and Cover Letter use the Skill Profile for emphasis of existing Master CV skills. Emphasis never authorizes unsupported personal-attribute claims. The Optimized CV Skills section uses the Skill Profile to categorize the complete Master CV skill inventory into visible groups assembled deterministically at generation time.
 
 Workflow orchestration technologies are introduced only when actual workflow complexity requires them. They are not required for V1.

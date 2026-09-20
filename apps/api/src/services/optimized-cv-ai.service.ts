@@ -1,4 +1,5 @@
 import OpenAI from "openai";
+import { assembleOptimizedCvSkillsFromProfile } from "../lib/optimized-cv-skills.js";
 import type {
   CertificationItem,
   EducationItem,
@@ -12,6 +13,7 @@ import type {
   OptimizedCv,
   OptimizedCvGenerationInput,
 } from "../types/optimized-cv.js";
+import type { SkillProfile } from "../types/skill-intelligence.js";
 import {
   generationLanguageInstruction,
   type SupportedLocale,
@@ -300,7 +302,15 @@ export function enforceMasterCvIntegrity(
   profilePhotoAssetId: string | null = null,
   profilePhotoPositionX: number | null = null,
   profilePhotoPositionY: number | null = null,
+  skillProfile: SkillProfile | null = null,
 ): Omit<OptimizedCv, "workingLanguage"> {
+  const assembledSkills = skillProfile
+    ? assembleOptimizedCvSkillsFromProfile(masterCv.skills, skillProfile)
+    : {
+        skills: supportedSkills(generated.skills, masterCv.skills),
+        skillGroups: undefined,
+      };
+
   return {
     fullName: masterCv.fullName,
     professionalTitle: masterCv.professionalTitle,
@@ -338,7 +348,10 @@ export function enforceMasterCvIntegrity(
           item.description,
       };
     }),
-    skills: supportedSkills(generated.skills, masterCv.skills),
+    skills: assembledSkills.skills,
+    ...(assembledSkills.skillGroups
+      ? { skillGroups: assembledSkills.skillGroups }
+      : {}),
     languages: masterCv.languages.map((item) => ({
       name: item.name,
       proficiency: item.proficiency,
@@ -404,7 +417,22 @@ export async function generateOptimizedCvDraft(
               "Keep the professional summary concise. Keep secondary sections concise and relevant.",
               "Avoid repeating skills, technologies, responsibilities, or achievements across sections.",
               "You may rewrite the professional summary and experience or education descriptions to improve clarity, relevance, ATS compatibility, and one-page fit.",
-              "You may reorder existing skills to emphasize relevance, but only use skills already present in the Master CV.",
+              "Use the provided Skill Profile as the shared skill-reasoning context. Do not independently reconstruct skill priority from raw Master CV, Job Analysis, or Profile Match skill lists.",
+              "Use Skill Profile professionalWeight, jobRelevance, evidence, and priority to guide which existing Master CV skills receive emphasis in the professional summary. Lower priority numbers receive greater emphasis.",
+              "The professional summary may mention a subset of Master CV skills. Never introduce a skill that is absent from the Skill Profile. Use evidence only to ground selected skills in existing Master CV content.",
+              "Skill Profile signals may guide emphasis but never authorize unsupported claims.",
+              "The professional summary may emphasize a subset of existing Master CV skills, prioritize skills using professionalWeight, jobRelevance, evidence, and priority, and rewrite and synthesize existing facts.",
+              "Preserve the factual meaning of Master CV facts. Relevance, weight, priority, and evidence are not permission to invent a stronger claim.",
+              "Do not turn relevance into expertise. Do not turn professional weight into seniority. Do not infer proficiency levels. Do not infer fluency or communication ability.",
+              "Do not invent certifications, responsibilities, achievements, domain expertise, or language characteristics.",
+              "Do not transform a skill mention into an unsupported proficiency claim. Do not change React into expert in React unless the Master CV explicitly supports that claim.",
+              "Do not infer language ability beyond what the Master CV explicitly states. If a language is mentioned, its proficiency must remain faithful to the Master CV. Do not change English — Intermediate into Conversational English, fluent English, advanced English, or any other upgraded formulation.",
+              "The backend will assemble the Skills section deterministically from the Skill Profile. Do not invent, decide, or re-derive the final Skills-section grouping.",
+              "Do not omit a Master CV skill from the Skills section because jobRelevance is low or none, professionalWeight is lower, priority is lower, or one-page fit is required.",
+              "Document-facing skill strings must be sourceSkill. Never use canonicalSkill in the Optimized CV. canonicalSkill is internal Skill Intelligence metadata only.",
+              "Do not invent, remove, or replace Master CV skills. Do not copy Profile Match matchingSkills or Job Analysis requiredSkills into the skills array.",
+              "Experience and selected personal-project descriptions may emphasize those same high-priority relevant skills while remaining factual.",
+              "Only use skills already present in the Master CV.",
               "Keep the same number of experience, education, language, and certification items as the Master CV. Condense less relevant descriptions instead of omitting items.",
               "Do not invent information to fill space. Do not drop relevant facts that matter to the target job solely for brevity.",
               "Do not control fonts, margins, spacing, columns, or visual layout.",
@@ -445,6 +473,7 @@ export async function generateOptimizedCvDraft(
       profilePhotoAssetId,
       profilePhotoPositionX,
       profilePhotoPositionY,
+      input.skillProfile,
     ),
     workingLanguage: locale,
   };

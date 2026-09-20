@@ -1,4 +1,8 @@
 import {
+  OptimizedCvSkillsError,
+  readOptimizedCvSkillFields,
+} from "../lib/optimized-cv-skills.js";
+import {
   isAssetId,
   optimizedCvPhotoPrefix,
   parseOptimizedCvPhotoAssetId,
@@ -11,10 +15,10 @@ import {
   findOptimizedCvByApplicationId,
   upsertOptimizedCv,
 } from "../repositories/optimized-cv.repository.js";
-import type { MasterCvInput } from "../types/master-cv.js";
 import type {
   GeneratedOptimizedCvDraft,
   OptimizedCv,
+  OptimizedCvText,
 } from "../types/optimized-cv.js";
 import {
   isSupportedLocale,
@@ -40,6 +44,8 @@ import {
   prepareProfileComparisonInput,
   ProfileComparisonError,
 } from "./profile-comparison.service.js";
+import { getOrComputeSkillProfile } from "./skill-intelligence-cache.js";
+import { SkillIntelligenceError } from "./skill-intelligence.js";
 
 export class OptimizedCvError extends Error {
   constructor(
@@ -87,10 +93,21 @@ function readStoredWorkingLanguage(record: unknown): SupportedLocale | null {
   return value;
 }
 
-function validateOptimizedCvText(value: unknown): MasterCvInput {
+function validateOptimizedCvText(value: unknown): OptimizedCvText {
   try {
-    return validateMasterCvInput(value);
+    const skillFields = readOptimizedCvSkillFields(value);
+    const record =
+      value && typeof value === "object" && !Array.isArray(value)
+        ? { ...value, skills: skillFields.skills }
+        : value;
+    const text = validateMasterCvInput(record);
+    return skillFields.skillGroups
+      ? { ...text, skillGroups: skillFields.skillGroups }
+      : text;
   } catch (error) {
+    if (error instanceof OptimizedCvSkillsError) {
+      throw new OptimizedCvError(error.message, error.statusCode);
+    }
     if (error instanceof MasterCvError) {
       throw new OptimizedCvError(error.message, error.statusCode);
     }
@@ -236,6 +253,15 @@ export async function generateOptimizedCv(
   try {
     const input = await prepareProfileComparisonInput(applicationId, userId);
     const profileMatch = await getProfileComparison(applicationId, userId);
+    const skillProfile = await getOrComputeSkillProfile({
+      userId,
+      applicationId,
+      input: {
+        masterCv: input.masterCv,
+        jobAnalysis: input.jobAnalysis,
+        profileMatch,
+      },
+    });
     const masterCv = await findMasterCvByUserId(userId);
     const saved = await findOptimizedCvByApplicationId(applicationId);
     const snapshotKey = await snapshotMasterCvPhoto(
@@ -262,6 +288,7 @@ export async function generateOptimizedCv(
         masterCv: input.masterCv,
         jobAnalysis: input.jobAnalysis,
         profileMatch,
+        skillProfile,
       },
       locale,
       profilePhotoAssetId,
@@ -270,6 +297,9 @@ export async function generateOptimizedCv(
     );
   } catch (error) {
     if (error instanceof ProfileComparisonError) {
+      throw new OptimizedCvError(error.message, error.statusCode);
+    }
+    if (error instanceof SkillIntelligenceError) {
       throw new OptimizedCvError(error.message, error.statusCode);
     }
     if (error instanceof ProfilePhotoError) {

@@ -94,6 +94,37 @@ const input: CoverLetterGenerationInput = {
     certifications: [],
     workingLanguage: null,
   },
+  skillProfile: {
+    skills: [
+      {
+        sourceSkill: "TypeScript",
+        canonicalSkill: "TS",
+        category: "Front-End",
+        professionalWeight: "core_professional",
+        jobRelevance: "very_high",
+        priority: 1,
+        evidence: [{ source: "experience", reference: "experience[0]" }],
+      },
+      {
+        sourceSkill: "REST APIs",
+        canonicalSkill: "REST",
+        category: "Back-End",
+        professionalWeight: "core_professional",
+        jobRelevance: "high",
+        priority: 2,
+        evidence: [{ source: "experience", reference: "experience[0]" }],
+      },
+      {
+        sourceSkill: "Git",
+        canonicalSkill: "Git",
+        category: "Development Tools",
+        professionalWeight: "general",
+        jobRelevance: "none",
+        priority: 3,
+        evidence: [],
+      },
+    ],
+  },
 };
 
 beforeEach(() => {
@@ -191,6 +222,52 @@ describe("generateCoverLetterDraft", () => {
     expect(createResponse).toHaveBeenCalledOnce();
     expect(createResponse.mock.calls[0][0].input[0].content[0].text).toContain(
       "Spanish (es)",
+    );
+    const payload = JSON.parse(
+      createResponse.mock.calls[0][0].input[1].content[0].text as string,
+    ) as CoverLetterGenerationInput;
+    expect(payload.skillProfile).toEqual(input.skillProfile);
+    const prompt = createResponse.mock.calls[0][0].input[0].content[0]
+      .text as string;
+    expect(prompt).toContain(
+      "Use the provided Skill Profile as the shared skill-reasoning context.",
+    );
+    expect(prompt).toContain(
+      "Do not independently reconstruct skill priority from raw Master CV, Job Analysis, Profile Match, or Optimized CV skill lists.",
+    );
+    expect(prompt).toContain(
+      "Emphasize existing professional skills with higher Skill Profile priority and jobRelevance.",
+    );
+    expect(prompt).toContain(
+      "Use Skill Profile evidence only to ground those existing skills in Master CV sections that already support them.",
+    );
+    expect(prompt).toContain(
+      "Document-facing skill strings must be sourceSkill.",
+    );
+    expect(prompt).toContain("Never use canonicalSkill in Cover Letter prose.");
+    expect(prompt).toContain(
+      "Master CV remains the authoritative candidate skill inventory.",
+    );
+    expect(prompt).toContain(
+      "Do not copy Profile Match matchingSkills or missingSkills, Job Analysis requiredSkills or atsKeywords, or canonicalSkill into the Cover Letter as candidate skills.",
+    );
+    expect(prompt).toContain("Preserve factual accuracy at all times.");
+    expect(prompt).toContain(
+      "Do not invent professional experience, achievements, personal motivations, or company information.",
+    );
+    expect(prompt).toContain(
+      "Do not infer company values that are not explicitly present in the Job Analysis.",
+    );
+    expect(prompt).toContain(
+      "Do not claim knowledge about the company that is not supported by the Job Analysis.",
+    );
+    expect(prompt).toContain("Do not modify factual profile information.");
+    expect(prompt).toContain("Do not promise future performance or outcomes.");
+    expect(prompt).toContain(
+      "The saved Optimized CV is the primary document reference.",
+    );
+    expect(prompt).toContain(
+      "Complement the Optimized CV instead of repeating it.",
     );
   });
 

@@ -111,4 +111,63 @@ describe("optimized CV repository", () => {
       }),
     });
   });
+
+  it("persists grouped skills in the existing Json column", async () => {
+    vi.mocked(prisma.optimizedCv.upsert).mockResolvedValue({
+      applicationId,
+      skills: {
+        groups: [{ category: "Front-End", skills: ["TypeScript"] }],
+        additionalSkills: ["Excel"],
+      },
+    } as never);
+
+    await upsertOptimizedCv(
+      applicationId,
+      {
+        ...input,
+        skills: ["TypeScript", "Excel"],
+        skillGroups: [{ category: "Front-End", skills: ["TypeScript"] }],
+      },
+      null,
+      null,
+      null,
+      "en",
+    );
+
+    expect(prisma.optimizedCv.upsert).toHaveBeenCalledWith({
+      where: { applicationId },
+      create: expect.objectContaining({
+        applicationId,
+        skills: {
+          groups: [{ category: "Front-End", skills: ["TypeScript"] }],
+          additionalSkills: ["Excel"],
+        },
+      }),
+      update: expect.objectContaining({
+        skills: {
+          groups: [{ category: "Front-End", skills: ["TypeScript"] }],
+          additionalSkills: ["Excel"],
+        },
+      }),
+    });
+  });
+
+  it("persists legacy skills as a string array", async () => {
+    vi.mocked(prisma.optimizedCv.upsert).mockResolvedValue({
+      applicationId,
+      skills: ["TypeScript"],
+    } as never);
+
+    await upsertOptimizedCv(applicationId, input, null, null, null, "en");
+
+    expect(prisma.optimizedCv.upsert).toHaveBeenCalledWith({
+      where: { applicationId },
+      create: expect.objectContaining({
+        skills: ["TypeScript"],
+      }),
+      update: expect.objectContaining({
+        skills: ["TypeScript"],
+      }),
+    });
+  });
 });

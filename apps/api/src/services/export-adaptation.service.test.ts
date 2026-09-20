@@ -73,6 +73,7 @@ const savedOptimizedCv: OptimizedCv = {
     },
   ],
   skills: ["TypeScript", "PostgreSQL"],
+  skillGroups: [{ category: "Front-End", skills: ["TypeScript"] }],
   languages: [{ name: "Spanish", proficiency: "Native" }],
   certifications: [
     {
@@ -146,6 +147,7 @@ function protectedOptimizedCvFields(document: OptimizedCv) {
     experience: document.experience.map(omitDescription),
     education: document.education.map(omitDescription),
     skills: document.skills,
+    skillGroups: document.skillGroups,
     languages: document.languages,
     certifications: document.certifications,
     personalProjects: document.personalProjects?.map(omitDescription),
